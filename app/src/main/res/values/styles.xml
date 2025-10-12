@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Modern Button Styles -->
+    <style name="ButtonPrimary" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/button_primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@string/font_family_primary</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <style name="ButtonSecondary" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/button_secondary</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">@string/font_family_primary</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:elevation">2dp</item>
+    </style>
+
+    <style name="ButtonAccent" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/button_accent</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@string/font_family_primary</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <style name="ButtonSmall" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/button_secondary</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">@string/font_family_primary</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:elevation">1dp</item>
+    </style>
+
+    <!-- Standardized Text Styles -->
+    <style name="TextHeading1">
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">@string/font_family_heading</item>
+    </style>
+
+    <style name="TextHeading2">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">@string/font_family_heading</item>
+    </style>
+
+    <style name="TextHeading3">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">@string/font_family_primary</item>
+    </style>
+
+    <style name="TextSubheading">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">@string/font_family_primary</item>
+    </style>
+
+    <style name="TextBody">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">@string/font_family_body</item>
+    </style>
+
+    <style name="TextBodySmall">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">@string/font_family_body</item>
+    </style>
+
+    <style name="TextCaption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:fontFamily">@string/font_family_caption</item>
+    </style>
+
+    <style name="TextHint">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_hint</item>
+        <item name="android:fontFamily">@string/font_family_caption</item>
+    </style>
+
+    <!-- Card Styles -->
+    <style name="CardModern">
+        <item name="android:background">@drawable/card_modern</item>
+        <item name="android:elevation">4dp</item>
+        <item name="android:layout_margin">16dp</item>
+        <item name="android:padding">20dp</item>
+    </style>
+
+    <style name="CardSmall">
+        <item name="android:background">@drawable/card_modern</item>
+        <item name="android:elevation">2dp</item>
+        <item name="android:layout_margin">8dp</item>
+        <item name="android:padding">12dp</item>
+    </style>
+</resources>

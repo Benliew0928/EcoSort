@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="font_family_primary">sans-serif-medium</string>
+    <string name="font_family_secondary">sans-serif</string>
+    <string name="font_family_heading">sans-serif-black</string>
+    <string name="font_family_body">sans-serif</string>
+    <string name="font_family_caption">sans-serif-light</string>
+</resources>
