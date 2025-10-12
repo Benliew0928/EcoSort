@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import com.example.ecosort.ui.login.LoginActivity
 
 class UserProfileActivity : AppCompatActivity() {
 
