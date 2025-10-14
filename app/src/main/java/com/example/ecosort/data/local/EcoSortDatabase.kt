@@ -160,6 +160,12 @@ interface MarketplaceItemDao {
     @Query("SELECT * FROM marketplace_items WHERE id = :itemId LIMIT 1")
     suspend fun getItemById(itemId: Long): MarketplaceItem?
 
+    @Query("SELECT * FROM marketplace_items WHERE title = :title LIMIT 1")
+    suspend fun getItemByTitle(title: String): MarketplaceItem?
+
+    @Query("DELETE FROM marketplace_items WHERE title IN (:titles)")
+    suspend fun deleteItemsByTitles(titles: List<String>)
+
     @Query("SELECT * FROM marketplace_items WHERE category = :category AND status = 'AVAILABLE' ORDER BY postedAt DESC")
     fun getItemsByCategory(category: WasteCategory): Flow<List<MarketplaceItem>>
 

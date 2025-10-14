@@ -3,6 +3,8 @@ package com.example.ecosort.di
 import android.content.Context
 import com.example.ecosort.data.local.*
 import com.example.ecosort.data.preferences.UserPreferencesManager
+import com.example.ecosort.data.firebase.FirebaseStorageService
+import com.example.ecosort.data.firebase.FirestoreService
 import com.example.ecosort.utils.SecurityManager
 import dagger.Module
 import dagger.Provides
@@ -65,5 +67,22 @@ object SecurityModule {
     @Singleton
     fun provideSecurityManager(): SecurityManager {
         return SecurityManager
+    }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object FirebaseModule {
+
+    @Provides
+    @Singleton
+    fun provideFirebaseStorageService(): FirebaseStorageService {
+        return FirebaseStorageService()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirestoreService(): FirestoreService {
+        return FirestoreService()
     }
 }

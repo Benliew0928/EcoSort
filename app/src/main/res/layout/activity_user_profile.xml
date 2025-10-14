@@ -241,7 +241,7 @@
                 android:textSize="16sp"
                 android:fontFamily="@string/font_family_primary"
                 android:background="@drawable/button_secondary"
-                android:textColor="@color/text_primary"
+                android:textColor="@color/white"
                 android:layout_marginBottom="12dp"
                 android:elevation="2dp" />
 
@@ -253,7 +253,7 @@
                 android:textSize="16sp"
                 android:fontFamily="@string/font_family_primary"
                 android:background="@drawable/button_secondary"
-                android:textColor="@color/text_primary"
+                android:textColor="@color/white"
                 android:layout_marginBottom="24dp"
                 android:elevation="2dp" />
 
@@ -270,3 +270,4 @@
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
+

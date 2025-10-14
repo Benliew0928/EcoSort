@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
     id("dagger.hilt.android.plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -116,6 +117,10 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
+    // Huawei HMS Maps & Location (use resolvable versions)
+    implementation("com.huawei.hms:maps:6.11.2.301")
+    implementation("com.huawei.hms:location:6.12.0.300")
+
     // Security & Encryption
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
@@ -124,6 +129,12 @@ dependencies {
 
     // Gson
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx")
 
     // ✅ Jetpack Compose dependencies
     implementation(platform("androidx.compose:compose-bom:2024.01.00"))

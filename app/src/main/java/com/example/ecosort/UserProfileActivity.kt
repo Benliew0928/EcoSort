@@ -1,23 +1,29 @@
 package com.example.ecosort
 
 import android.content.Intent
-import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import com.example.ecosort.data.model.UserType
+import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.ui.login.LoginActivity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
 
 class UserProfileActivity : AppCompatActivity() {
 
-    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var userPreferencesManager: UserPreferencesManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_user_profile)
 
-        sharedPreferences = getSharedPreferences("EcoSortPrefs", MODE_PRIVATE)
+        userPreferencesManager = UserPreferencesManager(applicationContext)
 
         val tvUsername = findViewById<TextView>(R.id.tvUsername)
         val tvUserType = findViewById<TextView>(R.id.tvUserType)
@@ -28,13 +34,17 @@ class UserProfileActivity : AppCompatActivity() {
         val btnLogout = findViewById<Button>(R.id.btnLogout)
         val btnBack = findViewById<Button>(R.id.btnBack)
 
-        // Get user information
-        val username = sharedPreferences.getString("current_username", "User") ?: "User"
-        val userType = sharedPreferences.getString("current_usertype", "user") ?: "user"
-
-        // Display user information
-        tvUsername.text = username
-        tvUserType.text = "Regular User"
+        // Populate user info from DataStore session
+        lifecycleScope.launch {
+            val session = withContext(Dispatchers.IO) { userPreferencesManager.userSession.first() }
+            if (session == null || !session.isLoggedIn) {
+                startActivity(Intent(this@UserProfileActivity, LoginActivity::class.java))
+                finish()
+                return@launch
+            }
+            tvUsername.text = session.username.ifBlank { "User" }
+            tvUserType.text = if (session.userType == UserType.ADMIN) "Administrator" else "Regular User"
+        }
         
         // Display stats (you can make these dynamic later)
         tvStatsRecycled.text = "24"
@@ -50,16 +60,12 @@ class UserProfileActivity : AppCompatActivity() {
         }
 
         btnLogout.setOnClickListener {
-            // Clear user session
-            with(sharedPreferences.edit()) {
-                putBoolean("is_logged_in", false)
-                remove("current_username")
-                remove("current_usertype")
-                apply()
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) { userPreferencesManager.clearUserSession() }
+                Toast.makeText(this@UserProfileActivity, "Logged out successfully", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(this@UserProfileActivity, LoginActivity::class.java))
+                finish()
             }
-            Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
         }
 
         btnBack.setOnClickListener {
@@ -71,3 +77,4 @@ class UserProfileActivity : AppCompatActivity() {
         finish()
     }
 }
+

@@ -46,7 +46,7 @@
                 android:text="EcoSort"
                 android:textSize="32sp"
                 android:textStyle="bold"
-                android:textColor="@color/text_primary"
+                android:textColor="@color/white"
                 android:fontFamily="@string/font_family_heading"
                 android:layout_marginTop="16dp" />
 
@@ -55,7 +55,7 @@
                 android:layout_height="wrap_content"
                 android:text="Smart Recycling &amp; Marketplace"
                 android:textSize="16sp"
-                android:textColor="@color/text_secondary"
+                android:textColor="@color/white"
                 android:fontFamily="@string/font_family_body"
                 android:layout_marginTop="8dp" />
         </LinearLayout>
@@ -195,7 +195,7 @@
                 android:textSize="14sp"
                 android:fontFamily="@string/font_family_primary"
                 android:background="@drawable/button_secondary"
-                android:textColor="@color/text_primary"
+                android:textColor="@color/white"
                 android:elevation="2dp" />
         </LinearLayout>
 

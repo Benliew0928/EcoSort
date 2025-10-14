@@ -9,6 +9,7 @@ import com.example.ecosort.data.model.UserType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import java.io.IOException
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
@@ -124,4 +125,29 @@ class UserPreferencesManager(private val context: Context) {
         .map { preferences ->
             preferences[PreferencesKeys.LANGUAGE] ?: "en"
         }
+
+    // ==================== HELPER METHODS ====================
+
+    suspend fun getCurrentUser(): UserSession? {
+        return try {
+            val preferences = context.dataStore.data.first()
+            val isLoggedIn = preferences[PreferencesKeys.IS_LOGGED_IN] ?: false
+            if (isLoggedIn) {
+                UserSession(
+                    userId = preferences[PreferencesKeys.USER_ID] ?: 0L,
+                    username = preferences[PreferencesKeys.USERNAME] ?: "",
+                    userType = UserType.valueOf(
+                        preferences[PreferencesKeys.USER_TYPE] ?: UserType.USER.name
+                    ),
+                    token = preferences[PreferencesKeys.SESSION_TOKEN],
+                    isLoggedIn = true
+                )
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("UserPreferencesManager", "Error getting current user", e)
+            null
+        }
+    }
 }

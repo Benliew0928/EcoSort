@@ -57,18 +57,21 @@
             android:elevation="2dp">
 
             <LinearLayout
+                android:id="@+id/photoContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:gravity="center">
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true">
 
-                <TextView
+                <ImageView
+                    android:id="@+id/imgPreview"
                     android:layout_width="match_parent"
-                    android:layout_height="150dp"
-                    android:text="📷"
-                    android:textSize="48sp"
-                    android:gravity="center"
+                    android:layout_height="180dp"
+                    android:scaleType="centerCrop"
                     android:background="@color/surface_light"
+                    android:contentDescription="Item photo preview"
                     android:layout_marginBottom="12dp" />
 
                 <TextView

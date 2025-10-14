@@ -1,23 +1,27 @@
 package com.example.ecosort
 
 import android.content.Intent
-import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.ui.login.LoginActivity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AdminActivity : AppCompatActivity() {
     
-    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var userPreferencesManager: UserPreferencesManager
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_admin)
         
-        sharedPreferences = getSharedPreferences("EcoSortPrefs", MODE_PRIVATE)
+        userPreferencesManager = UserPreferencesManager(applicationContext)
         
         val btnBack = findViewById<Button>(R.id.btnBackAdmin)
         val btnManageStations = findViewById<Button>(R.id.btnManageStations)
@@ -42,19 +46,12 @@ class AdminActivity : AppCompatActivity() {
         }
         
         btnLogout.setOnClickListener {
-            logout()
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) { userPreferencesManager.clearUserSession() }
+                val intent = Intent(this@AdminActivity, LoginActivity::class.java)
+                startActivity(intent)
+                finish()
+            }
         }
-    }
-    
-    private fun logout() {
-        sharedPreferences.edit()
-            .remove("current_username")
-            .remove("current_usertype")
-            .putBoolean("is_logged_in", false)
-            .apply()
-        
-        val intent = Intent(this, LoginActivity::class.java)
-        startActivity(intent)
-        finish()
     }
 }
