@@ -46,6 +46,18 @@ object DatabaseModule {
     fun provideMarketplaceItemDao(database: EcoSortDatabase): MarketplaceItemDao {
         return database.marketplaceItemDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideChatMessageDao(database: EcoSortDatabase): ChatMessageDao {
+        return database.chatMessageDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideConversationDao(database: EcoSortDatabase): ConversationDao {
+        return database.conversationDao()
+    }
 }
 
 @Module

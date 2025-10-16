@@ -11,6 +11,12 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29"
+        tools:replace="android:maxSdkVersion" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
 
     <!-- ==================== FEATURES ==================== -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -33,6 +39,17 @@
         <meta-data
             android:name="com.huawei.hms.client.api_key"
             android:value="DgEDALFQCT2z6SbgMBCF84yhsZnr8RYPkoILZbwIuYoIMO5ZhdqwMo7eVLUeEey0qoFkFjZQDhRUjoahAr+qtdLH4p+OdQgK/hkWng==" />
+
+        <!-- FileProvider for camera -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <!-- ==================== MAIN ACTIVITY (LAUNCHER) ==================== -->
         <activity
@@ -88,6 +105,27 @@
 
         <activity
             android:name=".marketplace.MarketplaceDetailActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- ==================== CHAT ACTIVITIES ==================== -->
+        <activity
+            android:name=".chat.ChatListActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".chat.UserSearchActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".chat.ChatActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".chat.SimpleChatActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 

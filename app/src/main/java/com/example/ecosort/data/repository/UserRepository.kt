@@ -143,6 +143,18 @@ class UserRepository @Inject constructor(
         }
     }
 
+    suspend fun searchUsers(query: String): Result<List<User>> {
+        return try {
+            val currentSession = preferencesManager.userSession.first()
+                ?: return Result.Error(Exception("No active session"))
+            
+            val users = userDao.searchUsersByUsername(query, currentSession.username)
+            Result.Success(users)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
     suspend fun updateUser(user: User): Result<Unit> {
         return try {
             userDao.updateUser(user)

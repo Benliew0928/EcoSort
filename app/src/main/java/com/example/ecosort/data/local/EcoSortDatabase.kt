@@ -2,6 +2,7 @@ package com.example.ecosort.data.local
 
 import android.content.Context
 import androidx.room.*
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.ecosort.data.model.*
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -62,6 +63,12 @@ class Converters {
 
     @TypeConverter
     fun toItemAction(value: String?): ItemAction? = value?.let { ItemAction.valueOf(it) }
+
+    @TypeConverter
+    fun fromMessageType(value: MessageType): String = value.name
+
+    @TypeConverter
+    fun toMessageType(value: String): MessageType = MessageType.valueOf(value)
 }
 
 // ==================== USER DAO ====================
@@ -72,6 +79,15 @@ interface UserDao {
 
     @Query("SELECT * FROM users WHERE username = :username LIMIT 1")
     suspend fun getUserByUsername(username: String): User?
+
+    @Query("SELECT * FROM users WHERE username LIKE '%' || :query || '%' AND username != :currentUsername LIMIT 20")
+    suspend fun searchUsersByUsername(query: String, currentUsername: String): List<User>
+
+    @Query("SELECT * FROM users")
+    suspend fun getAllUsers(): List<User>
+
+    @Query("SELECT COUNT(*) FROM users")
+    suspend fun getUserCount(): Int
 
     @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
     suspend fun getUserByEmail(email: String): User?
@@ -182,15 +198,82 @@ interface MarketplaceItemDao {
     suspend fun deleteItem(itemId: Long)
 }
 
+// ==================== CHAT MESSAGE DAO ====================
+@Dao
+interface ChatMessageDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMessage(message: ChatMessage): Long
+
+    @Query("SELECT * FROM chat_messages WHERE channelId = :channelId ORDER BY timestamp ASC")
+    fun getMessagesForChannel(channelId: String): Flow<List<ChatMessage>>
+
+    @Query("SELECT * FROM chat_messages WHERE channelId = :channelId ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLastMessageForChannel(channelId: String): ChatMessage?
+
+    @Query("UPDATE chat_messages SET isRead = 1 WHERE channelId = :channelId AND senderId != :currentUserId")
+    suspend fun markMessagesAsRead(channelId: String, currentUserId: Long)
+
+    @Query("UPDATE chat_messages SET messageStatus = 'SEEN' WHERE channelId = :channelId AND senderId != :currentUserId")
+    suspend fun updateMessageStatusToSeen(channelId: String, currentUserId: Long)
+
+    @Query("UPDATE chat_messages SET messageStatus = :status WHERE id = :messageId")
+    suspend fun updateMessageStatus(messageId: Long, status: MessageStatus)
+
+    @Query("SELECT COUNT(*) FROM chat_messages WHERE channelId = :channelId AND senderId != :currentUserId AND isRead = 0")
+    suspend fun getUnreadCount(channelId: String, currentUserId: Long): Int
+
+    @Query("DELETE FROM chat_messages WHERE channelId = :channelId")
+    suspend fun deleteChannelMessages(channelId: String)
+}
+
+// ==================== CONVERSATION DAO ====================
+@Dao
+interface ConversationDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertConversation(conversation: Conversation)
+
+    @Query("""
+        SELECT c.*, 
+               CASE 
+                   WHEN c.participant1Id = :userId THEN 
+                       (SELECT COUNT(*) FROM chat_messages 
+                        WHERE channelId = c.channelId 
+                        AND senderId != :userId 
+                        AND isRead = 0)
+                   ELSE 
+                       (SELECT COUNT(*) FROM chat_messages 
+                        WHERE channelId = c.channelId 
+                        AND senderId != :userId 
+                        AND isRead = 0)
+               END as unreadCount
+        FROM conversations c 
+        WHERE c.participant1Id = :userId OR c.participant2Id = :userId 
+        ORDER BY c.lastMessageTimestamp DESC
+    """)
+    fun getConversationsForUser(userId: Long): Flow<List<Conversation>>
+
+    @Query("SELECT * FROM conversations WHERE channelId = :channelId")
+    suspend fun getConversationByChannelId(channelId: String): Conversation?
+
+    @Query("UPDATE conversations SET lastMessageText = :messageText, lastMessageTimestamp = :timestamp, lastMessageSenderId = :senderId WHERE channelId = :channelId")
+    suspend fun updateLastMessage(channelId: String, messageText: String, timestamp: Long, senderId: Long)
+
+
+    @Query("DELETE FROM conversations WHERE channelId = :channelId")
+    suspend fun deleteConversation(channelId: String)
+}
+
 // ==================== MAIN DATABASE ====================
 @Database(
     entities = [
         User::class,
         ScannedItem::class,
         RecyclingStation::class,
-        MarketplaceItem::class
+        MarketplaceItem::class,
+        ChatMessage::class,
+        Conversation::class
     ],
-    version = 1,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -200,6 +283,8 @@ abstract class EcoSortDatabase : RoomDatabase() {
     abstract fun scannedItemDao(): ScannedItemDao
     abstract fun recyclingStationDao(): RecyclingStationDao
     abstract fun marketplaceItemDao(): MarketplaceItemDao
+    abstract fun chatMessageDao(): ChatMessageDao
+    abstract fun conversationDao(): ConversationDao
 
     companion object {
         @Volatile
@@ -212,10 +297,77 @@ abstract class EcoSortDatabase : RoomDatabase() {
                     EcoSortDatabase::class.java,
                     "ecosort_database"
                 )
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(
+                        MIGRATION_1_2,
+                        MIGRATION_2_3,
+                        MIGRATION_3_4
+                    )
+                    .allowMainThreadQueries() // Temporary for debugging
                     .build()
                 INSTANCE = instance
+                
+                // Log database creation for debugging
+                android.util.Log.d("EcoSortDatabase", "Database created/opened successfully")
+                android.util.Log.d("EcoSortDatabase", "Database path: ${context.applicationContext.getDatabasePath("ecosort_database")}")
+                
                 instance
+            }
+        }
+        
+        // Database migrations to preserve data
+        private val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Migration from version 1 to 2 - add chat tables
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS chat_messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        channelId TEXT NOT NULL,
+                        senderId INTEGER NOT NULL,
+                        senderUsername TEXT NOT NULL,
+                        messageText TEXT NOT NULL,
+                        messageType TEXT NOT NULL DEFAULT 'TEXT',
+                        attachmentUrl TEXT,
+                        attachmentType TEXT,
+                        attachmentDuration INTEGER,
+                        timestamp INTEGER NOT NULL,
+                        isRead INTEGER NOT NULL DEFAULT 0,
+                        messageStatus TEXT NOT NULL DEFAULT 'SENDING'
+                    )
+                """.trimIndent())
+            }
+        }
+        
+        private val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Migration from version 2 to 3 - add conversation table
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS conversations (
+                        channelId TEXT PRIMARY KEY NOT NULL,
+                        participant1Id INTEGER NOT NULL,
+                        participant1Username TEXT NOT NULL,
+                        participant2Id INTEGER NOT NULL,
+                        participant2Username TEXT NOT NULL,
+                        lastMessageText TEXT,
+                        lastMessageTimestamp INTEGER NOT NULL DEFAULT 0,
+                        lastMessageSenderId INTEGER,
+                        unreadCount INTEGER NOT NULL DEFAULT 0,
+                        createdAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+            }
+        }
+        
+        private val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Migration from version 3 to 4 - add new fields to chat_messages
+                try {
+                    // Add new columns if they don't exist
+                    database.execSQL("ALTER TABLE chat_messages ADD COLUMN attachmentDuration INTEGER")
+                    database.execSQL("ALTER TABLE chat_messages ADD COLUMN messageStatus TEXT NOT NULL DEFAULT 'SENDING'")
+                } catch (e: Exception) {
+                    // Columns might already exist, ignore the error
+                    android.util.Log.d("Migration", "Columns might already exist: ${e.message}")
+                }
             }
         }
     }

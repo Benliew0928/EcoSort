@@ -63,6 +63,7 @@ class UserPreferencesManager(private val context: Context) {
             preferences[PreferencesKeys.IS_LOGGED_IN] = session.isLoggedIn
             session.token?.let { preferences[PreferencesKeys.SESSION_TOKEN] = it }
         }
+        android.util.Log.d("UserPreferencesManager", "User session saved: ${session.username} (ID: ${session.userId})")
     }
 
     suspend fun clearUserSession() {
@@ -133,7 +134,7 @@ class UserPreferencesManager(private val context: Context) {
             val preferences = context.dataStore.data.first()
             val isLoggedIn = preferences[PreferencesKeys.IS_LOGGED_IN] ?: false
             if (isLoggedIn) {
-                UserSession(
+                val userSession = UserSession(
                     userId = preferences[PreferencesKeys.USER_ID] ?: 0L,
                     username = preferences[PreferencesKeys.USERNAME] ?: "",
                     userType = UserType.valueOf(
@@ -142,7 +143,10 @@ class UserPreferencesManager(private val context: Context) {
                     token = preferences[PreferencesKeys.SESSION_TOKEN],
                     isLoggedIn = true
                 )
+                android.util.Log.d("UserPreferencesManager", "Current user loaded: ${userSession.username} (ID: ${userSession.userId})")
+                userSession
             } else {
+                android.util.Log.d("UserPreferencesManager", "No user logged in")
                 null
             }
         } catch (e: Exception) {

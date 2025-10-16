@@ -102,6 +102,9 @@ dependencies {
     // Image Loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
     kapt("com.github.bumptech.glide:compiler:4.16.0")
+    
+    // Circle Image View
+    implementation("de.hdodenhof:circleimageview:3.1.0")
 
     // CameraX
     implementation("androidx.camera:camera-core:1.3.0")
@@ -135,6 +138,10 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
+
+    // Stream Chat
+    implementation("io.getstream:stream-chat-android-ui-components:6.0.0")
+    implementation("io.getstream:stream-chat-android-client:6.0.0")
 
     // ✅ Jetpack Compose dependencies
     implementation(platform("androidx.compose:compose-bom:2024.01.00"))

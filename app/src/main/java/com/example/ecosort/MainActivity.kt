@@ -12,6 +12,7 @@ import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.data.firebase.FirestoreService
 import com.example.ecosort.data.firebase.FirebaseMarketplaceItem
 import com.example.ecosort.ui.login.LoginActivity
+import com.example.ecosort.utils.DatabaseDebugHelper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,6 +40,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         
         // userPreferencesManager is now injected via Hilt
+        
+        // Debug database and user session info
+        val debugHelper = DatabaseDebugHelper(this)
+        debugHelper.logDatabaseInfo()
+        debugHelper.logUserSessionInfo()
 
         // Initialize UI elements
         val btnScan = findViewById<Button>(R.id.btnScan)
@@ -101,7 +107,12 @@ class MainActivity : AppCompatActivity() {
         }
         
         btnCommunity.setOnClickListener {
-            Toast.makeText(this, "Community Features - Coming Soon!", Toast.LENGTH_SHORT).show()
+            try {
+                startActivity(Intent(this, com.example.ecosort.chat.ChatListActivity::class.java))
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error starting ChatListActivity", e)
+                Toast.makeText(this, "Chat feature coming soon!", Toast.LENGTH_SHORT).show()
+            }
         }
         
         // Bottom navigation

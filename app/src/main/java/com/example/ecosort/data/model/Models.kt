@@ -132,6 +132,48 @@ sealed class Result<out T> {
     object Loading : Result<Nothing>()
 }
 
+// ==================== CHAT MESSAGE MODEL ====================
+@Entity(tableName = "chat_messages")
+data class ChatMessage(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val channelId: String,
+    val senderId: Long,
+    val senderUsername: String,
+    val messageText: String,
+    val messageType: MessageType = MessageType.TEXT,
+    val attachmentUrl: String? = null,
+    val attachmentType: String? = null,
+    val attachmentDuration: Long? = null, // For voice messages
+    val timestamp: Long = System.currentTimeMillis(),
+    val isRead: Boolean = false,
+    val messageStatus: MessageStatus = MessageStatus.SENDING
+)
+
+enum class MessageType {
+    TEXT, IMAGE, VOICE, FILE
+}
+
+enum class MessageStatus {
+    SENDING, SENT, DELIVERED, SEEN, READ
+}
+
+// ==================== CONVERSATION MODEL ====================
+@Entity(tableName = "conversations")
+data class Conversation(
+    @PrimaryKey
+    val channelId: String,
+    val participant1Id: Long,
+    val participant1Username: String,
+    val participant2Id: Long,
+    val participant2Username: String,
+    val lastMessageText: String? = null,
+    val lastMessageTimestamp: Long = 0L,
+    val lastMessageSenderId: Long? = null,
+    val unreadCount: Int = 0,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
 // UI State for ViewModels
 data class UiState<T>(
     val isLoading: Boolean = false,
