@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <dimen name="featured_card_width">180dp</dimen>
-    <dimen name="featured_card_gap">12dp</dimen>
-    <dimen name="featured_item_card_width">180dp</dimen>
-    <dimen name="featured_item_card_height">12dp</dimen>
-</resources>
-
