@@ -6,9 +6,15 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
 import android.Manifest
+import android.content.Context.MODE_PRIVATE
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.Log
+import android.widget.ImageView
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
+import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import java.io.File
@@ -24,10 +30,20 @@ class CameraActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
 
-        val btnSnap = findViewById<Button>(R.id.btnSnap)
         val btnBackCamera = findViewById<Button>(R.id.btnBackCamera)
-        val btnRecycleQuick = findViewById<Button>(R.id.btnRecycleQuick)
-        val btnSellQuick = findViewById<Button>(R.id.btnSellQuick)
+        val captureCameraButton = findViewById<Button>(R.id.cameraCaptureButton)
+        val uploadImageButton = findViewById<Button>(R.id.uploadImageButton)
+        val uploadedImage = findViewById<ImageView>(R.id.uploadedImage)
+        val pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            // Callback is invoked after the user selects a media item or closes the
+            // photo picker.
+            if (uri != null) {
+                uploadedImage.setImageURI(uri)
+
+            } else {
+                Toast.makeText(this, "No media selected", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         // Back button - return to main activity
         btnBackCamera.setOnClickListener {
@@ -35,18 +51,16 @@ class CameraActivity : AppCompatActivity() {
         }
 
         // Snap button - capture photo to file and save URI
-        btnSnap.setOnClickListener {
+        captureCameraButton.setOnClickListener {
             ensureCameraPermissionAndCapture()
         }
 
-        // Quick action buttons for last scanned item
-        btnRecycleQuick.setOnClickListener {
-            Toast.makeText(this, "Plastic Bottle sent to recycle center", Toast.LENGTH_SHORT).show()
+
+        // Upload button - open gallery to select image
+        uploadImageButton.setOnClickListener {
+            pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
 
-        btnSellQuick.setOnClickListener {
-            Toast.makeText(this, "Plastic Bottle listed for selling", Toast.LENGTH_SHORT).show()
-        }
     }
 
     private fun ensureCameraPermissionAndCapture() {
