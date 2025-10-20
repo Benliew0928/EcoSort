@@ -1,0 +1,30 @@
+buildscript {
+    repositories {
+        // Explicitly defining standard repos here is the most reliable way 
+        // to ensure all classpath dependencies resolve (including AGCP).
+        google()
+        mavenCentral()
+        maven { url 'https://developer.huawei.com/repo/' }
+    }
+    dependencies {
+        // Required for the Huawei AGConnect plugin
+        classpath 'com.android.tools.build:gradle:8.0.2'
+        classpath 'com.huawei.agconnect:agcp:1.9.1.301'
+    }
+}
+
+// Configuration for plugins applied to subprojects (like the 'app' module)
+plugins {
+    id 'com.android.application' version '8.0.2' apply false
+    id 'org.jetbrains.kotlin.android' version '1.9.23' apply false
+    id 'com.google.dagger.hilt.android' version '2.48' apply false
+    id 'com.google.gms.google-services' version '4.4.0' apply false
+
+
+}
+
+apply plugin: 'com.huawei.agconnect'
+
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
+}
