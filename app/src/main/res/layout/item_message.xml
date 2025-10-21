@@ -70,14 +70,35 @@
                     android:src="@drawable/ic_play_arrow"
                     android:background="@android:color/transparent" />
 
-                <View
-                    android:id="@+id/voice_waveform"
+                <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="20dp"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
                     android:layout_marginEnd="8dp"
-                    android:background="@drawable/voice_waveform_bg" />
+                    android:orientation="vertical">
+
+                    <!-- Progress bar for voice message -->
+                    <ProgressBar
+                        android:id="@+id/voice_progress_bar"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="12dp"
+                        android:layout_marginBottom="4dp"
+                        android:progress="0"
+                        android:max="100"
+                        android:progressDrawable="@drawable/voice_progress_bar"
+                        android:visibility="gone"
+                        android:indeterminate="false" />
+
+                    <!-- Waveform view (static) -->
+                    <View
+                        android:id="@+id/voice_waveform"
+                        android:layout_width="match_parent"
+                        android:layout_height="16dp"
+                        android:background="@drawable/voice_waveform_bg" />
+
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/voice_duration"

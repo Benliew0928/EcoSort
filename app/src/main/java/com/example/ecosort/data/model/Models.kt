@@ -2,6 +2,7 @@ package com.example.ecosort.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.io.Serializable
 
 // ==================== USER MODEL ====================
 @Entity(tableName = "users")
@@ -103,6 +104,76 @@ enum class ItemStatus {
     RESERVED,
     REMOVED
 }
+
+// ==================== COMMUNITY POST MODEL ====================
+@Entity(tableName = "community_posts")
+data class CommunityPost(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val authorId: Long,
+    val authorName: String,
+    val authorAvatar: String? = null,
+    val title: String,
+    val content: String,
+    val postType: PostType,
+    val inputType: InputType = InputType.TEXT,
+    val imageUrls: List<String> = emptyList(),
+    val videoUrl: String? = null,
+    val location: String? = null,
+    val tags: List<String> = emptyList(),
+    val postedAt: Long = System.currentTimeMillis(),
+    val likesCount: Int = 0,
+    val commentsCount: Int = 0,
+    val sharesCount: Int = 0,
+    val isLikedByUser: Boolean = false,
+    val status: PostStatus = PostStatus.PUBLISHED
+) : Serializable
+
+enum class PostType : Serializable {
+    TIP,            // Recycling tips and advice
+    ACHIEVEMENT,    // User achievements and milestones
+    QUESTION,       // Ask community questions
+    EVENT           // Community events and activities
+}
+
+enum class InputType : Serializable {
+    TEXT,           // Text-only post
+    IMAGE,          // Image with optional text
+    VIDEO           // Video with optional text
+}
+
+enum class PostStatus : Serializable {
+    PUBLISHED,
+    DRAFT,
+    HIDDEN,
+    DELETED
+}
+
+// ==================== COMMUNITY COMMENT MODEL ====================
+@Entity(tableName = "community_comments")
+data class CommunityComment(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val postId: Long,
+    val authorId: Long,
+    val authorName: String,
+    val authorAvatar: String? = null,
+    val content: String,
+    val parentCommentId: Long? = null, // For replies
+    val postedAt: Long = System.currentTimeMillis(),
+    val likesCount: Int = 0,
+    val isLikedByUser: Boolean = false
+)
+
+// ==================== COMMUNITY LIKE MODEL ====================
+@Entity(tableName = "community_likes")
+data class CommunityLike(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val postId: Long,
+    val userId: Long,
+    val likedAt: Long = System.currentTimeMillis()
+)
 
 // ==================== HELPER CLASSES ====================
 

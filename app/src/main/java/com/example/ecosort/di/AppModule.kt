@@ -58,6 +58,25 @@ object DatabaseModule {
     fun provideConversationDao(database: EcoSortDatabase): ConversationDao {
         return database.conversationDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideCommunityPostDao(database: EcoSortDatabase): CommunityPostDao {
+        return database.communityPostDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCommunityCommentDao(database: EcoSortDatabase): CommunityCommentDao {
+        return database.communityCommentDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCommunityLikeDao(database: EcoSortDatabase): CommunityLikeDao {
+        return database.communityLikeDao()
+    }
+
 }
 
 @Module

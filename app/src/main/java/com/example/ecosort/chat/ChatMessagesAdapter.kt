@@ -20,6 +20,7 @@ class ChatMessagesAdapter(
 ) : ListAdapter<ChatMessage, ChatMessagesAdapter.MessageViewHolder>(MessageDiffCallback()) {
     
     private val voicePlayer = VoicePlayer(context)
+    private val fallbackHandlers = mutableMapOf<String, android.os.Handler>()
 
     inner class MessageViewHolder(itemView: android.view.View) : RecyclerView.ViewHolder(itemView) {
         val textMessage: TextView = itemView.findViewById(R.id.text_message)
@@ -32,6 +33,7 @@ class ChatMessagesAdapter(
         val voiceMessageContainer: android.widget.LinearLayout = itemView.findViewById(R.id.voice_message_container)
         val voicePlayButton: android.widget.ImageView = itemView.findViewById(R.id.voice_play_button)
         val voiceDuration: TextView = itemView.findViewById(R.id.voice_duration)
+        val voiceProgressBar: android.widget.ProgressBar = itemView.findViewById(R.id.voice_progress_bar)
         val fileMessageContainer: android.widget.LinearLayout = itemView.findViewById(R.id.file_message_container)
         val fileName: TextView = itemView.findViewById(R.id.file_name)
 
@@ -77,6 +79,19 @@ class ChatMessagesAdapter(
                     val duration = message.attachmentDuration ?: 0L
                     val formattedDuration = formatDuration(duration)
                     holder.voiceDuration.text = formattedDuration
+                    
+                    // Only reset progress bar if not currently playing this specific message
+                    if (!voicePlayer.isPlayingFile(File(message.attachmentUrl ?: ""))) {
+                        holder.voiceProgressBar.visibility = android.view.View.GONE
+                        holder.voiceProgressBar.progress = 0
+                        holder.voicePlayButton.setImageResource(R.drawable.ic_play_arrow)
+                    } else {
+                        // If currently playing, show progress bar
+                        holder.voiceProgressBar.visibility = android.view.View.VISIBLE
+                        holder.voicePlayButton.setImageResource(R.drawable.ic_pause)
+                    }
+                    
+                    
                     android.util.Log.d("ChatMessagesAdapter", "Voice message duration: ${duration}ms, formatted: ${formattedDuration}")
                             // Set up voice play button click listener
                             holder.voicePlayButton.setOnClickListener {
@@ -92,8 +107,11 @@ class ChatMessagesAdapter(
                                             if (voicePlayer.isPlayingFile(voiceFile)) {
                                                 // Currently playing this file - stop it
                                                 android.util.Log.d("ChatMessagesAdapter", "Stopping voice message")
+                                                stopFallbackProgressAnimation(voiceFile)
                                                 voicePlayer.stopPlaying()
                                                 holder.voicePlayButton.setImageResource(R.drawable.ic_play_arrow)
+                                                holder.voiceProgressBar.visibility = android.view.View.GONE
+                                                holder.voiceProgressBar.progress = 0
                                             } else {
                                                 // Not playing - start playback
                                                 android.util.Log.d("ChatMessagesAdapter", "Starting voice message playback")
@@ -101,12 +119,48 @@ class ChatMessagesAdapter(
                                                 // Update button to show playing state
                                                 holder.voicePlayButton.setImageResource(R.drawable.ic_pause)
                                                 
-                                                // Play the voice message (no test beep!)
-                                                voicePlayer.playVoiceMessage(voiceFile) {
-                                                    // Playback completed - reset button
-                                                    holder.voicePlayButton.setImageResource(R.drawable.ic_play_arrow)
-                                                    android.util.Log.d("ChatMessagesAdapter", "MediaPlayer voice playback completed")
-                                                }
+                                                // Show progress bar and ensure it's visible
+                                                holder.voiceProgressBar.visibility = android.view.View.VISIBLE
+                                                holder.voiceProgressBar.progress = 0
+                                                holder.voiceProgressBar.max = 100
+                                                holder.voiceProgressBar.invalidate() // Force redraw
+                                                android.util.Log.d("ChatMessagesAdapter", "Progress bar made visible, progress set to 0")
+                                                
+                                                
+                                                // Start fallback progress animation based on actual audio duration
+                                                val audioDuration = message.attachmentDuration ?: 5000L // Default to 5 seconds if duration not available
+                                                startFallbackProgressAnimation(holder.voiceProgressBar, voiceFile, audioDuration)
+                                                
+                                                // Play the voice message with progress tracking
+                                                voicePlayer.playVoiceMessage(voiceFile, 
+                                                    onCompletion = {
+                                                        // Playback completed - reset button and hide progress
+                                                        android.util.Log.d("ChatMessagesAdapter", "Playback completed, hiding progress bar")
+                                                        stopFallbackProgressAnimation(voiceFile)
+                                                        holder.voicePlayButton.setImageResource(R.drawable.ic_play_arrow)
+                                                        holder.voiceProgressBar.visibility = android.view.View.GONE
+                                                        holder.voiceProgressBar.progress = 0
+                                                        android.util.Log.d("ChatMessagesAdapter", "MediaPlayer voice playback completed")
+                                                    },
+                                                    onProgress = { currentPosition, totalDuration ->
+                                                        // Update progress bar on main thread
+                                                        android.util.Log.d("ChatMessagesAdapter", "*** PROGRESS CALLBACK RECEIVED: $currentPosition/$totalDuration ***")
+                                                        if (totalDuration > 0) {
+                                                            val progress = (currentPosition * 100) / totalDuration
+                                                            android.util.Log.d("ChatMessagesAdapter", "*** CALCULATED PROGRESS: $progress% ***")
+                                                            
+                                                            // Always post to main thread to ensure UI updates
+                                                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                                                holder.voiceProgressBar.visibility = android.view.View.VISIBLE
+                                                                holder.voiceProgressBar.progress = progress
+                                                                holder.voiceProgressBar.invalidate() // Force redraw
+                                                                android.util.Log.d("ChatMessagesAdapter", "*** PROGRESS BAR UPDATED TO: $progress% ***")
+                                                            }
+                                                        } else {
+                                                            android.util.Log.w("ChatMessagesAdapter", "*** TOTAL DURATION IS 0! ***")
+                                                        }
+                                                    }
+                                                )
                                             }
                                             
                                         } else {
@@ -125,6 +179,13 @@ class ChatMessagesAdapter(
                                 } catch (e: Exception) {
                                     android.util.Log.e("ChatMessagesAdapter", "Error playing voice message", e)
                                     android.widget.Toast.makeText(context, "Error playing voice message: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                                    // Reset UI on error
+                                    holder.voicePlayButton.setImageResource(R.drawable.ic_play_arrow)
+                                    holder.voiceProgressBar.visibility = android.view.View.GONE
+                                    holder.voiceProgressBar.progress = 0
+                                    if (message.attachmentUrl != null) {
+                                        stopFallbackProgressAnimation(File(message.attachmentUrl))
+                                    }
                                 }
                             }
                 }
@@ -203,6 +264,76 @@ class ChatMessagesAdapter(
         return String.format("%d:%02d", minutes, remainingSeconds)
     }
     
+    /**
+     * Start a fallback progress animation to ensure progress bar is visible during playback
+     */
+    private fun startFallbackProgressAnimation(progressBar: android.widget.ProgressBar, voiceFile: File, audioDuration: Long = 10000L) {
+        android.util.Log.d("ChatMessagesAdapter", "Starting fallback progress animation for: ${voiceFile.name}")
+        
+        // Stop any existing animation for this file
+        stopFallbackProgressAnimation(voiceFile)
+        
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        fallbackHandlers[voiceFile.absolutePath] = handler
+        
+        // Ensure progress bar is visible and properly configured
+        progressBar.visibility = android.view.View.VISIBLE
+        progressBar.progress = 0
+        progressBar.max = 100
+        progressBar.invalidate() // Force redraw
+        
+        var progress = 0
+        val totalDuration = audioDuration // Use actual audio duration
+        val updateInterval = 100L // Update every 100ms
+        val progressIncrement = 100.0 / (totalDuration / updateInterval) // Calculate increment based on actual duration
+        
+        android.util.Log.d("ChatMessagesAdapter", "Fallback animation: increment=$progressIncrement, interval=${updateInterval}ms, total=${totalDuration}ms (actual audio duration)")
+        
+        val runnable = object : Runnable {
+            override fun run() {
+                // Check if this specific file is still playing
+                if (voicePlayer.isPlayingFile(voiceFile) && progress < 100) {
+                    progress += progressIncrement.toInt()
+                    if (progress > 100) progress = 100
+                    
+                    // Update progress bar directly (we're already on main thread)
+                    progressBar.progress = progress
+                    progressBar.visibility = android.view.View.VISIBLE
+                    progressBar.invalidate() // Force redraw
+                    android.util.Log.d("ChatMessagesAdapter", "Fallback progress: $progress% (visible=${progressBar.visibility}, max=${progressBar.max})")
+                    
+                    if (progress < 100) {
+                        handler.postDelayed(this, updateInterval)
+                    } else {
+                        android.util.Log.d("ChatMessagesAdapter", "Fallback progress completed")
+                        fallbackHandlers.remove(voiceFile.absolutePath)
+                    }
+                } else if (!voicePlayer.isPlayingFile(voiceFile)) {
+                    android.util.Log.d("ChatMessagesAdapter", "Fallback animation stopped - not playing")
+                    fallbackHandlers.remove(voiceFile.absolutePath)
+                } else {
+                    // Progress completed, but keep animation running if still playing
+                    android.util.Log.d("ChatMessagesAdapter", "Fallback animation at 100%, keeping visible")
+                    handler.postDelayed(this, updateInterval)
+                }
+            }
+        }
+        
+        handler.post(runnable)
+    }
+    
+    /**
+     * Stop fallback progress animation for a specific file
+     */
+    private fun stopFallbackProgressAnimation(voiceFile: File) {
+        fallbackHandlers[voiceFile.absolutePath]?.let { handler ->
+            handler.removeCallbacksAndMessages(null)
+            fallbackHandlers.remove(voiceFile.absolutePath)
+            android.util.Log.d("ChatMessagesAdapter", "Stopped fallback progress animation for: ${voiceFile.name}")
+        }
+    }
+    
+    
     private fun setMessageStatus(statusView: android.widget.ImageView, statusLabelView: TextView, status: com.example.ecosort.data.model.MessageStatus, isMine: Boolean) {
         if (!isMine) {
             statusView.visibility = android.view.View.GONE
@@ -256,6 +387,7 @@ class ChatMessagesAdapter(
             return oldItem == newItem
         }
     }
+    
 }
 
 

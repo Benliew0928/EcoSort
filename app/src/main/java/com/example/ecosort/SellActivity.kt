@@ -100,7 +100,7 @@ class SellActivity : AppCompatActivity() {
                         var imageUrl = ""
                         photoUri?.let { uri ->
                             android.util.Log.d("SellActivity", "Uploading image...")
-                            val uploadResult = firebaseStorageService.uploadImage(uri, "marketplace_images")
+                            val uploadResult = firebaseStorageService.uploadCommunityImage(uri, "marketplace_${System.currentTimeMillis()}.jpg")
                             if (uploadResult.isSuccess) {
                                 imageUrl = uploadResult.getOrNull() ?: ""
                                 android.util.Log.d("SellActivity", "Image uploaded successfully: $imageUrl")

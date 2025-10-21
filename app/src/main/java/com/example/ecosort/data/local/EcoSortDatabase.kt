@@ -69,6 +69,24 @@ class Converters {
 
     @TypeConverter
     fun toMessageType(value: String): MessageType = MessageType.valueOf(value)
+
+    @TypeConverter
+    fun fromPostType(value: PostType): String = value.name
+
+    @TypeConverter
+    fun toPostType(value: String): PostType = PostType.valueOf(value)
+
+    @TypeConverter
+    fun fromPostStatus(value: PostStatus): String = value.name
+
+    @TypeConverter
+    fun toPostStatus(value: String): PostStatus = PostStatus.valueOf(value)
+
+    @TypeConverter
+    fun fromInputType(value: InputType): String = value.name
+
+    @TypeConverter
+    fun toInputType(value: String): InputType = InputType.valueOf(value)
 }
 
 // ==================== USER DAO ====================
@@ -263,6 +281,102 @@ interface ConversationDao {
     suspend fun deleteConversation(channelId: String)
 }
 
+// ==================== COMMUNITY POST DAO ====================
+@Dao
+interface CommunityPostDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPost(post: CommunityPost): Long
+
+    @Query("SELECT * FROM community_posts WHERE status = 'PUBLISHED' ORDER BY postedAt DESC")
+    fun getAllPosts(): Flow<List<CommunityPost>>
+
+    @Query("SELECT * FROM community_posts WHERE authorId = :userId ORDER BY postedAt DESC")
+    fun getUserPosts(userId: Long): Flow<List<CommunityPost>>
+
+    @Query("SELECT * FROM community_posts WHERE id = :postId LIMIT 1")
+    suspend fun getPostById(postId: Long): CommunityPost?
+
+    @Query("SELECT * FROM community_posts WHERE postType = :postType AND status = 'PUBLISHED' ORDER BY postedAt DESC")
+    fun getPostsByType(postType: PostType): Flow<List<CommunityPost>>
+
+    @Query("SELECT * FROM community_posts WHERE tags LIKE '%' || :tag || '%' AND status = 'PUBLISHED' ORDER BY postedAt DESC")
+    fun getPostsByTag(tag: String): Flow<List<CommunityPost>>
+
+    @Update
+    suspend fun updatePost(post: CommunityPost)
+
+    @Query("UPDATE community_posts SET likesCount = likesCount + 1 WHERE id = :postId")
+    suspend fun incrementLikes(postId: Long)
+
+    @Query("UPDATE community_posts SET likesCount = likesCount - 1 WHERE id = :postId")
+    suspend fun decrementLikes(postId: Long)
+
+    @Query("UPDATE community_posts SET commentsCount = commentsCount + 1 WHERE id = :postId")
+    suspend fun incrementComments(postId: Long)
+
+    @Query("UPDATE community_posts SET commentsCount = commentsCount - 1 WHERE id = :postId")
+    suspend fun decrementComments(postId: Long)
+
+    @Query("UPDATE community_posts SET sharesCount = sharesCount + 1 WHERE id = :postId")
+    suspend fun incrementShares(postId: Long)
+
+    @Query("UPDATE community_posts SET status = :status WHERE id = :postId")
+    suspend fun updatePostStatus(postId: Long, status: PostStatus)
+
+    @Query("DELETE FROM community_posts WHERE id = :postId")
+    suspend fun deletePost(postId: Long)
+}
+
+// ==================== COMMUNITY COMMENT DAO ====================
+@Dao
+interface CommunityCommentDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertComment(comment: CommunityComment): Long
+
+    @Query("SELECT * FROM community_comments WHERE postId = :postId ORDER BY postedAt ASC")
+    fun getCommentsForPost(postId: Long): Flow<List<CommunityComment>>
+
+    @Query("SELECT * FROM community_comments WHERE id = :commentId LIMIT 1")
+    suspend fun getCommentById(commentId: Long): CommunityComment?
+
+    @Query("SELECT * FROM community_comments WHERE parentCommentId = :parentId ORDER BY postedAt ASC")
+    fun getRepliesForComment(parentId: Long): Flow<List<CommunityComment>>
+
+    @Update
+    suspend fun updateComment(comment: CommunityComment)
+
+    @Query("UPDATE community_comments SET likesCount = likesCount + 1 WHERE id = :commentId")
+    suspend fun incrementCommentLikes(commentId: Long)
+
+    @Query("UPDATE community_comments SET likesCount = likesCount - 1 WHERE id = :commentId")
+    suspend fun decrementCommentLikes(commentId: Long)
+
+    @Query("DELETE FROM community_comments WHERE id = :commentId")
+    suspend fun deleteComment(commentId: Long)
+
+    @Query("DELETE FROM community_comments WHERE postId = :postId")
+    suspend fun deleteCommentsForPost(postId: Long)
+}
+
+// ==================== COMMUNITY LIKE DAO ====================
+@Dao
+interface CommunityLikeDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLike(like: CommunityLike): Long
+
+    @Query("SELECT * FROM community_likes WHERE postId = :postId AND userId = :userId LIMIT 1")
+    suspend fun getUserLikeForPost(postId: Long, userId: Long): CommunityLike?
+
+    @Query("SELECT COUNT(*) FROM community_likes WHERE postId = :postId")
+    suspend fun getLikeCountForPost(postId: Long): Int
+
+    @Query("DELETE FROM community_likes WHERE postId = :postId AND userId = :userId")
+    suspend fun removeLike(postId: Long, userId: Long)
+
+    @Query("DELETE FROM community_likes WHERE postId = :postId")
+    suspend fun deleteLikesForPost(postId: Long)
+}
+
 // ==================== MAIN DATABASE ====================
 @Database(
     entities = [
@@ -271,9 +385,12 @@ interface ConversationDao {
         RecyclingStation::class,
         MarketplaceItem::class,
         ChatMessage::class,
-        Conversation::class
+        Conversation::class,
+        CommunityPost::class,
+        CommunityComment::class,
+        CommunityLike::class
     ],
-    version = 4,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -285,6 +402,9 @@ abstract class EcoSortDatabase : RoomDatabase() {
     abstract fun marketplaceItemDao(): MarketplaceItemDao
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun conversationDao(): ConversationDao
+    abstract fun communityPostDao(): CommunityPostDao
+    abstract fun communityCommentDao(): CommunityCommentDao
+    abstract fun communityLikeDao(): CommunityLikeDao
 
     companion object {
         @Volatile
@@ -297,11 +417,15 @@ abstract class EcoSortDatabase : RoomDatabase() {
                     EcoSortDatabase::class.java,
                     "ecosort_database"
                 )
-                    .addMigrations(
-                        MIGRATION_1_2,
-                        MIGRATION_2_3,
-                        MIGRATION_3_4
-                    )
+            .addMigrations(
+                MIGRATION_1_2,
+                MIGRATION_2_3,
+                MIGRATION_3_4,
+                MIGRATION_4_5,
+                MIGRATION_5_6,
+                MIGRATION_6_7,
+                MIGRATION_7_8
+            )
                     .allowMainThreadQueries() // Temporary for debugging
                     .build()
                 INSTANCE = instance
@@ -369,6 +493,110 @@ abstract class EcoSortDatabase : RoomDatabase() {
                     android.util.Log.d("Migration", "Columns might already exist: ${e.message}")
                 }
             }
+        }
+    }
+}
+
+// Migration from version 4 to 5 - add community tables
+internal val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            try {
+                // Create community_posts table
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS community_posts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        authorId INTEGER NOT NULL,
+                        authorName TEXT NOT NULL,
+                        authorAvatar TEXT,
+                        title TEXT NOT NULL,
+                        content TEXT NOT NULL,
+                        postType TEXT NOT NULL,
+                        imageUrls TEXT NOT NULL,
+                        videoUrl TEXT,
+                        location TEXT,
+                        tags TEXT NOT NULL,
+                        postedAt INTEGER NOT NULL,
+                        likesCount INTEGER NOT NULL,
+                        commentsCount INTEGER NOT NULL,
+                        sharesCount INTEGER NOT NULL,
+                        isLikedByUser INTEGER NOT NULL,
+                        status TEXT NOT NULL
+                    )
+                """.trimIndent())
+
+                // Create community_comments table
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS community_comments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        postId INTEGER NOT NULL,
+                        authorId INTEGER NOT NULL,
+                        authorName TEXT NOT NULL,
+                        authorAvatar TEXT,
+                        content TEXT NOT NULL,
+                        parentCommentId INTEGER,
+                        postedAt INTEGER NOT NULL,
+                        likesCount INTEGER NOT NULL,
+                        isLikedByUser INTEGER NOT NULL
+                    )
+                """.trimIndent())
+
+                // Create community_likes table
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS community_likes (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        postId INTEGER NOT NULL,
+                        userId INTEGER NOT NULL,
+                        likedAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+
+                android.util.Log.d("Migration", "Community tables created successfully")
+            } catch (e: Exception) {
+                android.util.Log.e("Migration", "Error creating community tables: ${e.message}")
+            }
+        }
+    }
+
+internal val MIGRATION_5_6 = object : androidx.room.migration.Migration(5, 6) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add inputType column to community_posts table
+            database.execSQL("ALTER TABLE community_posts ADD COLUMN inputType TEXT NOT NULL DEFAULT 'TEXT'")
+            android.util.Log.d("Migration", "Added inputType column to community_posts table")
+            
+            // Update old post type values to new enum values
+            database.execSQL("UPDATE community_posts SET postType = 'TIP' WHERE postType = 'TEXT'")
+            database.execSQL("UPDATE community_posts SET postType = 'TIP' WHERE postType = 'IMAGE'")
+            database.execSQL("UPDATE community_posts SET postType = 'TIP' WHERE postType = 'VIDEO'")
+            android.util.Log.d("Migration", "Updated old post type values to new enum values")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration", "Error in migration 5_6: ${e.message}")
+        }
+    }
+}
+
+internal val MIGRATION_6_7 = object : androidx.room.migration.Migration(6, 7) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Update old post type values to new enum values
+            database.execSQL("UPDATE community_posts SET postType = 'TIP' WHERE postType = 'TEXT'")
+            database.execSQL("UPDATE community_posts SET postType = 'TIP' WHERE postType = 'IMAGE'")
+            database.execSQL("UPDATE community_posts SET postType = 'TIP' WHERE postType = 'VIDEO'")
+            android.util.Log.d("Migration", "Updated old post type values to new enum values in migration 6_7")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration", "Error in migration 6_7: ${e.message}")
+        }
+    }
+}
+
+internal val MIGRATION_7_8 = object : androidx.room.migration.Migration(7, 8) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add demo images to existing posts that don't have images
+            database.execSQL("UPDATE community_posts SET imageUrls = '[\"demo_black_image\"]' WHERE imageUrls = '[]' OR imageUrls IS NULL")
+            android.util.Log.d("Migration", "Added demo images to existing posts in migration 7_8")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration", "Error in migration 7_8: ${e.message}")
         }
     }
 }

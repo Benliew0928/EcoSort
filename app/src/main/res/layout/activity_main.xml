@@ -177,7 +177,7 @@
                     android:layout_width="0dp"
                     android:layout_height="120dp"
                     android:layout_weight="1"
-                    android:text="💰\nSell Items"
+                    android:text="👥\nCommunity"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:fontFamily="@string/font_family_primary"
@@ -297,7 +297,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Featured Items -->
+        <!-- Community Feeds -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -316,7 +316,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Featured Items"
+                    android:text="Community Feeds"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
@@ -542,7 +542,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="💰\nSell"
+            android:text="👥\nCommunity"
             android:textSize="12sp"
             android:fontFamily="@string/font_family_primary"
             android:background="@drawable/button_secondary"

@@ -132,7 +132,7 @@ class AddBinActivity : AppCompatActivity() {
                     // Image Upload Logic
                     var imageUrl = ""
                     photoUri?.let { uri ->
-                        val uploadResult = firebaseStorageService.uploadImage(uri, "recycle_bin_images")
+                        val uploadResult = firebaseStorageService.uploadCommunityImage(uri, "recycle_bin_${System.currentTimeMillis()}.jpg")
                         if (uploadResult.isSuccess) { imageUrl = uploadResult.getOrNull() ?: "" }
                     }
 

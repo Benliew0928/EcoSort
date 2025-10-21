@@ -18,8 +18,11 @@ class VoicePlayer(private val context: Context) {
     private var currentFile: File? = null
     private var audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
+    private var progressCallback: ((Int, Int) -> Unit)? = null // (currentPosition, duration)
+    private var progressHandler: android.os.Handler? = null
+    private var progressRunnable: Runnable? = null
     
-    fun playVoiceMessage(file: File, onCompletion: () -> Unit = {}) {
+    fun playVoiceMessage(file: File, onCompletion: () -> Unit = {}, onProgress: ((Int, Int) -> Unit)? = null) {
         try {
             Log.d("VoicePlayer", "Attempting to play voice message: ${file.absolutePath}")
             
@@ -39,11 +42,15 @@ class VoicePlayer(private val context: Context) {
             
             stopPlaying() // Stop any current playback
             
-                    // Try to request audio focus, but don't fail if we can't get it
-                    val hasAudioFocus = requestAudioFocus()
-                    if (!hasAudioFocus) {
-                        Log.w("VoicePlayer", "Could not get audio focus, trying to play anyway")
-                    }
+            // Set up progress callback
+            progressCallback = onProgress
+            Log.d("VoicePlayer", "Progress callback set: ${if (onProgress != null) "NOT NULL" else "NULL"}")
+            
+            // Try to request audio focus, but don't fail if we can't get it
+            val hasAudioFocus = requestAudioFocus()
+            if (!hasAudioFocus) {
+                Log.w("VoicePlayer", "Could not get audio focus, trying to play anyway")
+            }
             
             // Ensure audio routing is correct - try multiple approaches
             try {
@@ -111,6 +118,10 @@ class VoicePlayer(private val context: Context) {
                         mp.start()
                         Log.d("VoicePlayer", "Started playing: ${file.name}, duration: ${mp.duration}ms")
                         Log.d("VoicePlayer", "Audio active after start: ${audioManager.isMusicActive}")
+                        
+                        // Start progress tracking
+                        Log.d("VoicePlayer", "Starting progress tracking for file: ${file.name}")
+                        startProgressTracking()
                     } catch (e: Exception) {
                         Log.e("VoicePlayer", "Error starting playback", e)
                         this@VoicePlayer.isPlaying = false
@@ -121,6 +132,7 @@ class VoicePlayer(private val context: Context) {
                 setOnCompletionListener { mp ->
                     Log.d("VoicePlayer", "Playback completed: ${file.name}")
                     this@VoicePlayer.isPlaying = false
+                    stopProgressTracking()
                     releaseMediaPlayer()
                     abandonAudioFocus()
                     onCompletion()
@@ -129,6 +141,7 @@ class VoicePlayer(private val context: Context) {
                 setOnErrorListener { mp, what, extra ->
                     Log.e("VoicePlayer", "Error playing audio: what=$what, extra=$extra")
                     this@VoicePlayer.isPlaying = false
+                    stopProgressTracking()
                     releaseMediaPlayer()
                     abandonAudioFocus()
                     onCompletion()
@@ -157,6 +170,7 @@ class VoicePlayer(private val context: Context) {
         try {
             Log.d("VoicePlayer", "Stopping playback")
             isPlaying = false
+            stopProgressTracking()
             releaseMediaPlayer()
             abandonAudioFocus()
             currentFile = null
@@ -563,6 +577,67 @@ class VoicePlayer(private val context: Context) {
         } catch (e: Exception) {
             Log.e("VoicePlayer", "Error launching system player", e)
             onCompletion()
+        }
+    }
+    
+    /**
+     * Start progress tracking for the current playback
+     */
+    private fun startProgressTracking() {
+        try {
+            stopProgressTracking() // Stop any existing tracking
+            
+            progressHandler = android.os.Handler(android.os.Looper.getMainLooper())
+            progressRunnable = object : Runnable {
+                override fun run() {
+                    try {
+                        if (isPlaying && mediaPlayer != null) {
+                            val currentPosition = mediaPlayer?.currentPosition ?: 0
+                            val duration = mediaPlayer?.duration ?: 0
+                            
+                            // Log progress for debugging
+                            if (currentPosition > 0 || duration > 0) {
+                                Log.d("VoicePlayer", "Progress: $currentPosition/$duration ms (${if (duration > 0) (currentPosition * 100) / duration else 0}%)")
+                            }
+                            
+                            // Call progress callback
+                            if (progressCallback != null) {
+                                Log.d("VoicePlayer", "Calling progress callback: $currentPosition/$duration")
+                                progressCallback?.invoke(currentPosition, duration)
+                            } else {
+                                Log.w("VoicePlayer", "Progress callback is null!")
+                            }
+                            
+                            // Schedule next update
+                            progressHandler?.postDelayed(this, 100) // Update every 100ms
+                        }
+                    } catch (e: Exception) {
+                        Log.e("VoicePlayer", "Error in progress tracking", e)
+                    }
+                }
+            }
+            
+            progressHandler?.post(progressRunnable!!)
+            Log.d("VoicePlayer", "Progress tracking started")
+        } catch (e: Exception) {
+            Log.e("VoicePlayer", "Error starting progress tracking", e)
+        }
+    }
+    
+    /**
+     * Stop progress tracking
+     */
+    private fun stopProgressTracking() {
+        try {
+            progressRunnable?.let { runnable ->
+                progressHandler?.removeCallbacks(runnable)
+            }
+            progressRunnable = null
+            progressHandler = null
+            // Don't clear progressCallback here - it should persist across playback sessions
+            Log.d("VoicePlayer", "Progress tracking stopped")
+        } catch (e: Exception) {
+            Log.e("VoicePlayer", "Error stopping progress tracking", e)
         }
     }
 }

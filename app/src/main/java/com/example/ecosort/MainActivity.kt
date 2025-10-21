@@ -107,7 +107,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnSell.setOnClickListener {
-            startActivity(Intent(this, SellActivity::class.java))
+            startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
         }
 
         btnCommunity.setOnClickListener {
@@ -134,27 +134,27 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SellActivity::class.java))
         }
 
-        // Featured: View All -> Marketplace
+        // Community Feeds: View All -> Community
         featuredViewAll.setOnClickListener {
-            startActivity(Intent(this, com.example.ecosort.marketplace.MarketplaceActivity::class.java))
+            startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
         }
 
-        // Listen to real-time Firestore data for featured items (with delay to ensure Firebase is ready)
+        // Listen to real-time Firestore data for featured community posts (with delay to ensure Firebase is ready)
         lifecycleScope.launch {
             try {
                 // Wait a bit for Firebase to initialize
                 kotlinx.coroutines.delay(1000)
-                firestoreService.getFeaturedMarketplaceItems().collect { firebaseItems ->
+                firestoreService.getAllCommunityPosts().collect { firebasePosts ->
                     withContext(Dispatchers.Main) {
-                        renderFeaturedItems(firebaseItems, featuredContainer)
+                        renderCommunityPosts(firebasePosts, featuredContainer)
                     }
                 }
             } catch (e: Exception) {
                 // If Firebase fails, show empty state
                 withContext(Dispatchers.Main) {
-                    renderFeaturedItems(emptyList(), featuredContainer)
+                    renderCommunityPosts(emptyList(), featuredContainer)
                 }
-                android.util.Log.e("MainActivity", "Error loading featured items", e)
+                android.util.Log.e("MainActivity", "Error loading featured posts", e)
             }
         }
     }
@@ -164,48 +164,50 @@ class MainActivity : AppCompatActivity() {
         moveTaskToBack(true)
     }
 
-    private fun renderFeaturedItems(items: List<FirebaseMarketplaceItem>, container: android.widget.LinearLayout) {
+    private fun renderCommunityPosts(posts: List<com.example.ecosort.data.firebase.FirebaseCommunityPost>, container: android.widget.LinearLayout) {
         container.removeAllViews()
 
-        if (items.isEmpty()) {
+        if (posts.isEmpty()) {
             val emptyView = TextView(this).apply {
-                text = "No featured items available"
+                text = "No community posts yet. Be the first to share!"
                 textSize = 14f
                 setPadding(16, 16, 16, 16)
+                setTextColor(getColor(R.color.text_secondary))
             }
             container.addView(emptyView)
             return
         }
 
-        items.take(3).forEach { item ->
+        posts.take(3).forEach { post ->
             val card = layoutInflater.inflate(R.layout.row_marketplace_item, container, false)
 
-            // Set item details
-            card.findViewById<TextView>(R.id.rowTitle).text = item.title
-            card.findViewById<TextView>(R.id.rowPrice).text = "RM %.2f".format(item.price)
+            // Set post details
+            card.findViewById<TextView>(R.id.rowTitle).text = post.title
+            card.findViewById<TextView>(R.id.rowPrice).text = post.postType // Show post type instead of price
 
             // Load image using Glide
             val thumb = card.findViewById<android.widget.ImageView>(R.id.rowThumb)
-            if (item.imageUrl.isNotEmpty()) {
+            if (post.imageUrls.isNotEmpty()) {
                 Glide.with(this)
-                    .load(item.imageUrl)
-                    .placeholder(R.drawable.ic_placeholder)
-                    .error(R.drawable.ic_placeholder)
+                    .load(post.imageUrls.first())
+                    .placeholder(R.drawable.ic_image_placeholder)
+                    .error(R.drawable.ic_image_placeholder)
                     .into(thumb)
             } else {
-                thumb.setImageResource(R.drawable.ic_placeholder)
+                // Show post type icon instead of placeholder
+                val iconRes = when (post.postType) {
+                    "TIP" -> R.drawable.ic_lightbulb
+                    "ACHIEVEMENT" -> R.drawable.ic_trophy
+                    "QUESTION" -> R.drawable.ic_help
+                    "EVENT" -> R.drawable.ic_event
+                    else -> R.drawable.ic_image_placeholder
+                }
+                thumb.setImageResource(iconRes)
             }
 
-            // Set click listener
+            // Set click listener to open community feed
             card.setOnClickListener {
-                startActivity(Intent(this, com.example.ecosort.marketplace.MarketplaceDetailActivity::class.java).apply {
-                    putExtra("item_id", item.id)
-                    putExtra("item_title", item.title)
-                    putExtra("item_price", item.price)
-                    putExtra("item_description", item.description)
-                    putExtra("item_image_url", item.imageUrl)
-                    putExtra("item_owner", item.ownerName)
-                })
+                startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
             }
 
             // Set layout parameters

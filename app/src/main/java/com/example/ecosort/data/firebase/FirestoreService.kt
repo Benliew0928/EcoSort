@@ -15,6 +15,11 @@ class FirestoreService @Inject constructor() {
     
     private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
     private val marketplaceCollection by lazy { firestore.collection("marketplace_items") }
+    
+    // Community collections
+    private val communityPostsCollection by lazy { firestore.collection("community_posts") }
+    private val communityCommentsCollection by lazy { firestore.collection("community_comments") }
+    private val communityLikesCollection by lazy { firestore.collection("community_likes") }
 
     private val recycleBinsCollection by lazy { firestore.collection("recycleBins") }
 
@@ -241,4 +246,231 @@ class FirestoreService @Inject constructor() {
         
         awaitClose { listener.remove() }
     }
+
+    // ==================== COMMUNITY OPERATIONS ====================
+
+    /**
+     * Add a new community post to Firestore
+     */
+    suspend fun addCommunityPost(post: FirebaseCommunityPost): Result<String> {
+        return try {
+            android.util.Log.d("FirestoreService", "Adding community post: ${post.title}")
+            // Use the local ID as the document ID to ensure consistency
+            communityPostsCollection.document(post.id).set(post).await()
+            android.util.Log.d("FirestoreService", "Community post added with ID: ${post.id}")
+            Result.success(post.id)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to add community post", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get all community posts with real-time updates
+     */
+    fun getAllCommunityPosts(): Flow<List<FirebaseCommunityPost>> = callbackFlow {
+        val listener = communityPostsCollection
+            .orderBy("postedAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to community posts", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val posts = snapshot?.documents?.mapNotNull { document ->
+                    document.toObject<FirebaseCommunityPost>()?.copy(id = document.id)
+                } ?: emptyList()
+
+                trySend(posts)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    /**
+     * Get community posts by type
+     */
+    fun getCommunityPostsByType(postType: String): Flow<List<FirebaseCommunityPost>> = callbackFlow {
+        val listener = communityPostsCollection
+            .whereEqualTo("postType", postType)
+            .orderBy("postedAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to community posts by type", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val posts = snapshot?.documents?.mapNotNull { document ->
+                    document.toObject<FirebaseCommunityPost>()?.copy(id = document.id)
+                } ?: emptyList()
+
+                trySend(posts)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    /**
+     * Update community post likes count
+     */
+    suspend fun updatePostLikes(postId: String, likesCount: Int): Result<Unit> {
+        return try {
+            communityPostsCollection.document(postId)
+                .update("likesCount", likesCount)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to update post likes", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Update community post comments count
+     */
+    suspend fun updatePostComments(postId: String, commentsCount: Int): Result<Unit> {
+        return try {
+            communityPostsCollection.document(postId)
+                .update("commentsCount", commentsCount)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to update post comments", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Add a community comment
+     */
+    suspend fun addCommunityComment(comment: FirebaseCommunityComment): Result<String> {
+        return try {
+            android.util.Log.d("FirestoreService", "Adding community comment to post: ${comment.postId}")
+            // Use the local ID as the document ID to ensure consistency
+            communityCommentsCollection.document(comment.id).set(comment).await()
+            android.util.Log.d("FirestoreService", "Community comment added with ID: ${comment.id}")
+            Result.success(comment.id)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to add community comment", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get comments for a specific post
+     */
+    fun getCommentsForPost(postId: String): Flow<List<FirebaseCommunityComment>> = callbackFlow {
+        val listener = communityCommentsCollection
+            .whereEqualTo("postId", postId)
+            .orderBy("postedAt", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to comments", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val comments = snapshot?.documents?.mapNotNull { document ->
+                    document.toObject<FirebaseCommunityComment>()?.copy(id = document.id)
+                } ?: emptyList()
+
+                trySend(comments)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    /**
+     * Add or remove a like for a post
+     */
+    suspend fun togglePostLike(postId: String, userId: String): Result<Boolean> {
+        return try {
+            val likeQuery = communityLikesCollection
+                .whereEqualTo("postId", postId)
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+
+            if (likeQuery.isEmpty) {
+                // Add like
+                val like = FirebaseCommunityLike(
+                    postId = postId,
+                    userId = userId
+                )
+                communityLikesCollection.add(like).await()
+                Result.success(true)
+            } else {
+                // Remove like
+                likeQuery.documents.first().reference.delete().await()
+                Result.success(false)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to toggle post like", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get like count for a post
+     */
+    suspend fun getPostLikeCount(postId: String): Result<Int> {
+        return try {
+            val likeQuery = communityLikesCollection
+                .whereEqualTo("postId", postId)
+                .get()
+                .await()
+            Result.success(likeQuery.size())
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to get post like count", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Check if user has liked a post
+     */
+    suspend fun hasUserLikedPost(postId: String, userId: String): Result<Boolean> {
+        return try {
+            val likeQuery = communityLikesCollection
+                .whereEqualTo("postId", postId)
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+            Result.success(!likeQuery.isEmpty)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to check if user liked post", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Delete a community comment from Firebase
+     */
+    suspend fun deleteCommunityComment(commentId: String): Result<Unit> {
+        return try {
+            communityCommentsCollection.document(commentId).delete().await()
+            android.util.Log.d("FirestoreService", "Community comment deleted: $commentId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to delete community comment", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Delete a community post from Firebase
+     */
+    suspend fun deleteCommunityPost(postId: String): Result<Unit> {
+        return try {
+            communityPostsCollection.document(postId).delete().await()
+            android.util.Log.d("FirestoreService", "Community post deleted: $postId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to delete community post", e)
+            Result.failure(e)
+        }
+    }
+
 }

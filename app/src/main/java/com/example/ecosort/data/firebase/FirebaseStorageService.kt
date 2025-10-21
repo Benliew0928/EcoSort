@@ -4,7 +4,6 @@ import android.net.Uri
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -12,60 +11,68 @@ import javax.inject.Singleton
 class FirebaseStorageService @Inject constructor() {
     
     private val storage: FirebaseStorage by lazy { FirebaseStorage.getInstance() }
-    private val storageRef: StorageReference by lazy { storage.reference }
+    private val communityImagesRef: StorageReference by lazy { 
+        storage.reference.child("community_images") 
+    }
+    
+    private val communityVideosRef: StorageReference by lazy { 
+        storage.reference.child("community_videos") 
+    }
     
     /**
-     * Upload an image to Firebase Storage
-     * @param imageUri Local URI of the image to upload
-     * @param folderName Folder name in storage (e.g., "marketplace_images")
-     * @return Download URL of the uploaded image
+     * Upload an image to Firebase Storage and return the download URL
      */
-    suspend fun uploadImage(imageUri: Uri, folderName: String = "marketplace_images"): Result<String> {
+    suspend fun uploadCommunityImage(imageUri: Uri, fileName: String): Result<String> {
         return try {
-            android.util.Log.d("FirebaseStorageService", "Starting image upload...")
+            android.util.Log.d("FirebaseStorageService", "Uploading image: $fileName")
+            android.util.Log.d("FirebaseStorageService", "Image URI: $imageUri")
+            android.util.Log.d("FirebaseStorageService", "URI scheme: ${imageUri.scheme}")
             
-            // Generate unique filename
-            val fileName = "${UUID.randomUUID()}.jpg"
-            val imageRef = storageRef.child("$folderName/$fileName")
-            
-            android.util.Log.d("FirebaseStorageService", "Uploading to: $folderName/$fileName")
-            
-            // Upload the file
+            val imageRef = communityImagesRef.child(fileName)
             val uploadTask = imageRef.putFile(imageUri).await()
-            android.util.Log.d("FirebaseStorageService", "Upload completed")
+            val downloadUrl = uploadTask.storage.downloadUrl.await()
             
-            // Get download URL
-            val downloadUrl = imageRef.downloadUrl.await()
-            android.util.Log.d("FirebaseStorageService", "Got download URL: $downloadUrl")
-            
+            android.util.Log.d("FirebaseStorageService", "Image uploaded successfully: $downloadUrl")
             Result.success(downloadUrl.toString())
         } catch (e: Exception) {
-            android.util.Log.e("FirebaseStorageService", "Upload failed", e)
+            android.util.Log.e("FirebaseStorageService", "Error uploading image", e)
             Result.failure(e)
         }
     }
     
     /**
-     * Delete an image from Firebase Storage
-     * @param imageUrl The download URL of the image to delete
-     * @return Success or failure result
+     * Upload a video to Firebase Storage and return the download URL
      */
-    suspend fun deleteImage(imageUrl: String): Result<Unit> {
+    suspend fun uploadCommunityVideo(videoUri: Uri, fileName: String): Result<String> {
+        return try {
+            android.util.Log.d("FirebaseStorageService", "Uploading video: $fileName")
+            android.util.Log.d("FirebaseStorageService", "Video URI: $videoUri")
+            android.util.Log.d("FirebaseStorageService", "URI scheme: ${videoUri.scheme}")
+            
+            val videoRef = communityVideosRef.child(fileName)
+            val uploadTask = videoRef.putFile(videoUri).await()
+            val downloadUrl = uploadTask.storage.downloadUrl.await()
+            
+            android.util.Log.d("FirebaseStorageService", "Video uploaded successfully: $downloadUrl")
+            Result.success(downloadUrl.toString())
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseStorageService", "Error uploading video", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Delete an image from Firebase Storage
+     */
+    suspend fun deleteCommunityImage(imageUrl: String): Result<Unit> {
         return try {
             val imageRef = storage.getReferenceFromUrl(imageUrl)
             imageRef.delete().await()
+            android.util.Log.d("FirebaseStorageService", "Image deleted successfully: $imageUrl")
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("FirebaseStorageService", "Error deleting image", e)
             Result.failure(e)
         }
-    }
-    
-    /**
-     * Get a reference to a specific image
-     * @param imagePath Path to the image in storage
-     * @return StorageReference
-     */
-    fun getImageReference(imagePath: String): StorageReference {
-        return storageRef.child(imagePath)
     }
 }
