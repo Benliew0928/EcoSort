@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ==================== LARGE PHONES (400dp and above) ==================== -->
+    <!-- Generous spacing for large screens -->
+    <dimen name="spacing_xs">6dp</dimen>
+    <dimen name="spacing_sm">12dp</dimen>
+    <dimen name="spacing_md">20dp</dimen>
+    <dimen name="spacing_lg">28dp</dimen>
+    <dimen name="spacing_xl">36dp</dimen>
+    <dimen name="spacing_xxl">44dp</dimen>
+    
+    <!-- Generous padding -->
+    <dimen name="padding_xs">6dp</dimen>
+    <dimen name="padding_sm">12dp</dimen>
+    <dimen name="padding_md">20dp</dimen>
+    <dimen name="padding_lg">24dp</dimen>
+    <dimen name="padding_xl">28dp</dimen>
+    <dimen name="padding_xxl">36dp</dimen>
+    
+    <!-- Generous margins -->
+    <dimen name="margin_xs">6dp</dimen>
+    <dimen name="margin_sm">12dp</dimen>
+    <dimen name="margin_md">16dp</dimen>
+    <dimen name="margin_lg">20dp</dimen>
+    <dimen name="margin_xl">24dp</dimen>
+    <dimen name="margin_xxl">28dp</dimen>
+    
+    <!-- Larger text sizes -->
+    <dimen name="text_xs">11sp</dimen>
+    <dimen name="text_sm">13sp</dimen>
+    <dimen name="text_md">15sp</dimen>
+    <dimen name="text_lg">17sp</dimen>
+    <dimen name="text_xl">19sp</dimen>
+    <dimen name="text_xxl">22sp</dimen>
+    <dimen name="text_xxxl">26sp</dimen>
+    <dimen name="text_display">30sp</dimen>
+    
+    <!-- Larger button heights -->
+    <dimen name="button_height_sm">40dp</dimen>
+    <dimen name="button_height_md">48dp</dimen>
+    <dimen name="button_height_lg">56dp</dimen>
+    <dimen name="button_height_xl">64dp</dimen>
+    
+    <!-- Larger icons -->
+    <dimen name="icon_xs">18dp</dimen>
+    <dimen name="icon_sm">22dp</dimen>
+    <dimen name="icon_md">26dp</dimen>
+    <dimen name="icon_lg">34dp</dimen>
+    <dimen name="icon_xl">42dp</dimen>
+    <dimen name="icon_xxl">50dp</dimen>
+    
+    <!-- Larger cards -->
+    <dimen name="card_radius_sm">6dp</dimen>
+    <dimen name="card_radius_md">10dp</dimen>
+    <dimen name="card_radius_lg">14dp</dimen>
+    <dimen name="card_radius_xl">18dp</dimen>
+    
+    <!-- Layout constraints -->
+    <dimen name="container_max_width">400dp</dimen>
+    <dimen name="content_max_width">380dp</dimen>
+    
+    <!-- Featured cards for large screens -->
+    <dimen name="featured_card_width">200dp</dimen>
+    <dimen name="featured_card_gap">14dp</dimen>
+    <dimen name="featured_item_card_width">200dp</dimen>
+    <dimen name="featured_item_card_height">14dp</dimen>
+</resources>

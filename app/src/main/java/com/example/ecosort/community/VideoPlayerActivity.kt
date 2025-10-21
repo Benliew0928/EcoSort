@@ -130,14 +130,34 @@ class VideoPlayerActivity : AppCompatActivity() {
         
         try {
             android.util.Log.d("VideoPlayerActivity", "Playing video: $videoUrl")
+            android.util.Log.d("VideoPlayerActivity", "Video URL type: ${if (videoUrl.startsWith("http")) "HTTP" else if (videoUrl.startsWith("content://")) "CONTENT" else if (videoUrl.startsWith("file://")) "FILE" else "UNKNOWN"}")
+            
+            // Check if it's a Firebase Storage URL
+            if (videoUrl.contains("firebasestorage.googleapis.com")) {
+                android.util.Log.d("VideoPlayerActivity", "Firebase Storage URL detected")
+                android.util.Log.d("VideoPlayerActivity", "URL contains token: ${videoUrl.contains("token=")}")
+            }
+            
             val uri = Uri.parse(videoUrl)
             videoView.setVideoURI(uri)
             
             // Request focus for better video rendering
             videoView.requestFocus()
+            
+            // Add timeout to detect if video fails to load
+            videoView.postDelayed({
+                if (binding.progressBar.visibility == View.VISIBLE) {
+                    android.util.Log.w("VideoPlayerActivity", "Video loading timeout - may be a network or format issue")
+                    binding.progressBar.visibility = View.GONE
+                    android.widget.Toast.makeText(this, "Video loading timeout. Check your internet connection.", android.widget.Toast.LENGTH_LONG).show()
+                }
+            }, 10000) // 10 second timeout
+            
         } catch (e: Exception) {
             binding.progressBar.visibility = View.GONE
             android.util.Log.e("VideoPlayerActivity", "Error setting video URI", e)
+            android.util.Log.e("VideoPlayerActivity", "Exception type: ${e.javaClass.simpleName}")
+            android.util.Log.e("VideoPlayerActivity", "Exception message: ${e.message}")
             android.widget.Toast.makeText(this, "Error loading video: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
         }
     }

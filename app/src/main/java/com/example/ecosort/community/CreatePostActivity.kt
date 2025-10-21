@@ -12,6 +12,7 @@ import android.widget.Toast
 import java.io.File
 import java.io.FileOutputStream
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -37,8 +38,8 @@ class CreatePostActivity : AppCompatActivity() {
     private var selectedMediaUri: Uri? = null
     private var selectedInputType: InputType = InputType.TEXT
 
-    // Activity result launchers
-    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    // Activity result launchers - using modern PickVisualMedia approach
+    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let {
             android.util.Log.d("CreatePostActivity", "Original URI: $uri")
             // Copy the image to app storage to avoid permission issues
@@ -57,7 +58,7 @@ class CreatePostActivity : AppCompatActivity() {
         }
     }
 
-    private val videoLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    private val videoLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let {
             android.util.Log.d("CreatePostActivity", "Video URI: $uri")
             selectedMediaUri = it
@@ -95,9 +96,8 @@ class CreatePostActivity : AppCompatActivity() {
     
     private fun setupMediaButtons() {
         binding.btnGallery.setOnClickListener {
-            if (checkStoragePermission()) {
-                galleryLauncher.launch("image/*")
-            }
+            // No permission check needed for PickVisualMedia on Android 13+
+            galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
 
         binding.btnCamera.setOnClickListener {
@@ -107,9 +107,8 @@ class CreatePostActivity : AppCompatActivity() {
         }
 
         binding.btnVideo.setOnClickListener {
-            if (checkStoragePermission()) {
-                videoLauncher.launch("video/*")
-            }
+            // No permission check needed for PickVisualMedia on Android 13+
+            videoLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
         }
     }
 
@@ -229,14 +228,7 @@ class CreatePostActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkStoragePermission(): Boolean {
-        return if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED) {
-            true
-        } else {
-            requestPermissions(arrayOf(Manifest.permission.READ_MEDIA_IMAGES), 100)
-            false
-        }
-    }
+    // Storage permission check removed - not needed for PickVisualMedia on Android 13+
 
     private fun checkCameraPermission(): Boolean {
         return if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -324,13 +316,6 @@ class CreatePostActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
-            100 -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    galleryLauncher.launch("image/*")
-                } else {
-                    Toast.makeText(this, "Storage permission required to select images", Toast.LENGTH_SHORT).show()
-                }
-            }
             101 -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     openCamera()

@@ -1,5 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- ==================== RESPONSIVE SPACING SYSTEM ==================== -->
+    <!-- Base spacing unit (8dp) - Bootstrap-like spacing system -->
+    <dimen name="spacing_xs">4dp</dimen>    <!-- 0.5x base -->
+    <dimen name="spacing_sm">8dp</dimen>    <!-- 1x base -->
+    <dimen name="spacing_md">16dp</dimen>   <!-- 2x base -->
+    <dimen name="spacing_lg">24dp</dimen>   <!-- 3x base -->
+    <dimen name="spacing_xl">32dp</dimen>   <!-- 4x base -->
+    <dimen name="spacing_xxl">40dp</dimen>  <!-- 5x base -->
+    
+    <!-- ==================== RESPONSIVE PADDING ==================== -->
+    <dimen name="padding_xs">4dp</dimen>
+    <dimen name="padding_sm">8dp</dimen>
+    <dimen name="padding_md">16dp</dimen>
+    <dimen name="padding_lg">20dp</dimen>
+    <dimen name="padding_xl">24dp</dimen>
+    <dimen name="padding_xxl">32dp</dimen>
+    
+    <!-- ==================== RESPONSIVE MARGINS ==================== -->
+    <dimen name="margin_xs">4dp</dimen>
+    <dimen name="margin_sm">8dp</dimen>
+    <dimen name="margin_md">12dp</dimen>
+    <dimen name="margin_lg">16dp</dimen>
+    <dimen name="margin_xl">20dp</dimen>
+    <dimen name="margin_xxl">24dp</dimen>
+    
+    <!-- ==================== RESPONSIVE TEXT SIZES ==================== -->
+    <dimen name="text_xs">10sp</dimen>      <!-- Caption -->
+    <dimen name="text_sm">12sp</dimen>      <!-- Small text -->
+    <dimen name="text_md">14sp</dimen>      <!-- Body text -->
+    <dimen name="text_lg">16sp</dimen>      <!-- Large body -->
+    <dimen name="text_xl">18sp</dimen>      <!-- Subheading -->
+    <dimen name="text_xxl">20sp</dimen>     <!-- Heading -->
+    <dimen name="text_xxxl">24sp</dimen>    <!-- Large heading -->
+    <dimen name="text_display">28sp</dimen> <!-- Display text -->
+    
+    <!-- ==================== RESPONSIVE BUTTON SIZES ==================== -->
+    <dimen name="button_height_sm">36dp</dimen>
+    <dimen name="button_height_md">44dp</dimen>
+    <dimen name="button_height_lg">52dp</dimen>
+    <dimen name="button_height_xl">60dp</dimen>
+    
+    <!-- ==================== RESPONSIVE CARD SIZES ==================== -->
+    <dimen name="card_radius_sm">4dp</dimen>
+    <dimen name="card_radius_md">8dp</dimen>
+    <dimen name="card_radius_lg">12dp</dimen>
+    <dimen name="card_radius_xl">16dp</dimen>
+    
+    <!-- ==================== RESPONSIVE ICON SIZES ==================== -->
+    <dimen name="icon_xs">16dp</dimen>
+    <dimen name="icon_sm">20dp</dimen>
+    <dimen name="icon_md">24dp</dimen>
+    <dimen name="icon_lg">32dp</dimen>
+    <dimen name="icon_xl">40dp</dimen>
+    <dimen name="icon_xxl">48dp</dimen>
+    
+    <!-- ==================== RESPONSIVE LAYOUT SIZES ==================== -->
+    <dimen name="container_max_width">400dp</dimen>
+    <dimen name="content_max_width">360dp</dimen>
+    
+    <!-- ==================== LEGACY DIMENSIONS (for backward compatibility) ==================== -->
     <dimen name="featured_card_width">180dp</dimen>
     <dimen name="featured_card_gap">12dp</dimen>
     <dimen name="featured_item_card_width">180dp</dimen>

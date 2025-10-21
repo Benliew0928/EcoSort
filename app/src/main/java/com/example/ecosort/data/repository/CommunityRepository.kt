@@ -31,17 +31,51 @@ class CommunityRepository @Inject constructor(
 ) {
 
     /**
-     * Get all community posts from local database
+     * Get all community posts - combines local and Firebase data
      */
     fun getAllCommunityPosts(): Flow<List<CommunityPost>> {
-        return communityPostDao.getAllPosts()
+        // First, try to sync from Firebase to ensure we have the latest data
+        return firestoreService.getAllCommunityPosts().map { firebasePosts ->
+            android.util.Log.d("CommunityRepository", "Received ${firebasePosts.size} posts from Firebase")
+            
+            // Convert Firebase posts to local models and save to local database
+            firebasePosts.forEach { firebasePost ->
+                try {
+                    val localPost = firebasePost.toLocalModel()
+                    communityPostDao.insertPost(localPost)
+                    android.util.Log.d("CommunityRepository", "Synced post to local DB: ${localPost.title}")
+                } catch (e: Exception) {
+                    android.util.Log.e("CommunityRepository", "Error syncing post: ${firebasePost.title}", e)
+                }
+            }
+            
+            // Return the converted posts
+            firebasePosts.map { it.toLocalModel() }
+        }
     }
 
     /**
-     * Get community posts by type from local database
+     * Get community posts by type - combines local and Firebase data
      */
     fun getCommunityPostsByType(postType: PostType): Flow<List<CommunityPost>> {
-        return communityPostDao.getPostsByType(postType)
+        // First, try to sync from Firebase to ensure we have the latest data
+        return firestoreService.getCommunityPostsByType(postType.name).map { firebasePosts ->
+            android.util.Log.d("CommunityRepository", "Received ${firebasePosts.size} posts of type $postType from Firebase")
+            
+            // Convert Firebase posts to local models and save to local database
+            firebasePosts.forEach { firebasePost ->
+                try {
+                    val localPost = firebasePost.toLocalModel()
+                    communityPostDao.insertPost(localPost)
+                    android.util.Log.d("CommunityRepository", "Synced post to local DB: ${localPost.title}")
+                } catch (e: Exception) {
+                    android.util.Log.e("CommunityRepository", "Error syncing post: ${firebasePost.title}", e)
+                }
+            }
+            
+            // Return the converted posts
+            firebasePosts.map { it.toLocalModel() }
+        }
     }
 
     /**
@@ -269,10 +303,16 @@ class CommunityRepository @Inject constructor(
     }
 
     /**
-     * Search posts by tag
+     * Search posts by tag - combines local and Firebase data
      */
     fun searchPostsByTag(tag: String): Flow<List<CommunityPost>> {
-        return communityPostDao.getPostsByTag(tag)
+        // For tag search, we'll get all posts and filter by tag
+        // This is because Firestore doesn't support array-contains queries easily
+        return getAllCommunityPosts().map { allPosts ->
+            allPosts.filter { post ->
+                post.tags.any { it.contains(tag, ignoreCase = true) }
+            }
+        }
     }
 
     /**
@@ -331,12 +371,24 @@ class CommunityRepository @Inject constructor(
      */
     suspend fun syncPostsFromFirebase() {
         try {
-            // This would be called periodically or on app start
-            // to sync any new posts from Firebase to local database
             android.util.Log.d("CommunityRepository", "Syncing posts from Firebase...")
             
-            // Implementation would collect from Firebase and save to local
-            // For now, we'll rely on local-first approach
+            // Get all posts from Firebase
+            val firebasePosts = firestoreService.getAllCommunityPosts().first()
+            android.util.Log.d("CommunityRepository", "Retrieved ${firebasePosts.size} posts from Firebase")
+            
+            // Convert and save to local database
+            firebasePosts.forEach { firebasePost ->
+                try {
+                    val localPost = firebasePost.toLocalModel()
+                    communityPostDao.insertPost(localPost)
+                    android.util.Log.d("CommunityRepository", "Synced post to local DB: ${localPost.title}")
+                } catch (e: Exception) {
+                    android.util.Log.e("CommunityRepository", "Error syncing post: ${firebasePost.title}", e)
+                }
+            }
+            
+            android.util.Log.d("CommunityRepository", "Firebase sync completed successfully")
         } catch (e: Exception) {
             android.util.Log.e("CommunityRepository", "Error syncing from Firebase", e)
         }

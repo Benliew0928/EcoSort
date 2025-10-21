@@ -130,8 +130,12 @@ class PostDetailActivity : AppCompatActivity() {
                 val userSession = userPreferencesManager.getCurrentUser()
                 currentUserId = userSession?.userId ?: 1L
                 currentUsername = userSession?.username ?: "Anonymous User"
+                android.util.Log.d("PostDetailActivity", "Current user loaded: $currentUsername (ID: $currentUserId)")
             } catch (e: Exception) {
                 android.util.Log.e("PostDetailActivity", "Error loading current user", e)
+                // Use fallback values
+                currentUserId = 1L
+                currentUsername = "Anonymous User"
             }
         }
     }
@@ -208,12 +212,14 @@ class PostDetailActivity : AppCompatActivity() {
     private fun sendComment() {
         val commentText = editTextComment.text.toString().trim()
         if (commentText.isEmpty()) {
+            android.util.Log.w("PostDetailActivity", "Attempted to send empty comment")
             return
         }
         
         currentPost?.let { post ->
             lifecycleScope.launch {
                 try {
+                    android.util.Log.d("PostDetailActivity", "Sending comment for post: ${post.id}")
                     val result = communityRepository.addComment(
                         postId = post.id,
                         authorId = currentUserId,
@@ -223,20 +229,26 @@ class PostDetailActivity : AppCompatActivity() {
                     
                     when (result) {
                         is com.example.ecosort.data.model.Result.Success -> {
+                            android.util.Log.d("PostDetailActivity", "Comment added successfully")
                             editTextComment.text.clear()
                             // Comments will be updated automatically via Flow
                         }
                         is com.example.ecosort.data.model.Result.Error -> {
                             android.util.Log.e("PostDetailActivity", "Error adding comment", result.exception)
+                            android.widget.Toast.makeText(this@PostDetailActivity, "Error adding comment: ${result.exception.message}", android.widget.Toast.LENGTH_SHORT).show()
                         }
                         is com.example.ecosort.data.model.Result.Loading -> {
-                            // Should not happen for suspend fun
+                            android.util.Log.d("PostDetailActivity", "Comment operation in progress...")
                         }
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("PostDetailActivity", "Error sending comment", e)
+                    android.widget.Toast.makeText(this@PostDetailActivity, "Error sending comment: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
+        } ?: run {
+            android.util.Log.e("PostDetailActivity", "Cannot send comment: currentPost is null")
+            android.widget.Toast.makeText(this, "Error: Post not found", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -256,34 +268,72 @@ class PostDetailActivity : AppCompatActivity() {
                 if (hasRealImage) {
                     postImage.visibility = View.VISIBLE
                     val imageUrl = imageUrls.first()
+                    android.util.Log.d("PostDetailActivity", "Loading image: $imageUrl")
+                    
                     try {
                         when {
                             imageUrl.startsWith("content://") || imageUrl.startsWith("file://") -> {
                                 // Parse as URI
                                 val uri = android.net.Uri.parse(imageUrl)
+                                android.util.Log.d("PostDetailActivity", "Loading URI: $uri")
                                 try {
                                     Glide.with(this)
                                         .load(uri)
                                         .placeholder(R.drawable.ic_image_placeholder)
                                         .error(R.drawable.ic_image_placeholder)
-                                        .into(postImage)
+                                        .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
+                                            override fun onResourceReady(
+                                                resource: android.graphics.drawable.Drawable,
+                                                transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?
+                                            ) {
+                                                android.util.Log.d("PostDetailActivity", "Successfully loaded image from URI")
+                                                postImage.setImageDrawable(resource)
+                                            }
+                                            
+                                            override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
+                                                android.util.Log.e("PostDetailActivity", "Failed to load image from URI: $imageUrl")
+                                                postImage.setImageResource(R.drawable.ic_image_placeholder)
+                                            }
+                                            
+                                            override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
+                                                // Called when the image is cleared
+                                            }
+                                        })
                                 } catch (e: Exception) {
                                     android.util.Log.e("PostDetailActivity", "Error loading URI: $imageUrl", e)
-                                    postImage.visibility = View.GONE
+                                    postImage.setImageResource(R.drawable.ic_image_placeholder)
                                 }
                             }
                             else -> {
                                 // Load as string URL (Firebase Storage URL)
+                                android.util.Log.d("PostDetailActivity", "Loading Firebase Storage URL: $imageUrl")
                                 Glide.with(this)
                                     .load(imageUrl)
                                     .placeholder(R.drawable.ic_image_placeholder)
                                     .error(R.drawable.ic_image_placeholder)
-                                    .into(postImage)
+                                    .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
+                                        override fun onResourceReady(
+                                            resource: android.graphics.drawable.Drawable,
+                                            transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?
+                                        ) {
+                                            android.util.Log.d("PostDetailActivity", "Successfully loaded image from Firebase URL")
+                                            postImage.setImageDrawable(resource)
+                                        }
+                                        
+                                        override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
+                                            android.util.Log.e("PostDetailActivity", "Failed to load image from Firebase URL: $imageUrl")
+                                            postImage.setImageResource(R.drawable.ic_image_placeholder)
+                                        }
+                                        
+                                        override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
+                                            // Called when the image is cleared
+                                        }
+                                    })
                             }
                         }
                     } catch (e: Exception) {
                         android.util.Log.e("PostDetailActivity", "Error loading image: $imageUrl", e)
-                        postImage.visibility = View.GONE
+                        postImage.setImageResource(R.drawable.ic_image_placeholder)
                     }
                 } else {
                     postImage.visibility = View.GONE
@@ -302,28 +352,73 @@ class PostDetailActivity : AppCompatActivity() {
                     // Generate and load video thumbnail
                     lifecycleScope.launch(Dispatchers.Main) {
                         try {
-                            val thumbnailUri = VideoThumbnailGenerator.generateThumbnailFromUrl(
-                                this@PostDetailActivity, 
-                                videoUrl
-                            )
+                            android.util.Log.d("PostDetailActivity", "Processing video for post detail: $videoUrl")
                             
-                            if (thumbnailUri != null) {
-                                Glide.with(this@PostDetailActivity)
-                                    .load(thumbnailUri)
-                                    .placeholder(R.drawable.ic_video)
-                                    .error(R.drawable.ic_video)
-                                    .into(postImage)
-                            } else {
-                                // Fallback to video icon
-                                Glide.with(this@PostDetailActivity)
-                                    .load(R.drawable.ic_video)
-                                    .placeholder(R.drawable.ic_video)
-                                    .error(R.drawable.ic_video)
-                                    .into(postImage)
-                            }
+                            // First, try to load the video URL directly with Glide
+                            android.util.Log.d("PostDetailActivity", "Attempting to load video URL directly with Glide")
+                            Glide.with(this@PostDetailActivity)
+                                .asBitmap()
+                                .load(videoUrl)
+                                .placeholder(R.drawable.ic_video)
+                                .error(R.drawable.ic_video)
+                                .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.Bitmap>() {
+                                    override fun onResourceReady(
+                                        resource: android.graphics.Bitmap,
+                                        transition: com.bumptech.glide.request.transition.Transition<in android.graphics.Bitmap>?
+                                    ) {
+                                        android.util.Log.d("PostDetailActivity", "Successfully loaded video thumbnail from URL")
+                                        postImage.setImageBitmap(resource)
+                                    }
+                                    
+                                    override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
+                                        android.util.Log.w("PostDetailActivity", "Failed to load video thumbnail from URL, trying thumbnail generation")
+                                        
+                                        // If direct loading fails, try thumbnail generation
+                                        lifecycleScope.launch(Dispatchers.IO) {
+                                            try {
+                                                val thumbnailUri = VideoThumbnailGenerator.generateThumbnailFromUrl(
+                                                    this@PostDetailActivity, 
+                                                    videoUrl
+                                                )
+                                                
+                                                lifecycleScope.launch(Dispatchers.Main) {
+                                                    if (thumbnailUri != null) {
+                                                        android.util.Log.d("PostDetailActivity", "Loading generated thumbnail: $thumbnailUri")
+                                                        Glide.with(this@PostDetailActivity)
+                                                            .load(thumbnailUri)
+                                                            .placeholder(R.drawable.ic_video)
+                                                            .error(R.drawable.ic_video)
+                                                            .into(postImage)
+                                                    } else {
+                                                        android.util.Log.w("PostDetailActivity", "Thumbnail generation failed, using video icon")
+                                                        Glide.with(this@PostDetailActivity)
+                                                            .load(R.drawable.ic_video)
+                                                            .placeholder(R.drawable.ic_video)
+                                                            .error(R.drawable.ic_video)
+                                                            .into(postImage)
+                                                    }
+                                                }
+                                            } catch (e: Exception) {
+                                                android.util.Log.e("PostDetailActivity", "Error in thumbnail generation fallback", e)
+                                                lifecycleScope.launch(Dispatchers.Main) {
+                                                    Glide.with(this@PostDetailActivity)
+                                                        .load(R.drawable.ic_video)
+                                                        .placeholder(R.drawable.ic_video)
+                                                        .error(R.drawable.ic_video)
+                                                        .into(postImage)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
+                                        // Called when the image is cleared
+                                    }
+                                })
+                                
                         } catch (e: Exception) {
-                            android.util.Log.e("PostDetailActivity", "Error generating video thumbnail", e)
-                            // Fallback to video icon
+                            android.util.Log.e("PostDetailActivity", "Error in video thumbnail loading", e)
+                            // Final fallback to video icon
                             Glide.with(this@PostDetailActivity)
                                 .load(R.drawable.ic_video)
                                 .placeholder(R.drawable.ic_video)

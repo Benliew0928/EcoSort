@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="@dimen/margin_sm"
+    android:elevation="4dp"
+    app:cardCornerRadius="@dimen/card_radius_lg"
+    app:cardElevation="2dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_md">
+
+        <!-- Header Section -->
+        <LinearLayout
+            android:id="@+id/header_section"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="@dimen/spacing_md"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Avatar -->
+            <ImageView
+                android:id="@+id/imageAvatar"
+                android:layout_width="@dimen/icon_xl"
+                android:layout_height="@dimen/icon_xl"
+                android:src="@drawable/ic_user_placeholder"
+                android:background="@drawable/circle_background"
+                android:padding="@dimen/padding_sm" />
+
+            <!-- Author info -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="@dimen/spacing_md">
+
+                <TextView
+                    android:id="@+id/textAuthorName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Author Name"
+                    android:textSize="@dimen/text_lg"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:fontFamily="@string/font_family_primary"
+                    tools:text="John Doe" />
+
+                <TextView
+                    android:id="@+id/textPostTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2 hours ago"
+                    android:textSize="@dimen/text_xs"
+                    android:textColor="@color/text_secondary"
+                    android:fontFamily="@string/font_family_caption"
+                    tools:text="2 hours ago" />
+            </LinearLayout>
+
+            <!-- Post type badge -->
+            <TextView
+                android:id="@+id/textPostType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TIP"
+                android:textSize="@dimen/text_xs"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/post_type_bg"
+                android:padding="@dimen/padding_xs"
+                android:fontFamily="@string/font_family_caption"
+                tools:text="TIP" />
+        </LinearLayout>
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/textPostTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Post Title"
+            android:textSize="@dimen/text_xl"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:fontFamily="@string/font_family_heading"
+            android:layout_marginBottom="@dimen/spacing_sm"
+            app:layout_constraintTop_toBottomOf="@+id/header_section"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="How to Recycle Electronics Properly" />
+
+        <!-- Content -->
+        <TextView
+            android:id="@+id/textPostContent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Post content goes here..."
+            android:textSize="@dimen/text_md"
+            android:textColor="@color/text_primary"
+            android:fontFamily="@string/font_family_body"
+            android:lineSpacingExtra="@dimen/spacing_xs"
+            android:layout_marginBottom="@dimen/spacing_md"
+            app:layout_constraintTop_toBottomOf="@+id/textPostTitle"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="Here's a comprehensive guide on how to properly recycle your old electronics..." />
+
+        <!-- Media Section -->
+        <ImageView
+            android:id="@+id/imagePostMedia"
+            android:layout_width="0dp"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            android:background="@color/surface_light"
+            android:layout_marginBottom="@dimen/spacing_md"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@+id/textPostContent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:visibility="visible"
+            tools:src="@drawable/ic_image_placeholder" />
+
+        <!-- Tags Section -->
+        <LinearLayout
+            android:id="@+id/tags_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="@dimen/spacing_md"
+            app:layout_constraintTop_toBottomOf="@+id/imagePostMedia"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Tags will be added dynamically -->
+        </LinearLayout>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:id="@+id/action_buttons"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            app:layout_constraintTop_toBottomOf="@+id/tags_container"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <!-- Like Button -->
+            <LinearLayout
+                android:id="@+id/buttonLike"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:padding="@dimen/padding_sm"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:id="@+id/imageLike"
+                    android:layout_width="@dimen/icon_sm"
+                    android:layout_height="@dimen/icon_sm"
+                    android:src="@drawable/ic_favorite_border"
+                    android:tint="@color/text_secondary" />
+
+                <TextView
+                    android:id="@+id/textLikeCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="@dimen/text_sm"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    android:fontFamily="@string/font_family_caption" />
+            </LinearLayout>
+
+            <!-- Comment Button -->
+            <LinearLayout
+                android:id="@+id/buttonComment"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:padding="@dimen/padding_sm"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="@dimen/icon_sm"
+                    android:layout_height="@dimen/icon_sm"
+                    android:src="@drawable/ic_comment"
+                    android:tint="@color/text_secondary" />
+
+                <TextView
+                    android:id="@+id/textCommentCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="@dimen/text_sm"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    android:fontFamily="@string/font_family_caption" />
+            </LinearLayout>
+
+            <!-- Share Button -->
+            <LinearLayout
+                android:id="@+id/buttonShare"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:padding="@dimen/padding_sm"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="@dimen/icon_sm"
+                    android:layout_height="@dimen/icon_sm"
+                    android:src="@drawable/ic_share"
+                    android:tint="@color/text_secondary" />
+
+                <TextView
+                    android:id="@+id/textShareCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="@dimen/text_sm"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    android:fontFamily="@string/font_family_caption" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.cardview.widget.CardView>

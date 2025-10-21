@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ==================== SMALL PHONES (320dp and below) ==================== -->
+    <!-- Compact spacing for small screens -->
+    <dimen name="spacing_xs">2dp</dimen>
+    <dimen name="spacing_sm">6dp</dimen>
+    <dimen name="spacing_md">12dp</dimen>
+    <dimen name="spacing_lg">18dp</dimen>
+    <dimen name="spacing_xl">24dp</dimen>
+    <dimen name="spacing_xxl">30dp</dimen>
+    
+    <!-- Compact padding -->
+    <dimen name="padding_xs">2dp</dimen>
+    <dimen name="padding_sm">6dp</dimen>
+    <dimen name="padding_md">12dp</dimen>
+    <dimen name="padding_lg">16dp</dimen>
+    <dimen name="padding_xl">20dp</dimen>
+    <dimen name="padding_xxl">24dp</dimen>
+    
+    <!-- Compact margins -->
+    <dimen name="margin_xs">2dp</dimen>
+    <dimen name="margin_sm">6dp</dimen>
+    <dimen name="margin_md">10dp</dimen>
+    <dimen name="margin_lg">14dp</dimen>
+    <dimen name="margin_xl">18dp</dimen>
+    <dimen name="margin_xxl">22dp</dimen>
+    
+    <!-- Smaller text sizes -->
+    <dimen name="text_xs">9sp</dimen>
+    <dimen name="text_sm">11sp</dimen>
+    <dimen name="text_md">13sp</dimen>
+    <dimen name="text_lg">15sp</dimen>
+    <dimen name="text_xl">17sp</dimen>
+    <dimen name="text_xxl">19sp</dimen>
+    <dimen name="text_xxxl">22sp</dimen>
+    <dimen name="text_display">26sp</dimen>
+    
+    <!-- Smaller button heights -->
+    <dimen name="button_height_sm">32dp</dimen>
+    <dimen name="button_height_md">40dp</dimen>
+    <dimen name="button_height_lg">48dp</dimen>
+    <dimen name="button_height_xl">56dp</dimen>
+    
+    <!-- Smaller icons -->
+    <dimen name="icon_xs">14dp</dimen>
+    <dimen name="icon_sm">18dp</dimen>
+    <dimen name="icon_md">22dp</dimen>
+    <dimen name="icon_lg">28dp</dimen>
+    <dimen name="icon_xl">36dp</dimen>
+    <dimen name="icon_xxl">44dp</dimen>
+    
+    <!-- Smaller cards -->
+    <dimen name="card_radius_sm">3dp</dimen>
+    <dimen name="card_radius_md">6dp</dimen>
+    <dimen name="card_radius_lg">9dp</dimen>
+    <dimen name="card_radius_xl">12dp</dimen>
+    
+    <!-- Layout constraints -->
+    <dimen name="container_max_width">320dp</dimen>
+    <dimen name="content_max_width">300dp</dimen>
+    
+    <!-- Featured cards for small screens -->
+    <dimen name="featured_card_width">140dp</dimen>
+    <dimen name="featured_card_gap">8dp</dimen>
+    <dimen name="featured_item_card_width">140dp</dimen>
+    <dimen name="featured_item_card_height">8dp</dimen>
+</resources>

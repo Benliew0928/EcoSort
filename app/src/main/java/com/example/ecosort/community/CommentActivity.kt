@@ -97,8 +97,12 @@ class CommentActivity : AppCompatActivity() {
                 val userSession = userPreferencesManager.getCurrentUser()
                 currentUserId = userSession?.userId ?: 1L
                 currentUsername = userSession?.username ?: "Anonymous User"
+                android.util.Log.d("CommentActivity", "Current user loaded: $currentUsername (ID: $currentUserId)")
             } catch (e: Exception) {
                 android.util.Log.e("CommentActivity", "Error loading current user", e)
+                // Use fallback values
+                currentUserId = 1L
+                currentUsername = "Anonymous User"
             }
         }
     }
@@ -125,12 +129,14 @@ class CommentActivity : AppCompatActivity() {
     private fun sendComment() {
         val commentText = editTextComment.text.toString().trim()
         if (commentText.isEmpty()) {
+            android.util.Log.w("CommentActivity", "Attempted to send empty comment")
             return
         }
         
         currentPost?.let { post ->
             lifecycleScope.launch {
                 try {
+                    android.util.Log.d("CommentActivity", "Sending comment for post: ${post.id}")
                     val result = communityRepository.addComment(
                         postId = post.id,
                         authorId = currentUserId,
@@ -140,20 +146,26 @@ class CommentActivity : AppCompatActivity() {
                     
                     when (result) {
                         is com.example.ecosort.data.model.Result.Success -> {
+                            android.util.Log.d("CommentActivity", "Comment added successfully")
                             editTextComment.text.clear()
                             // Comments will be updated automatically via Flow
                         }
                         is com.example.ecosort.data.model.Result.Error -> {
                             android.util.Log.e("CommentActivity", "Error adding comment", result.exception)
+                            android.widget.Toast.makeText(this@CommentActivity, "Error adding comment: ${result.exception.message}", android.widget.Toast.LENGTH_SHORT).show()
                         }
                         is com.example.ecosort.data.model.Result.Loading -> {
-                            // Should not happen for suspend fun
+                            android.util.Log.d("CommentActivity", "Comment operation in progress...")
                         }
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("CommentActivity", "Error sending comment", e)
+                    android.widget.Toast.makeText(this@CommentActivity, "Error sending comment: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
+        } ?: run {
+            android.util.Log.e("CommentActivity", "Cannot send comment: currentPost is null")
+            android.widget.Toast.makeText(this, "Error: Post not found", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
     

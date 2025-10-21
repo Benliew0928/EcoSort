@@ -96,14 +96,117 @@
     <style name="CardModern">
         <item name="android:background">@drawable/card_modern</item>
         <item name="android:elevation">4dp</item>
-        <item name="android:layout_margin">16dp</item>
-        <item name="android:padding">20dp</item>
+        <item name="android:layout_margin">@dimen/margin_lg</item>
+        <item name="android:padding">@dimen/padding_lg</item>
     </style>
 
     <style name="CardSmall">
         <item name="android:background">@drawable/card_modern</item>
         <item name="android:elevation">2dp</item>
-        <item name="android:layout_margin">8dp</item>
-        <item name="android:padding">12dp</item>
+        <item name="android:layout_margin">@dimen/margin_sm</item>
+        <item name="android:padding">@dimen/padding_md</item>
+    </style>
+
+    <!-- ==================== RESPONSIVE BUTTON STYLES ==================== -->
+    <style name="ButtonResponsive" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/button_primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">@dimen/text_md</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@string/font_family_primary</item>
+        <item name="android:padding">@dimen/padding_md</item>
+        <item name="android:minHeight">@dimen/button_height_md</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <style name="ButtonResponsiveSmall" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/button_secondary</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_sm</item>
+        <item name="android:fontFamily">@string/font_family_primary</item>
+        <item name="android:padding">@dimen/padding_sm</item>
+        <item name="android:minHeight">@dimen/button_height_sm</item>
+        <item name="android:elevation">2dp</item>
+    </style>
+
+    <style name="ButtonResponsiveLarge" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/button_primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">@dimen/text_lg</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@string/font_family_primary</item>
+        <item name="android:padding">@dimen/padding_lg</item>
+        <item name="android:minHeight">@dimen/button_height_lg</item>
+        <item name="android:elevation">6dp</item>
+    </style>
+
+    <!-- ==================== RESPONSIVE TEXT STYLES ==================== -->
+    <style name="TextResponsiveHeading1">
+        <item name="android:textSize">@dimen/text_display</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">@string/font_family_heading</item>
+        <item name="android:lineSpacingExtra">@dimen/spacing_xs</item>
+    </style>
+
+    <style name="TextResponsiveHeading2">
+        <item name="android:textSize">@dimen/text_xxxl</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">@string/font_family_heading</item>
+        <item name="android:lineSpacingExtra">@dimen/spacing_xs</item>
+    </style>
+
+    <style name="TextResponsiveHeading3">
+        <item name="android:textSize">@dimen/text_xxl</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">@string/font_family_primary</item>
+        <item name="android:lineSpacingExtra">@dimen/spacing_xs</item>
+    </style>
+
+    <style name="TextResponsiveBody">
+        <item name="android:textSize">@dimen/text_md</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">@string/font_family_body</item>
+        <item name="android:lineSpacingExtra">@dimen/spacing_xs</item>
+    </style>
+
+    <style name="TextResponsiveCaption">
+        <item name="android:textSize">@dimen/text_xs</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:fontFamily">@string/font_family_caption</item>
+    </style>
+
+    <!-- ==================== RESPONSIVE CARD STYLES ==================== -->
+    <style name="CardResponsive">
+        <item name="android:background">@drawable/card_modern</item>
+        <item name="android:elevation">4dp</item>
+        <item name="android:layout_margin">@dimen/margin_lg</item>
+        <item name="android:padding">@dimen/padding_lg</item>
+    </style>
+
+    <style name="CardResponsiveCompact">
+        <item name="android:background">@drawable/card_modern</item>
+        <item name="android:elevation">2dp</item>
+        <item name="android:layout_margin">@dimen/margin_sm</item>
+        <item name="android:padding">@dimen/padding_md</item>
+    </style>
+
+    <!-- ==================== RESPONSIVE CONTAINER STYLES ==================== -->
+    <style name="ContainerResponsive">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:maxWidth">@dimen/container_max_width</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        <item name="android:padding">@dimen/padding_lg</item>
+    </style>
+
+    <style name="ContentResponsive">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:maxWidth">@dimen/content_max_width</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        <item name="android:padding">@dimen/padding_md</item>
     </style>
 </resources>

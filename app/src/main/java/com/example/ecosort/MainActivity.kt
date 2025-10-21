@@ -24,6 +24,8 @@ import com.example.ecosort.data.model.MarketplaceItem
 import com.bumptech.glide.Glide
 import javax.inject.Inject
 import com.example.ecosort.hms.MapActivity // <--- FIX: Added the necessary import for MapActivity
+import com.example.ecosort.utils.ResponsiveUtils
+import com.example.ecosort.utils.ResponsiveLayoutManager
 
 
 
@@ -40,7 +42,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_main_responsive)
 
         // userPreferencesManager is now injected via Hilt
 
@@ -170,8 +172,13 @@ class MainActivity : AppCompatActivity() {
         if (posts.isEmpty()) {
             val emptyView = TextView(this).apply {
                 text = "No community posts yet. Be the first to share!"
-                textSize = 14f
-                setPadding(16, 16, 16, 16)
+                textSize = ResponsiveUtils.getResponsiveTextSize(this@MainActivity, 14f)
+                setPadding(
+                    ResponsiveUtils.getResponsivePadding(this@MainActivity, 16),
+                    ResponsiveUtils.getResponsivePadding(this@MainActivity, 16),
+                    ResponsiveUtils.getResponsivePadding(this@MainActivity, 16),
+                    ResponsiveUtils.getResponsivePadding(this@MainActivity, 16)
+                )
                 setTextColor(getColor(R.color.text_secondary))
             }
             container.addView(emptyView)
@@ -185,24 +192,105 @@ class MainActivity : AppCompatActivity() {
             card.findViewById<TextView>(R.id.rowTitle).text = post.title
             card.findViewById<TextView>(R.id.rowPrice).text = post.postType // Show post type instead of price
 
-            // Load image using Glide
+            // Load image using enhanced Glide with proper error handling
             val thumb = card.findViewById<android.widget.ImageView>(R.id.rowThumb)
-            if (post.imageUrls.isNotEmpty()) {
-                Glide.with(this)
-                    .load(post.imageUrls.first())
-                    .placeholder(R.drawable.ic_image_placeholder)
-                    .error(R.drawable.ic_image_placeholder)
-                    .into(thumb)
-            } else {
-                // Show post type icon instead of placeholder
-                val iconRes = when (post.postType) {
-                    "TIP" -> R.drawable.ic_lightbulb
-                    "ACHIEVEMENT" -> R.drawable.ic_trophy
-                    "QUESTION" -> R.drawable.ic_help
-                    "EVENT" -> R.drawable.ic_event
-                    else -> R.drawable.ic_image_placeholder
+            val imageUrl = post.imageUrls.firstOrNull()
+            val videoUrl = post.videoUrl
+            
+            when {
+                !imageUrl.isNullOrEmpty() && imageUrl != "demo_black_image" -> {
+                    // Load image with enhanced error handling
+                    android.util.Log.d("MainActivity", "Loading image for home screen: $imageUrl")
+                    Glide.with(this)
+                        .load(imageUrl)
+                        .placeholder(R.drawable.ic_image_placeholder)
+                        .error(R.drawable.ic_image_placeholder)
+                        .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
+                            override fun onResourceReady(
+                                resource: android.graphics.drawable.Drawable,
+                                transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?
+                            ) {
+                                android.util.Log.d("MainActivity", "Successfully loaded image for home screen")
+                                thumb.setImageDrawable(resource)
+                            }
+                            
+                            override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
+                                android.util.Log.e("MainActivity", "Failed to load image for home screen: $imageUrl")
+                                thumb.setImageResource(R.drawable.ic_image_placeholder)
+                            }
+                            
+                            override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
+                                // Called when the image is cleared
+                            }
+                        })
                 }
-                thumb.setImageResource(iconRes)
+                !videoUrl.isNullOrEmpty() -> {
+                    // Load video thumbnail with enhanced error handling
+                    android.util.Log.d("MainActivity", "Loading video thumbnail for home screen: $videoUrl")
+                    Glide.with(this)
+                        .asBitmap()
+                        .load(videoUrl)
+                        .placeholder(R.drawable.ic_video)
+                        .error(R.drawable.ic_video)
+                        .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.Bitmap>() {
+                            override fun onResourceReady(
+                                resource: android.graphics.Bitmap,
+                                transition: com.bumptech.glide.request.transition.Transition<in android.graphics.Bitmap>?
+                            ) {
+                                android.util.Log.d("MainActivity", "Successfully loaded video thumbnail for home screen")
+                                thumb.setImageBitmap(resource)
+                            }
+                            
+                            override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
+                                android.util.Log.w("MainActivity", "Failed to load video thumbnail for home screen, trying thumbnail generation")
+                                
+                                // Try thumbnail generation as fallback
+                                lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                    try {
+                                        val thumbnailUri = com.example.ecosort.utils.VideoThumbnailGenerator.generateThumbnailFromUrl(
+                                            this@MainActivity, 
+                                            videoUrl
+                                        )
+                                        
+                                        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                                            if (thumbnailUri != null) {
+                                                android.util.Log.d("MainActivity", "Loading generated thumbnail for home screen: $thumbnailUri")
+                                                Glide.with(this@MainActivity)
+                                                    .load(thumbnailUri)
+                                                    .placeholder(R.drawable.ic_video)
+                                                    .error(R.drawable.ic_video)
+                                                    .into(thumb)
+                                            } else {
+                                                android.util.Log.w("MainActivity", "Thumbnail generation failed for home screen, using video icon")
+                                                thumb.setImageResource(R.drawable.ic_video)
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("MainActivity", "Error in thumbnail generation fallback for home screen", e)
+                                        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                                            thumb.setImageResource(R.drawable.ic_video)
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
+                                // Called when the image is cleared
+                            }
+                        })
+                }
+                else -> {
+                    // Show post type icon instead of placeholder
+                    val iconRes = when (post.postType) {
+                        "TIP" -> R.drawable.ic_lightbulb
+                        "ACHIEVEMENT" -> R.drawable.ic_trophy
+                        "QUESTION" -> R.drawable.ic_help
+                        "EVENT" -> R.drawable.ic_event
+                        else -> R.drawable.ic_image_placeholder
+                    }
+                    android.util.Log.d("MainActivity", "Using post type icon for home screen: ${post.postType}")
+                    thumb.setImageResource(iconRes)
+                }
             }
 
             // Set click listener to open community feed
@@ -210,11 +298,14 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
             }
 
-            // Set layout parameters
+            // Set responsive layout parameters
             val params = android.widget.LinearLayout.LayoutParams(card.layoutParams)
-            params.width = resources.getDimensionPixelSize(R.dimen.featured_item_card_width)
-            params.rightMargin = resources.getDimensionPixelSize(R.dimen.featured_item_card_height)
+            params.width = ResponsiveUtils.getResponsiveCardWidth(this)
+            params.rightMargin = ResponsiveUtils.getResponsivePadding(this, 12)
             card.layoutParams = params
+            
+            // Apply responsive layout to the card
+            ResponsiveUtils.applyResponsiveLayout(card, this)
 
             container.addView(card)
         }
