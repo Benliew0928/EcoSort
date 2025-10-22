@@ -12,17 +12,14 @@
     android:clickable="true"
     android:focusable="true">
 
-    <!-- User avatar placeholder -->
-    <TextView
+    <!-- User avatar -->
+    <ImageView
+        android:id="@+id/image_user_avatar"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_gravity="center_vertical"
-        android:background="@drawable/bg_unread_count"
-        android:gravity="center"
-        android:textColor="@android:color/white"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        tools:text="U" />
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_person" />
 
     <!-- Message content -->
     <LinearLayout
@@ -97,5 +94,16 @@
         </LinearLayout>
 
     </LinearLayout>
+
+    <!-- Delete button -->
+    <ImageButton
+        android:id="@+id/btn_delete_conversation"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center_vertical"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_delete"
+        android:contentDescription="Delete conversation"
+        android:padding="8dp" />
 
 </LinearLayout>

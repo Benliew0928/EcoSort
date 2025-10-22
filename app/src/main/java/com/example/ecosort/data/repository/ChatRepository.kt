@@ -17,7 +17,8 @@ import javax.inject.Singleton
 class ChatRepository @Inject constructor(
     private val chatMessageDao: ChatMessageDao,
     private val conversationDao: ConversationDao,
-    private val preferencesManager: UserPreferencesManager
+    private val preferencesManager: UserPreferencesManager,
+    private val userRepository: UserRepository
 ) {
 
     /**
@@ -237,10 +238,11 @@ class ChatRepository @Inject constructor(
     suspend fun createOrGetConversation(user1Id: Long, user1Username: String, user2Id: Long, user2Username: String): Result<Conversation> {
         return try {
             // Create a consistent channel ID (always smaller ID first)
+            // Use "chat_" prefix for compatibility with old conversations
             val channelId = if (user1Id < user2Id) {
-                "user_${user1Id}_${user2Id}"
+                "chat_${user1Id}_${user2Id}"
             } else {
-                "user_${user2Id}_${user1Id}"
+                "chat_${user2Id}_${user1Id}"
             }
 
             // Check if conversation already exists
@@ -266,6 +268,84 @@ class ChatRepository @Inject constructor(
     }
 
     /**
+     * Get or create a conversation between two users (simplified version with just user IDs)
+     */
+    suspend fun getOrCreateConversation(user1Id: Long, user2Id: Long): Result<Conversation> {
+        return try {
+            // Create a consistent channel ID (always smaller ID first)
+            // Use "chat_" prefix for compatibility with old conversations
+            val channelId = if (user1Id < user2Id) {
+                "chat_${user1Id}_${user2Id}"
+            } else {
+                "chat_${user2Id}_${user1Id}"
+            }
+
+            android.util.Log.d("ChatRepository", "Looking for conversation with channelId: $channelId")
+
+            // Check if conversation already exists
+            var existingConversation = conversationDao.getConversationByChannelId(channelId)
+            if (existingConversation != null) {
+                android.util.Log.d("ChatRepository", "Found existing conversation: $channelId")
+                return Result.Success(existingConversation)
+            }
+
+            // Check for old format conversations (user_ prefix) and migrate them
+            val oldChannelId = if (user1Id < user2Id) {
+                "user_${user1Id}_${user2Id}"
+            } else {
+                "user_${user2Id}_${user1Id}"
+            }
+            
+            existingConversation = conversationDao.getConversationByChannelId(oldChannelId)
+            if (existingConversation != null) {
+                android.util.Log.d("ChatRepository", "Found old format conversation, migrating: $oldChannelId -> $channelId")
+                
+                // Create new conversation with correct channel ID
+                val migratedConversation = existingConversation.copy(channelId = channelId)
+                
+                // Delete old conversation and insert new one
+                conversationDao.deleteConversation(oldChannelId)
+                conversationDao.insertConversation(migratedConversation)
+                
+                // Update all messages to use new channel ID
+                chatMessageDao.updateChannelId(oldChannelId, channelId)
+                
+                android.util.Log.d("ChatRepository", "Successfully migrated conversation: $oldChannelId -> $channelId")
+                return Result.Success(migratedConversation)
+            }
+
+            // Get usernames for new conversation
+            val user1Result = userRepository.getUserById(user1Id)
+            val user2Result = userRepository.getUserById(user2Id)
+            
+            if (user1Result is com.example.ecosort.data.model.Result.Success && 
+                user2Result is com.example.ecosort.data.model.Result.Success) {
+                
+                val user1 = user1Result.data
+                val user2 = user2Result.data
+                
+                // Create new conversation
+                val conversation = Conversation(
+                    channelId = channelId,
+                    participant1Id = if (user1Id < user2Id) user1Id else user2Id,
+                    participant1Username = if (user1Id < user2Id) user1.username else user2.username,
+                    participant2Id = if (user1Id < user2Id) user2Id else user1Id,
+                    participant2Username = if (user1Id < user2Id) user2.username else user1.username
+                )
+
+                conversationDao.insertConversation(conversation)
+                android.util.Log.d("ChatRepository", "Created new conversation: $channelId")
+                Result.Success(conversation)
+            } else {
+                Result.Error(Exception("Could not get user information"))
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ChatRepository", "Error in getOrCreateConversation", e)
+            Result.Error(e)
+        }
+    }
+
+    /**
      * Update conversation with new message
      */
     suspend fun updateConversationWithMessage(channelId: String, messageText: String, senderId: Long): Result<Unit> {
@@ -273,6 +353,19 @@ class ChatRepository @Inject constructor(
             conversationDao.updateLastMessage(channelId, messageText, System.currentTimeMillis(), senderId)
             Result.Success(Unit)
         } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+    
+    suspend fun deleteConversation(channelId: String): Result<Unit> {
+        return try {
+            // Delete all messages in the conversation
+            chatMessageDao.deleteChannelMessages(channelId)
+            // Delete the conversation itself
+            conversationDao.deleteConversation(channelId)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("ChatRepository", "Error deleting conversation", e)
             Result.Error(e)
         }
     }

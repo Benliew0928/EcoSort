@@ -132,6 +132,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE username LIKE '%' || :query || '%' AND username != :currentUsername LIMIT 20")
     suspend fun searchUsersByUsername(query: String, currentUsername: String): List<User>
 
+    @Query("SELECT * FROM users WHERE username LIKE :query OR email LIKE :query LIMIT 20")
+    suspend fun searchUsers(query: String): List<User>
+
     @Query("SELECT * FROM users")
     suspend fun getAllUsers(): List<User>
 
@@ -265,6 +268,9 @@ interface ChatMessageDao {
 
     @Query("DELETE FROM chat_messages WHERE channelId = :channelId")
     suspend fun deleteChannelMessages(channelId: String)
+    
+    @Query("UPDATE chat_messages SET channelId = :newChannelId WHERE channelId = :oldChannelId")
+    suspend fun updateChannelId(oldChannelId: String, newChannelId: String)
 }
 
 // ==================== CONVERSATION DAO ====================
@@ -400,6 +406,71 @@ interface CommunityLikeDao {
     suspend fun deleteLikesForPost(postId: Long)
 }
 
+// ==================== USER FOLLOW DAO ====================
+@Dao
+interface UserFollowDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFollow(follow: UserFollow): Long
+
+    @Query("SELECT * FROM user_follows WHERE followerId = :followerId AND followingId = :followingId LIMIT 1")
+    suspend fun getFollow(followerId: Long, followingId: Long): UserFollow?
+
+    @Query("SELECT * FROM user_follows WHERE followerId = :userId ORDER BY followedAt DESC")
+    fun getUserFollowing(userId: Long): Flow<List<UserFollow>>
+
+    @Query("SELECT * FROM user_follows WHERE followingId = :userId ORDER BY followedAt DESC")
+    fun getUserFollowers(userId: Long): Flow<List<UserFollow>>
+
+    @Query("SELECT COUNT(*) FROM user_follows WHERE followerId = :userId")
+    suspend fun getFollowingCount(userId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM user_follows WHERE followingId = :userId")
+    suspend fun getFollowersCount(userId: Long): Int
+
+    @Query("DELETE FROM user_follows WHERE followerId = :followerId AND followingId = :followingId")
+    suspend fun removeFollow(followerId: Long, followingId: Long)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM user_follows WHERE followerId = :followerId AND followingId = :followingId)")
+    suspend fun isFollowing(followerId: Long, followingId: Long): Boolean
+}
+
+// ==================== USER FRIEND DAO ====================
+@Dao
+interface UserFriendDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFriend(friend: UserFriend): Long
+
+    @Query("SELECT * FROM user_friends WHERE (userId = :userId AND friendId = :friendId) OR (userId = :friendId AND friendId = :userId) LIMIT 1")
+    suspend fun getFriendship(userId: Long, friendId: Long): UserFriend?
+
+    @Query("SELECT * FROM user_friends WHERE userId = :userId AND status = 'ACCEPTED' ORDER BY acceptedAt DESC")
+    fun getUserFriends(userId: Long): Flow<List<UserFriend>>
+
+    @Query("SELECT * FROM user_friends WHERE friendId = :userId AND status = 'PENDING' ORDER BY createdAt DESC")
+    fun getPendingFriendRequests(userId: Long): Flow<List<UserFriend>>
+
+    @Query("SELECT * FROM user_friends WHERE userId = :userId AND status = 'PENDING' ORDER BY createdAt DESC")
+    fun getSentFriendRequests(userId: Long): Flow<List<UserFriend>>
+
+    @Query("SELECT COUNT(*) FROM user_friends WHERE (userId = :userId OR friendId = :userId) AND status = 'ACCEPTED'")
+    suspend fun getFriendsCount(userId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM user_friends WHERE friendId = :userId AND status = 'PENDING'")
+    suspend fun getPendingRequestsCount(userId: Long): Int
+
+    @Query("UPDATE user_friends SET status = 'ACCEPTED', acceptedAt = :acceptedAt WHERE id = :friendshipId")
+    suspend fun acceptFriendRequest(friendshipId: Long, acceptedAt: Long = System.currentTimeMillis())
+
+    @Query("DELETE FROM user_friends WHERE id = :friendshipId")
+    suspend fun removeFriendship(friendshipId: Long)
+
+    @Query("DELETE FROM user_friends WHERE (userId = :userId AND friendId = :friendId) OR (userId = :friendId AND friendId = :userId)")
+    suspend fun removeFriendship(userId: Long, friendId: Long)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM user_friends WHERE (userId = :userId AND friendId = :friendId) OR (userId = :friendId AND friendId = :userId) AND status = 'ACCEPTED')")
+    suspend fun areFriends(userId: Long, friendId: Long): Boolean
+}
+
 // ==================== MAIN DATABASE ====================
 @Database(
     entities = [
@@ -410,9 +481,11 @@ interface CommunityLikeDao {
         Conversation::class,
         CommunityPost::class,
         CommunityComment::class,
-        CommunityLike::class
+        CommunityLike::class,
+        UserFollow::class,
+        UserFriend::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -426,6 +499,8 @@ abstract class EcoSortDatabase : RoomDatabase() {
     abstract fun communityPostDao(): CommunityPostDao
     abstract fun communityCommentDao(): CommunityCommentDao
     abstract fun communityLikeDao(): CommunityLikeDao
+    abstract fun userFollowDao(): UserFollowDao
+    abstract fun userFriendDao(): UserFriendDao
 
     companion object {
         @Volatile
@@ -449,7 +524,8 @@ abstract class EcoSortDatabase : RoomDatabase() {
                 MIGRATION_8_9,
                 MIGRATION_9_10,
                 MIGRATION_10_11,
-                MIGRATION_11_12
+                MIGRATION_11_12,
+                MIGRATION_12_13
             )
                     .allowMainThreadQueries() // Temporary for debugging
                     .build()
@@ -678,6 +754,38 @@ internal val MIGRATION_11_12 = object : androidx.room.migration.Migration(11, 12
             android.util.Log.d("Migration", "Added user profile columns in migration 11_12")
         } catch (e: Exception) {
             android.util.Log.e("Migration", "Error in migration 11_12: ${e.message}")
+        }
+    }
+}
+
+internal val MIGRATION_12_13 = object : androidx.room.migration.Migration(12, 13) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Create user_follows table
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS user_follows (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    followerId INTEGER NOT NULL,
+                    followingId INTEGER NOT NULL,
+                    followedAt INTEGER NOT NULL
+                )
+            """.trimIndent())
+            
+            // Create user_friends table
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS user_friends (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    userId INTEGER NOT NULL,
+                    friendId INTEGER NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'PENDING',
+                    createdAt INTEGER NOT NULL,
+                    acceptedAt INTEGER
+                )
+            """.trimIndent())
+            
+            android.util.Log.d("Migration", "Created social features tables in migration 12_13")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration", "Error in migration 12_13: ${e.message}")
         }
     }
 }

@@ -27,7 +27,8 @@ class CommunityRepository @Inject constructor(
     private val communityLikeDao: CommunityLikeDao,
     private val firestoreService: FirestoreService,
     private val firebaseStorageService: FirebaseStorageService,
-    private val userPreferencesManager: UserPreferencesManager
+    private val userPreferencesManager: UserPreferencesManager,
+    private val userRepository: UserRepository
 ) {
 
     /**
@@ -63,10 +64,18 @@ class CommunityRepository @Inject constructor(
             val authorId = userSession?.userId ?: 1L
             val authorName = userSession?.username ?: "Anonymous User"
             
+            // Get current user's profile image
+            val currentUser = userRepository.getCurrentUser()
+            val authorAvatar = if (currentUser is com.example.ecosort.data.model.Result.Success<*>) {
+                (currentUser.data as? com.example.ecosort.data.model.User)?.profileImageUrl
+            } else {
+                null
+            }
+            
             val newPost = CommunityPost(
                 authorId = authorId,
                 authorName = authorName,
-                authorAvatar = null,
+                authorAvatar = authorAvatar,
                 title = title,
                 content = content,
                 postType = postType,
@@ -386,6 +395,45 @@ class CommunityRepository @Inject constructor(
             Result.Success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("CommunityRepository", "Error clearing posts", e)
+            Result.Error(e)
+        }
+    }
+
+    /**
+     * Update existing posts with current user's profile picture
+     * This fixes old posts that were created before profile pictures were implemented
+     */
+    suspend fun updateExistingPostsWithProfilePictures(): Result<Unit> {
+        return try {
+            // Get current user session
+            val userSession = userPreferencesManager.getCurrentUser()
+            val currentUserId = userSession?.userId ?: 1L
+            
+            // Get current user's profile image
+            val currentUser = userRepository.getCurrentUser()
+            val profileImageUrl = if (currentUser is com.example.ecosort.data.model.Result.Success<*>) {
+                (currentUser.data as? com.example.ecosort.data.model.User)?.profileImageUrl
+            } else {
+                null
+            }
+            
+            // Get all posts by current user that don't have profile pictures
+            val allUserPosts = communityPostDao.getUserPosts(currentUserId).first()
+            val postsToUpdate = allUserPosts.filter { post -> post.authorAvatar.isNullOrBlank() }
+            
+            android.util.Log.d("CommunityRepository", "Found ${postsToUpdate.size} posts to update with profile picture")
+            
+            // Update each post
+            postsToUpdate.forEach { post ->
+                val updatedPost = post.copy(authorAvatar = profileImageUrl)
+                communityPostDao.updatePost(updatedPost)
+                android.util.Log.d("CommunityRepository", "Updated post ${post.id} with profile picture")
+            }
+            
+            android.util.Log.d("CommunityRepository", "Updated ${postsToUpdate.size} posts with profile pictures")
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("CommunityRepository", "Error updating posts with profile pictures", e)
             Result.Error(e)
         }
     }

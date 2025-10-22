@@ -16,6 +16,8 @@ import com.example.ecosort.data.repository.ChatRepository
 import com.example.ecosort.data.repository.UserRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -32,6 +34,8 @@ class ChatActivity : AppCompatActivity() {
     private var channelId: String? = null
     private var channelName: String? = null
     private var currentUserId: Long = 0L
+    private var targetUserId: Long = 0L
+    private var targetUsername: String? = null
     
     // Image picker launcher
     private val imagePickerLauncher = registerForActivityResult(
@@ -70,6 +74,8 @@ class ChatActivity : AppCompatActivity() {
             // Get channel info from intent
             channelId = intent.getStringExtra("channel_id")
             channelName = intent.getStringExtra("channel_name")
+            targetUserId = intent.getLongExtra("target_user_id", 0L)
+            targetUsername = intent.getStringExtra("target_username")
             
             if (channelId == null) {
                 Toast.makeText(this, "Invalid chat channel", Toast.LENGTH_SHORT).show()
@@ -79,7 +85,10 @@ class ChatActivity : AppCompatActivity() {
             
             setSupportActionBar(binding.toolbar)
             supportActionBar?.setDisplayHomeAsUpEnabled(true)
-            supportActionBar?.title = channelName ?: "Chat"
+            supportActionBar?.title = "" // Remove title since we have custom username display
+            
+            // Load target user profile picture
+            loadTargetUserProfilePicture()
 
             setupClickListeners()
             setupCurrentUser()
@@ -93,20 +102,25 @@ class ChatActivity : AppCompatActivity() {
     }
     
     private fun setupCurrentUser() {
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val result = userRepository.getCurrentUser()
                 when (result) {
                     is com.example.ecosort.data.model.Result.Success -> {
                         currentUserId = result.data.id
                         android.util.Log.d("ChatActivity", "Current user ID: $currentUserId")
-                        // Re-setup adapter with correct user ID
-                        setupRecyclerView()
-                        loadMessages()
+                        
+                        withContext(Dispatchers.Main) {
+                            // Re-setup adapter with correct user ID
+                            setupRecyclerView()
+                            loadMessages()
+                        }
                     }
                     is com.example.ecosort.data.model.Result.Error -> {
                         android.util.Log.e("ChatActivity", "Error getting current user", result.exception)
-                        Toast.makeText(this@ChatActivity, "Please login first", Toast.LENGTH_SHORT).show()
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@ChatActivity, "Please login first", Toast.LENGTH_SHORT).show()
+                        }
                         // Don't call finish() - let user navigate back manually
                     }
                     is com.example.ecosort.data.model.Result.Loading -> {
@@ -115,8 +129,59 @@ class ChatActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 android.util.Log.e("ChatActivity", "Error in setupCurrentUser", e)
-                Toast.makeText(this@ChatActivity, "Error getting user info", Toast.LENGTH_SHORT).show()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@ChatActivity, "Error getting user info", Toast.LENGTH_SHORT).show()
+                }
                 // Don't call finish() - let user navigate back manually
+            }
+        }
+    }
+    
+    private fun loadTargetUserProfilePicture() {
+        // Set default values immediately to prevent UI blocking
+        binding.textUserName.text = targetUsername ?: "User"
+        binding.imageUserProfile.setImageResource(com.example.ecosort.R.drawable.ic_person)
+        
+        if (targetUserId > 0) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val userResult = userRepository.getUserById(targetUserId)
+                    if (userResult is com.example.ecosort.data.model.Result.Success) {
+                        val user = userResult.data
+                        
+                        withContext(Dispatchers.Main) {
+                            // Update username in toolbar
+                            binding.textUserName.text = user.username
+                            
+                            // Load profile picture
+                            if (!user.profileImageUrl.isNullOrBlank()) {
+                                com.bumptech.glide.Glide.with(this@ChatActivity)
+                                    .load(user.profileImageUrl)
+                                    .circleCrop()
+                                    .placeholder(com.example.ecosort.R.drawable.ic_person)
+                                    .error(com.example.ecosort.R.drawable.ic_person)
+                                    .into(binding.imageUserProfile)
+                            } else {
+                                binding.imageUserProfile.setImageResource(com.example.ecosort.R.drawable.ic_person)
+                            }
+                        }
+                    } else {
+                        android.util.Log.e("ChatActivity", "Failed to get target user info")
+                        withContext(Dispatchers.Main) {
+                            binding.textUserName.text = targetUsername ?: "User"
+                            binding.imageUserProfile.setImageResource(com.example.ecosort.R.drawable.ic_person)
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Only log if it's not a cancellation exception (which is normal when activity is destroyed)
+                    if (e !is kotlinx.coroutines.CancellationException) {
+                        android.util.Log.e("ChatActivity", "Error loading target user profile", e)
+                    }
+                    withContext(Dispatchers.Main) {
+                        binding.textUserName.text = targetUsername ?: "User"
+                        binding.imageUserProfile.setImageResource(com.example.ecosort.R.drawable.ic_person)
+                    }
+                }
             }
         }
     }
@@ -169,8 +234,11 @@ class ChatActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("ChatActivity", "Error loading messages", e)
-                Toast.makeText(this@ChatActivity, "Error loading messages: ${e.message}", Toast.LENGTH_SHORT).show()
+                // Only log if it's not a cancellation exception (which is normal when activity is destroyed)
+                if (e !is kotlinx.coroutines.CancellationException) {
+                    android.util.Log.e("ChatActivity", "Error loading messages", e)
+                    Toast.makeText(this@ChatActivity, "Error loading messages: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

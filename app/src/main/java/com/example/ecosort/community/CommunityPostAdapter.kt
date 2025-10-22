@@ -47,6 +47,7 @@ class CommunityPostAdapter(
     }
 
     inner class PostViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val authorProfileImage: ImageView = itemView.findViewById(R.id.imageAuthorProfile)
         private val authorName: TextView = itemView.findViewById(R.id.textAuthorName)
         private val postTime: TextView = itemView.findViewById(R.id.textPostTime)
         private val postTitle: TextView = itemView.findViewById(R.id.textPostTitle)
@@ -74,6 +75,9 @@ class CommunityPostAdapter(
                 authorName.text = post.authorName
                 postTime.text = formatTime(post.postedAt)
                 postTitle.text = post.title
+                
+                // Load author profile picture
+                loadAuthorProfilePicture(post.authorAvatar)
                 
                 // Smart content display with preview
                 setupContentPreview(post.content)
@@ -329,6 +333,24 @@ class CommunityPostAdapter(
                 }
             } else {
                 tagsContainer.visibility = View.GONE
+            }
+        }
+
+        private fun loadAuthorProfilePicture(profileImageUrl: String?) {
+            android.util.Log.d("CommunityPostAdapter", "Loading author profile picture: $profileImageUrl")
+            
+            if (!profileImageUrl.isNullOrBlank()) {
+                android.util.Log.d("CommunityPostAdapter", "Loading profile image with Glide: $profileImageUrl")
+                Glide.with(itemView.context)
+                    .load(profileImageUrl)
+                    .circleCrop()
+                    .placeholder(R.drawable.ic_person_24)
+                    .error(R.drawable.ic_person_24)
+                    .into(authorProfileImage)
+            } else {
+                android.util.Log.d("CommunityPostAdapter", "No profile image URL, showing default placeholder")
+                // Set default placeholder
+                authorProfileImage.setImageResource(R.drawable.ic_person_24)
             }
         }
 

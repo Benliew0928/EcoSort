@@ -119,3 +119,14 @@ object FirebaseModule {
         return ProfileImageStorageService()
     }
 }
+
+@Module
+@InstallIn(SingletonComponent::class)
+object RepositoryModule {
+
+    @Provides
+    @Singleton
+    fun provideSocialRepository(database: EcoSortDatabase): com.example.ecosort.data.repository.SocialRepository {
+        return com.example.ecosort.data.repository.SocialRepository(database)
+    }
+}

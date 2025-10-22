@@ -91,8 +91,7 @@
         android:background="@color/background_white"
         android:elevation="8dp"
         android:padding="16dp"
-        app:layout_anchor="@id/recyclerViewComments"
-        app:layout_anchorGravity="bottom"
+        android:layout_gravity="bottom"
         app:layout_dodgeInsetEdges="bottom">
 
         <EditText

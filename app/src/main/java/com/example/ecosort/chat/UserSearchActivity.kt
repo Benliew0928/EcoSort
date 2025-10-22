@@ -169,9 +169,11 @@ class UserSearchActivity : AppCompatActivity() {
                                 val conversation = conversationResult.data
                                 
                                 // Navigate to chat activity
-                                val intent = Intent(this@UserSearchActivity, SimpleChatActivity::class.java).apply {
+                                val intent = Intent(this@UserSearchActivity, ChatActivity::class.java).apply {
                                     putExtra("channel_id", conversation.channelId)
                                     putExtra("channel_name", user.username)
+                                    putExtra("target_user_id", user.id)
+                                    putExtra("target_username", user.username)
                                 }
                                 startActivity(intent)
                             }

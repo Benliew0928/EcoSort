@@ -66,24 +66,37 @@
                         android:gravity="center_vertical"
                         android:layout_marginBottom="12dp">
 
-                        <TextView
-                            android:id="@+id/textAuthorName"
+                        <ImageView
+                            android:id="@+id/imageAuthorProfile"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:scaleType="centerCrop" />
+
+                        <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Author Name"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary" />
+                            android:orientation="vertical"
+                            android:layout_marginStart="12dp">
 
-                        <TextView
-                            android:id="@+id/textPostTime"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="2 hours ago"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary" />
+                            <TextView
+                                android:id="@+id/textAuthorName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Author Name"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary" />
 
+                            <TextView
+                                android:id="@+id/textPostTime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="2 hours ago"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_secondary" />
+
+                        </LinearLayout>
                     </LinearLayout>
 
                     <!-- Post Type -->
@@ -233,9 +246,8 @@
                         android:id="@+id/recyclerViewComments"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:maxHeight="400dp"
                         android:clipToPadding="false"
-                        android:paddingBottom="8dp" />
+                        android:paddingBottom="80dp" />
 
                     <!-- Empty State -->
                     <TextView
@@ -265,8 +277,7 @@
         android:background="@color/background_white"
         android:elevation="8dp"
         android:padding="16dp"
-        app:layout_anchor="@id/recyclerViewComments"
-        app:layout_anchorGravity="bottom"
+        android:layout_gravity="bottom"
         app:layout_dodgeInsetEdges="bottom">
 
         <EditText

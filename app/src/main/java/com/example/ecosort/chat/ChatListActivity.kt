@@ -64,14 +64,27 @@ class ChatListActivity : AppCompatActivity() {
     
     private fun setupRecyclerView(binding: ActivityChatListBinding) {
         try {
-            val adapter = ConversationAdapter(0L) { conversation ->
-                // Handle conversation click
-                val intent = Intent(this, SimpleChatActivity::class.java).apply {
-                    putExtra("channel_id", conversation.channelId)
-                    putExtra("channel_name", if (conversation.participant1Id == 0L) conversation.participant2Username else conversation.participant1Username)
-                }
-                startActivity(intent)
-            }
+            val adapter = ConversationAdapter(0L, 
+                onConversationClick = { conversation ->
+                    // Handle conversation click
+                    val intent = Intent(this, ChatActivity::class.java).apply {
+                        putExtra("channel_id", conversation.channelId)
+                        putExtra("channel_name", if (conversation.participant1Id == 0L) conversation.participant2Username else conversation.participant1Username)
+                        // Add target user info for profile picture
+                        val targetUserId = if (conversation.participant1Id == 0L) conversation.participant2Id else conversation.participant1Id
+                        val targetUsername = if (conversation.participant1Id == 0L) conversation.participant2Username else conversation.participant1Username
+                        putExtra("target_user_id", targetUserId)
+                        putExtra("target_username", targetUsername)
+                    }
+                    startActivity(intent)
+                },
+                onDeleteClick = { conversation ->
+                    // Handle delete conversation
+                    deleteConversation(conversation)
+                },
+                userRepository = userRepository,
+                lifecycleScope = lifecycleScope
+            )
             
             binding.recyclerViewChats.apply {
                 layoutManager = LinearLayoutManager(this@ChatListActivity)
@@ -92,14 +105,27 @@ class ChatListActivity : AppCompatActivity() {
                         val currentUser = currentUserResult.data
                         
                         // Update adapter with current user ID
-                        val adapter = ConversationAdapter(currentUser.id) { conversation ->
-                            // Handle conversation click
-                            val intent = Intent(this@ChatListActivity, SimpleChatActivity::class.java).apply {
-                                putExtra("channel_id", conversation.channelId)
-                                putExtra("channel_name", if (conversation.participant1Id == currentUser.id) conversation.participant2Username else conversation.participant1Username)
-                            }
-                            startActivity(intent)
-                        }
+                        val adapter = ConversationAdapter(currentUser.id,
+                            onConversationClick = { conversation ->
+                                // Handle conversation click
+                                val intent = Intent(this@ChatListActivity, ChatActivity::class.java).apply {
+                                    putExtra("channel_id", conversation.channelId)
+                                    putExtra("channel_name", if (conversation.participant1Id == currentUser.id) conversation.participant2Username else conversation.participant1Username)
+                                    // Add target user info for profile picture
+                                    val targetUserId = if (conversation.participant1Id == currentUser.id) conversation.participant2Id else conversation.participant1Id
+                                    val targetUsername = if (conversation.participant1Id == currentUser.id) conversation.participant2Username else conversation.participant1Username
+                                    putExtra("target_user_id", targetUserId)
+                                    putExtra("target_username", targetUsername)
+                                }
+                                startActivity(intent)
+                            },
+                            onDeleteClick = { conversation ->
+                                // Handle delete conversation
+                                deleteConversation(conversation)
+                            },
+                            userRepository = userRepository,
+                            lifecycleScope = lifecycleScope
+                        )
                         
                         binding.recyclerViewChats.adapter = adapter
                         
@@ -136,6 +162,29 @@ class ChatListActivity : AppCompatActivity() {
                 binding.textViewEmpty.visibility = View.VISIBLE
             }
         }
+    }
+    
+    private fun deleteConversation(conversation: com.example.ecosort.data.model.Conversation) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Delete Conversation")
+            .setMessage("Are you sure you want to delete this conversation? This action cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                lifecycleScope.launch {
+                    try {
+                        val result = chatRepository.deleteConversation(conversation.channelId)
+                        if (result is com.example.ecosort.data.model.Result.Success<*>) {
+                            Toast.makeText(this@ChatListActivity, "Conversation deleted", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this@ChatListActivity, "Failed to delete conversation", Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("ChatListActivity", "Error deleting conversation", e)
+                        Toast.makeText(this@ChatListActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
     
     override fun onSupportNavigateUp(): Boolean {

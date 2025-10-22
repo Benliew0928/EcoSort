@@ -281,6 +281,32 @@ data class Conversation(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+// ==================== SOCIAL FEATURES MODELS ====================
+
+@Entity(tableName = "user_follows")
+data class UserFollow(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val followerId: Long, // User who is following
+    val followingId: Long, // User being followed
+    val followedAt: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "user_friends")
+data class UserFriend(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val userId: Long, // First user in the friendship
+    val friendId: Long, // Second user in the friendship
+    val status: FriendStatus = FriendStatus.PENDING,
+    val createdAt: Long = System.currentTimeMillis(),
+    val acceptedAt: Long? = null
+)
+
+enum class FriendStatus {
+    PENDING, ACCEPTED, BLOCKED
+}
+
 // UI State for ViewModels
 data class UiState<T>(
     val isLoading: Boolean = false,

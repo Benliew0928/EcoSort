@@ -44,6 +44,7 @@ class PostDetailActivity : AppCompatActivity() {
     
     private lateinit var toolbar: Toolbar
     private lateinit var btnDeletePost: ImageButton
+    private lateinit var authorProfileImage: ImageView
     private lateinit var authorName: TextView
     private lateinit var postTime: TextView
     private lateinit var postTitle: TextView
@@ -92,6 +93,7 @@ class PostDetailActivity : AppCompatActivity() {
     
     private fun setupViews() {
         btnDeletePost = findViewById(R.id.btnDeletePost)
+        authorProfileImage = findViewById(R.id.imageAuthorProfile)
         authorName = findViewById(R.id.textAuthorName)
         postTime = findViewById(R.id.textPostTime)
         postTitle = findViewById(R.id.textPostTitle)
@@ -144,6 +146,9 @@ class PostDetailActivity : AppCompatActivity() {
     private fun displayPost(post: CommunityPost) {
         authorName.text = post.authorName
         postTime.text = formatTime(post.postedAt)
+        
+        // Load author profile picture
+        loadAuthorProfilePicture(post.authorAvatar)
         postTitle.text = post.title
         postContent.text = post.content
         // Display post type with better formatting
@@ -470,6 +475,23 @@ class PostDetailActivity : AppCompatActivity() {
                 true
             }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+    
+    private fun loadAuthorProfilePicture(profileImageUrl: String?) {
+        android.util.Log.d("PostDetailActivity", "Loading author profile picture: $profileImageUrl")
+        
+        if (!profileImageUrl.isNullOrBlank()) {
+            android.util.Log.d("PostDetailActivity", "Loading profile image with Glide: $profileImageUrl")
+            Glide.with(this)
+                .load(profileImageUrl)
+                .circleCrop()
+                .placeholder(R.drawable.ic_person_24)
+                .error(R.drawable.ic_person_24)
+                .into(authorProfileImage)
+        } else {
+            android.util.Log.d("PostDetailActivity", "No profile image URL, showing default placeholder")
+            authorProfileImage.setImageResource(R.drawable.ic_person_24)
         }
     }
 }

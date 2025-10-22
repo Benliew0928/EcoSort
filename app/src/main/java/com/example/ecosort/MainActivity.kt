@@ -24,6 +24,8 @@ import javax.inject.Inject
 import com.example.ecosort.hms.MapActivity // <--- FIX: Added the necessary import for MapActivity
 import com.example.ecosort.utils.ResponsiveUtils
 import com.example.ecosort.utils.ResponsiveLayoutManager
+import com.example.ecosort.utils.VideoThumbnailGenerator
+import kotlinx.coroutines.CoroutineScope
 
 
 
@@ -35,6 +37,12 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var firestoreService: FirestoreService
+
+    @Inject
+    lateinit var communityRepository: com.example.ecosort.data.repository.CommunityRepository
+
+    @Inject
+    lateinit var userRepository: com.example.ecosort.data.repository.UserRepository
 
     private var currentUserType: UserType = UserType.USER
 
@@ -52,9 +60,9 @@ class MainActivity : AppCompatActivity() {
         // Initialize UI elements
         val btnScan = findViewById<Button>(R.id.btnScan)
         val btnFindStations = findViewById<Button>(R.id.btnFindStations)
-        val btnSell = findViewById<Button>(R.id.btnSell)
+        val btnChat = findViewById<Button>(R.id.btnChat)
         val btnCommunity = findViewById<Button>(R.id.btnCommunity)
-        val btnProfile = findViewById<Button>(R.id.btnProfile)
+        val btnProfile = findViewById<android.widget.ImageView>(R.id.btnProfile)
         val tvWelcomeMessage = findViewById<TextView>(R.id.tvWelcomeMessage)
         val featuredViewAll = findViewById<TextView>(R.id.featuredViewAll)
         val featuredContainer = findViewById<android.widget.LinearLayout>(R.id.featuredContainer)
@@ -77,6 +85,9 @@ class MainActivity : AppCompatActivity() {
 
                 currentUserType = session.userType
                 tvWelcomeMessage.text = "Welcome back, ${session.username}!"
+
+                // Load user profile picture
+                loadUserProfilePicture(btnProfile)
 
                 // Handle user type specific functionality
                 if (currentUserType == UserType.ADMIN) {
@@ -106,8 +117,8 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, MapActivity::class.java))
         }
 
-        btnSell.setOnClickListener {
-            startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
+        btnChat.setOnClickListener {
+            startActivity(Intent(this, com.example.ecosort.chat.ChatListActivity::class.java))
         }
 
         btnCommunity.setOnClickListener {
@@ -134,20 +145,30 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
         }
 
-        // Listen to real-time Firestore data for featured community posts (with delay to ensure Firebase is ready)
+        // Load community posts from local database (with updated profile pictures)
         lifecycleScope.launch {
             try {
-                // Wait a bit for Firebase to initialize
+                // Wait a bit for database to initialize
                 kotlinx.coroutines.delay(1000)
-                firestoreService.getAllCommunityPosts().collect { firebasePosts ->
+                
+                // Update existing posts with profile pictures (one-time fix for old posts)
+                try {
+                    communityRepository.updateExistingPostsWithProfilePictures()
+                    android.util.Log.d("MainActivity", "Updated existing posts with profile pictures")
+                } catch (e: Exception) {
+                    android.util.Log.w("MainActivity", "Failed to update existing posts with profile pictures: ${e.message}")
+                }
+                
+                // Load posts from local database (which has updated profile pictures)
+                communityRepository.getAllCommunityPosts().collect { localPosts ->
                     withContext(Dispatchers.Main) {
-                        renderCommunityPosts(firebasePosts, featuredContainer)
+                        renderCommunityPostsFromLocal(localPosts, featuredContainer)
                     }
                 }
             } catch (e: Exception) {
-                // If Firebase fails, show empty state
+                // If database fails, show empty state
                 withContext(Dispatchers.Main) {
-                    renderCommunityPosts(emptyList(), featuredContainer)
+                    renderCommunityPostsFromLocal(emptyList(), featuredContainer)
                 }
                 android.util.Log.e("MainActivity", "Error loading featured posts", e)
             }
@@ -184,6 +205,22 @@ class MainActivity : AppCompatActivity() {
             // Set post details
             card.findViewById<TextView>(R.id.textPostTitle).text = post.title
             card.findViewById<TextView>(R.id.textPostType).text = post.postType // Show post type instead of price
+            
+            // Set author details
+            card.findViewById<TextView>(R.id.textAuthorName).text = post.authorName
+            
+            // Load author profile picture
+            val authorProfileImage = card.findViewById<android.widget.ImageView>(R.id.imageAuthorProfile)
+            if (!post.authorAvatar.isNullOrBlank()) {
+                Glide.with(this)
+                    .load(post.authorAvatar)
+                    .circleCrop()
+                    .placeholder(R.drawable.ic_person_24)
+                    .error(R.drawable.ic_person_24)
+                    .into(authorProfileImage)
+            } else {
+                authorProfileImage.setImageResource(R.drawable.ic_person_24)
+            }
 
             // Load image using enhanced Glide with proper error handling
             val thumb = card.findViewById<android.widget.ImageView>(R.id.imagePost)
@@ -291,16 +328,250 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
             }
 
-            // Set responsive layout parameters
-            val params = android.widget.LinearLayout.LayoutParams(card.layoutParams)
-            params.width = ResponsiveUtils.getResponsiveCardWidth(this)
-            params.rightMargin = ResponsiveUtils.getResponsivePadding(this, 12)
+            // Set layout parameters for vertical layout
+            val params = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.bottomMargin = ResponsiveUtils.getResponsivePadding(this, 12)
             card.layoutParams = params
-            
-            // Apply responsive layout to the card
-            ResponsiveUtils.applyResponsiveLayout(card, this)
 
             container.addView(card)
+        }
+    }
+
+    private fun renderCommunityPostsFromLocal(posts: List<com.example.ecosort.data.model.CommunityPost>, container: android.widget.LinearLayout) {
+        container.removeAllViews()
+
+        if (posts.isEmpty()) {
+            val emptyView = TextView(this).apply {
+                text = "No community posts yet. Be the first to share!"
+                textSize = ResponsiveUtils.getResponsiveTextSize(this@MainActivity, 14f)
+                setPadding(
+                    ResponsiveUtils.getResponsivePadding(this@MainActivity, 16),
+                    ResponsiveUtils.getResponsivePadding(this@MainActivity, 16),
+                    ResponsiveUtils.getResponsivePadding(this@MainActivity, 16),
+                    ResponsiveUtils.getResponsivePadding(this@MainActivity, 16)
+                )
+                setTextColor(getColor(R.color.text_secondary))
+            }
+            container.addView(emptyView)
+            return
+        }
+
+        posts.take(3).forEach { post ->
+            val card = layoutInflater.inflate(R.layout.item_community_post, container, false)
+
+            // Set post details
+            card.findViewById<TextView>(R.id.textPostTitle).text = post.title
+            card.findViewById<TextView>(R.id.textPostContent).text = post.content
+            card.findViewById<TextView>(R.id.textPostType).text = post.postType.name
+            
+            // Set author details
+            card.findViewById<TextView>(R.id.textAuthorName).text = post.authorName
+            card.findViewById<TextView>(R.id.textPostTime).text = formatTime(post.postedAt)
+            
+            // Load author profile picture
+            val authorProfileImage = card.findViewById<android.widget.ImageView>(R.id.imageAuthorProfile)
+            if (!post.authorAvatar.isNullOrBlank()) {
+                Glide.with(this)
+                    .load(post.authorAvatar)
+                    .circleCrop()
+                    .placeholder(R.drawable.ic_person_24)
+                    .error(R.drawable.ic_person_24)
+                    .into(authorProfileImage)
+            } else {
+                authorProfileImage.setImageResource(R.drawable.ic_person_24)
+            }
+
+            // Load image using enhanced Glide with proper error handling
+            val thumb = card.findViewById<android.widget.ImageView>(R.id.imagePost)
+            val imageUrl = post.imageUrls.firstOrNull()
+            val videoUrl = post.videoUrl
+            
+            when {
+                !imageUrl.isNullOrEmpty() && imageUrl != "demo_black_image" -> {
+                    // Load image with enhanced error handling
+                    android.util.Log.d("MainActivity", "Loading image for home screen: $imageUrl")
+                    Glide.with(this)
+                        .load(imageUrl)
+                        .placeholder(R.drawable.ic_image_placeholder)
+                        .error(R.drawable.ic_image_placeholder)
+                        .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
+                            override fun onResourceReady(
+                                resource: android.graphics.drawable.Drawable,
+                                transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?
+                            ) {
+                                android.util.Log.d("MainActivity", "Successfully loaded image for home screen")
+                                thumb.setImageDrawable(resource)
+                            }
+                            
+                            override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
+                                android.util.Log.e("MainActivity", "Failed to load image for home screen: $imageUrl")
+                                thumb.setImageResource(R.drawable.ic_image_placeholder)
+                            }
+                            
+                            override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
+                                // Called when the image load is cleared
+                            }
+                        })
+                    thumb.visibility = android.view.View.VISIBLE
+                }
+                !videoUrl.isNullOrEmpty() -> {
+                    // For video posts, generate and show video thumbnail
+                    android.util.Log.d("MainActivity", "Loading video thumbnail for home screen: $videoUrl")
+                    thumb.visibility = android.view.View.VISIBLE
+                    
+                    // Generate and load video thumbnail
+                    CoroutineScope(Dispatchers.Main).launch {
+                        try {
+                            android.util.Log.d("MainActivity", "Starting thumbnail generation for: $videoUrl")
+                            
+                            // First, try to load the video URL directly with Glide
+                            // This will work for Firebase URLs and show the first frame
+                            android.util.Log.d("MainActivity", "Attempting to load video URL directly with Glide")
+                            Glide.with(this@MainActivity)
+                                .asBitmap()
+                                .load(videoUrl)
+                                .placeholder(R.drawable.ic_video)
+                                .error(R.drawable.ic_video)
+                                .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.Bitmap>() {
+                                    override fun onResourceReady(
+                                        resource: android.graphics.Bitmap,
+                                        transition: com.bumptech.glide.request.transition.Transition<in android.graphics.Bitmap>?
+                                    ) {
+                                        android.util.Log.d("MainActivity", "Successfully loaded video thumbnail from URL")
+                                        thumb.setImageBitmap(resource)
+                                    }
+                                    
+                                    override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
+                                        android.util.Log.w("MainActivity", "Failed to load video thumbnail from URL, trying thumbnail generation")
+                                        
+                                        // If direct loading fails, try thumbnail generation
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            try {
+                                                val thumbnailUri = VideoThumbnailGenerator.generateThumbnailFromUrl(
+                                                    this@MainActivity, 
+                                                    videoUrl
+                                                )
+                                                
+                                                CoroutineScope(Dispatchers.Main).launch {
+                                                    if (thumbnailUri != null) {
+                                                        android.util.Log.d("MainActivity", "Loading generated thumbnail: $thumbnailUri")
+                                                        Glide.with(this@MainActivity)
+                                                            .load(thumbnailUri)
+                                                            .placeholder(R.drawable.ic_video)
+                                                            .error(R.drawable.ic_video)
+                                                            .into(thumb)
+                                                    } else {
+                                                        android.util.Log.w("MainActivity", "Thumbnail generation failed, using video icon")
+                                                        Glide.with(this@MainActivity)
+                                                            .load(R.drawable.ic_video)
+                                                            .placeholder(R.drawable.ic_video)
+                                                            .error(R.drawable.ic_video)
+                                                            .into(thumb)
+                                                    }
+                                                }
+                                            } catch (e: Exception) {
+                                                android.util.Log.e("MainActivity", "Error in thumbnail generation fallback", e)
+                                                CoroutineScope(Dispatchers.Main).launch {
+                                                    Glide.with(this@MainActivity)
+                                                        .load(R.drawable.ic_video)
+                                                        .placeholder(R.drawable.ic_video)
+                                                        .error(R.drawable.ic_video)
+                                                        .into(thumb)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
+                                        // Called when the image is cleared
+                                    }
+                                })
+                                
+                        } catch (e: Exception) {
+                            android.util.Log.e("MainActivity", "Error in video thumbnail loading", e)
+                            // Final fallback to video icon
+                            Glide.with(this@MainActivity)
+                                .load(R.drawable.ic_video)
+                                .placeholder(R.drawable.ic_video)
+                                .error(R.drawable.ic_video)
+                                .into(thumb)
+                        }
+                    }
+                }
+                else -> {
+                    // Hide image when there's no content
+                    thumb.visibility = android.view.View.GONE
+                }
+            }
+
+            // Set click listener to open community feed
+            card.setOnClickListener {
+                startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
+            }
+
+            // Set layout parameters for vertical layout
+            val params = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.bottomMargin = ResponsiveUtils.getResponsivePadding(this, 12)
+            card.layoutParams = params
+
+            container.addView(card)
+        }
+    }
+
+    private fun formatTime(timestamp: Long): String {
+        val now = System.currentTimeMillis()
+        val diff = now - timestamp
+
+        return when {
+            diff < 60_000 -> "Just now"
+            diff < 3600_000 -> "${diff / 60_000}m ago"
+            diff < 86400_000 -> "${diff / 3600_000}h ago"
+            else -> {
+                val date = java.util.Date(timestamp)
+                java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault()).format(date)
+            }
+        }
+    }
+
+    private fun loadUserProfilePicture(profileImageView: android.widget.ImageView) {
+        lifecycleScope.launch {
+            try {
+                // Get current user's profile image
+                val currentUser = userRepository.getCurrentUser()
+                val profileImageUrl = if (currentUser is com.example.ecosort.data.model.Result.Success<*>) {
+                    (currentUser.data as? com.example.ecosort.data.model.User)?.profileImageUrl
+                } else {
+                    null
+                }
+                
+                if (!profileImageUrl.isNullOrBlank()) {
+                    Glide.with(this@MainActivity)
+                        .load(profileImageUrl)
+                        .circleCrop()
+                        .placeholder(R.drawable.ic_person_24)
+                        .error(R.drawable.ic_person_24)
+                        .into(profileImageView)
+                } else {
+                    // Set default placeholder with circular crop
+                    Glide.with(this@MainActivity)
+                        .load(R.drawable.ic_person_24)
+                        .circleCrop()
+                        .into(profileImageView)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error loading user profile picture", e)
+                // Set default placeholder on error with circular crop
+                Glide.with(this@MainActivity)
+                    .load(R.drawable.ic_person_24)
+                    .circleCrop()
+                    .into(profileImageView)
+            }
         }
     }
 }

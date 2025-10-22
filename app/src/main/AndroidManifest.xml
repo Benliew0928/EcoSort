@@ -94,6 +94,7 @@
         <activity android:name=".UserProfileActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".profile.EditProfileActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".profile.UserProfileViewActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".profile.PrivacySettingsActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".AdminActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".marketplace.MarketplaceActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".marketplace.MarketplaceDetailActivity" android:exported="false" android:screenOrientation="portrait" />
@@ -102,7 +103,6 @@
         <activity android:name=".chat.ChatListActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".chat.UserSearchActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".chat.ChatActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".chat.SimpleChatActivity" android:exported="false" android:screenOrientation="portrait" />
 
         <!-- COMMUNITY ACTIVITIES -->
         <activity android:name=".community.CommunityFeedActivity" android:exported="false" android:screenOrientation="portrait" />

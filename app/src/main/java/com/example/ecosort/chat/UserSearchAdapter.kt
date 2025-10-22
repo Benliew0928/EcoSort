@@ -36,7 +36,18 @@ class UserSearchAdapter(
             binding.apply {
                 textViewUserName.text = user.username
                 textViewUserId.text = "${user.itemsRecycled} items recycled • ${user.userType.name}"
-                imageViewUserAvatar.setImageResource(com.example.ecosort.R.drawable.ic_person)
+                
+                // Load user profile picture
+                if (!user.profileImageUrl.isNullOrBlank()) {
+                    com.bumptech.glide.Glide.with(itemView.context)
+                        .load(user.profileImageUrl)
+                        .circleCrop()
+                        .placeholder(com.example.ecosort.R.drawable.ic_person)
+                        .error(com.example.ecosort.R.drawable.ic_person)
+                        .into(imageViewUserAvatar)
+                } else {
+                    imageViewUserAvatar.setImageResource(com.example.ecosort.R.drawable.ic_person)
+                }
                 
                 root.setOnClickListener {
                     onUserClick(user)

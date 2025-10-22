@@ -75,6 +75,7 @@ class UserProfileActivity : AppCompatActivity() {
         val tvStatsRecycled = findViewById<TextView>(R.id.tvStatsRecycled)
         val tvStatsEarnings = findViewById<TextView>(R.id.tvStatsEarnings)
         val btnEditProfile = findViewById<Button>(R.id.btnEditProfile)
+        val btnPrivacySettings = findViewById<Button>(R.id.btnPrivacySettings)
         val btnSettings = findViewById<Button>(R.id.btnSettings)
         val btnLogout = findViewById<Button>(R.id.btnLogout)
         val btnBack = findViewById<Button>(R.id.btnBack)
@@ -112,6 +113,11 @@ class UserProfileActivity : AppCompatActivity() {
         btnEditProfile.setOnClickListener {
             val intent = Intent(this, com.example.ecosort.profile.EditProfileActivity::class.java)
             startActivityForResult(intent, 100)
+        }
+
+        btnPrivacySettings.setOnClickListener {
+            val intent = Intent(this, com.example.ecosort.profile.PrivacySettingsActivity::class.java)
+            startActivity(intent)
         }
 
         btnSettings.setOnClickListener {

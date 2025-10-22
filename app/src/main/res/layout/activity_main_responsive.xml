@@ -93,16 +93,14 @@
                     </LinearLayout>
 
                     <!-- Profile button -->
-                    <Button
+                    <ImageView
                         android:id="@+id/btnProfile"
-                        android:layout_width="wrap_content"
-                        android:layout_height="@dimen/button_height_md"
-                        android:text="👤"
-                        android:textSize="@dimen/text_md"
-                        android:background="@color/white"
-                        android:textColor="@color/primary_green"
-                        android:paddingLeft="@dimen/padding_md"
-                        android:paddingRight="@dimen/padding_md" />
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_person_24"
+                        android:scaleType="centerCrop"
+                        android:clickable="true"
+                        android:focusable="true" />
                 </LinearLayout>
 
                 <!-- Welcome Message -->
@@ -190,11 +188,11 @@
                     android:orientation="horizontal">
 
                     <Button
-                        android:id="@+id/btnSell"
+                        android:id="@+id/btnChat"
                         android:layout_width="0dp"
                         android:layout_height="120dp"
                         android:layout_weight="1"
-                        android:text="👥\nCommunity"
+                        android:text="💬\nChat"
                         android:textSize="@dimen/text_md"
                         android:textStyle="bold"
                         android:fontFamily="@string/font_family_primary"
@@ -208,7 +206,7 @@
                         android:layout_width="0dp"
                         android:layout_height="120dp"
                         android:layout_weight="1"
-                        android:text="💬\nChat"
+                        android:text="👥\nCommunity"
                         android:textSize="@dimen/text_md"
                         android:textStyle="bold"
                         android:fontFamily="@string/font_family_primary"
@@ -360,21 +358,14 @@
                         android:fontFamily="@string/font_family_primary" />
                 </LinearLayout>
 
-                <HorizontalScrollView
+                <LinearLayout
+                    android:id="@+id/featuredContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fillViewport="false"
-                    android:scrollbars="none">
+                    android:orientation="vertical">
 
-                    <LinearLayout
-                        android:id="@+id/featuredContainer"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <!-- Dynamic content will be added here -->
-                    </LinearLayout>
-                </HorizontalScrollView>
+                    <!-- Dynamic content will be added here -->
+                </LinearLayout>
             </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
