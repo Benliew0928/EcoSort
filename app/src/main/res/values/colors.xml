@@ -11,7 +11,11 @@
     
     <color name="background_light">#FAFAFA</color>
     <color name="background_white">#FFFFFF</color>
+    <color name="background_secondary">#F5F5F5</color>
     <color name="surface_light">#F5F5F5</color>
+    
+    <!-- Primary color for consistency -->
+    <color name="primary">@color/primary_green</color>
     
     <color name="text_primary">#212121</color>
     <color name="text_secondary">#757575</color>

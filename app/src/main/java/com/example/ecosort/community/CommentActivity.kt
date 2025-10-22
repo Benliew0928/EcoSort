@@ -9,6 +9,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ecosort.R
@@ -115,9 +116,11 @@ class CommentActivity : AppCompatActivity() {
         currentPost?.let { post ->
             lifecycleScope.launch {
                 try {
-                    communityRepository.getCommentsForPost(post.id).collectLatest { comments ->
-                        commentAdapter.submitList(comments)
-                        updateEmptyState(comments.isEmpty())
+                    repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                        communityRepository.getCommentsForPost(post.id).collectLatest { comments ->
+                            commentAdapter.submitList(comments)
+                            updateEmptyState(comments.isEmpty())
+                        }
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("CommentActivity", "Error loading comments", e)
@@ -128,6 +131,7 @@ class CommentActivity : AppCompatActivity() {
     
     private fun sendComment() {
         val commentText = editTextComment.text.toString().trim()
+        
         if (commentText.isEmpty()) {
             android.util.Log.w("CommentActivity", "Attempted to send empty comment")
             return

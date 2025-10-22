@@ -5,4 +5,5 @@
     <external-cache-path name="external_chat_images" path="chat_images/" />
     <external-cache-path name="external_voice_messages" path="voice_messages/" />
     <cache-path name="bin_images" path="/" />
+    <cache-path name="profile_images" path="profile_images/" />
 </paths>

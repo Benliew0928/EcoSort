@@ -34,48 +34,14 @@ class CommunityRepository @Inject constructor(
      * Get all community posts - combines local and Firebase data
      */
     fun getAllCommunityPosts(): Flow<List<CommunityPost>> {
-        // First, try to sync from Firebase to ensure we have the latest data
-        return firestoreService.getAllCommunityPosts().map { firebasePosts ->
-            android.util.Log.d("CommunityRepository", "Received ${firebasePosts.size} posts from Firebase")
-            
-            // Convert Firebase posts to local models and save to local database
-            firebasePosts.forEach { firebasePost ->
-                try {
-                    val localPost = firebasePost.toLocalModel()
-                    communityPostDao.insertPost(localPost)
-                    android.util.Log.d("CommunityRepository", "Synced post to local DB: ${localPost.title}")
-                } catch (e: Exception) {
-                    android.util.Log.e("CommunityRepository", "Error syncing post: ${firebasePost.title}", e)
-                }
-            }
-            
-            // Return the converted posts
-            firebasePosts.map { it.toLocalModel() }
-        }
+        return communityPostDao.getAllPosts()
     }
 
     /**
      * Get community posts by type - combines local and Firebase data
      */
     fun getCommunityPostsByType(postType: PostType): Flow<List<CommunityPost>> {
-        // First, try to sync from Firebase to ensure we have the latest data
-        return firestoreService.getCommunityPostsByType(postType.name).map { firebasePosts ->
-            android.util.Log.d("CommunityRepository", "Received ${firebasePosts.size} posts of type $postType from Firebase")
-            
-            // Convert Firebase posts to local models and save to local database
-            firebasePosts.forEach { firebasePost ->
-                try {
-                    val localPost = firebasePost.toLocalModel()
-                    communityPostDao.insertPost(localPost)
-                    android.util.Log.d("CommunityRepository", "Synced post to local DB: ${localPost.title}")
-                } catch (e: Exception) {
-                    android.util.Log.e("CommunityRepository", "Error syncing post: ${firebasePost.title}", e)
-                }
-            }
-            
-            // Return the converted posts
-            firebasePosts.map { it.toLocalModel() }
-        }
+        return communityPostDao.getPostsByType(postType)
     }
 
     /**
@@ -139,19 +105,19 @@ class CommunityRepository @Inject constructor(
             val currentUserId = 1L // Default user ID
 
             val existingLike = communityLikeDao.getUserLikeForPost(postId, currentUserId)
-            val isLiked = existingLike == null
+            val isCurrentlyLiked = existingLike != null
 
-            if (isLiked) {
-                // Add like
-                communityLikeDao.insertLike(CommunityLike(postId = postId, userId = currentUserId))
-                communityPostDao.incrementLikes(postId)
-            } else {
+            if (isCurrentlyLiked) {
                 // Remove like
                 communityLikeDao.removeLike(postId, currentUserId)
                 communityPostDao.decrementLikes(postId)
+            } else {
+                // Add like
+                communityLikeDao.insertLike(CommunityLike(postId = postId, userId = currentUserId))
+                communityPostDao.incrementLikes(postId)
             }
 
-            Result.Success(isLiked)
+            Result.Success(!isCurrentlyLiked)
         } catch (e: Exception) {
             android.util.Log.e("CommunityRepository", "Error toggling post like", e)
             Result.Error(e)
@@ -206,13 +172,21 @@ class CommunityRepository @Inject constructor(
             val localCommentId = communityCommentDao.insertComment(newComment)
             val localComment = newComment.copy(id = localCommentId)
 
-            // Update post comment count
+            // Update post comment count locally
             communityPostDao.incrementComments(postId)
 
-            // Sync to Firebase for real-time updates
+            // Sync to Firebase
             try {
-                firestoreService.addCommunityComment(localComment.toFirebaseModel())
-                android.util.Log.d("CommunityRepository", "Comment synced to Firebase successfully")
+                val firebaseComment = localComment.toFirebaseModel()
+                val firebaseResult = firestoreService.addCommunityComment(firebaseComment)
+                if (firebaseResult.isSuccess) {
+                    // Update the local comment with the Firebase ID
+                    val updatedComment = localComment.copy(firebaseId = firebaseResult.getOrNull() ?: "")
+                    communityCommentDao.updateComment(updatedComment)
+                    android.util.Log.d("CommunityRepository", "Comment synced to Firebase successfully")
+                } else {
+                    android.util.Log.e("CommunityRepository", "Error syncing comment to Firebase", firebaseResult.exceptionOrNull())
+                }
             } catch (e: Exception) {
                 android.util.Log.e("CommunityRepository", "Error syncing comment to Firebase", e)
                 // Continue with local success even if Firebase fails
@@ -240,8 +214,12 @@ class CommunityRepository @Inject constructor(
 
                 // Sync to Firebase for real-time updates
                 try {
-                    firestoreService.deleteCommunityComment(commentId.toString())
-                    android.util.Log.d("CommunityRepository", "Comment deletion synced to Firebase successfully")
+                    if (comment.firebaseId.isNotEmpty()) {
+                        firestoreService.deleteCommunityComment(comment.firebaseId)
+                        android.util.Log.d("CommunityRepository", "Comment deletion synced to Firebase successfully")
+                    } else {
+                        android.util.Log.w("CommunityRepository", "Comment has no Firebase ID, skipping Firebase deletion")
+                    }
                 } catch (e: Exception) {
                     android.util.Log.e("CommunityRepository", "Error syncing comment deletion to Firebase", e)
                     // Continue with local success even if Firebase fails
@@ -263,11 +241,28 @@ class CommunityRepository @Inject constructor(
             // Get the post first to access image URLs
             val post = communityPostDao.getPostById(postId)
             
+            if (post == null) {
+                android.util.Log.w("CommunityRepository", "Post with ID $postId not found")
+                return Result.Error(Exception("Post not found"))
+            }
+            
+            // Check if current user is the author of the post
+            val currentUser = userPreferencesManager.getCurrentUser()
+            val currentUserId = currentUser?.userId ?: 0L
+            
+            if (currentUserId != post.authorId) {
+                android.util.Log.w("CommunityRepository", "User $currentUserId is not authorized to delete post ${post.id} (author: ${post.authorId})")
+                return Result.Error(Exception("You can only delete your own posts"))
+            }
+            
+            android.util.Log.d("CommunityRepository", "Deleting post: ${post.title} (ID: $postId, Firebase ID: ${post.firebaseId})")
+            
             // Delete images from Firebase Storage
-            post?.imageUrls?.forEach { imageUrl ->
+            post.imageUrls.forEach { imageUrl ->
                 if (imageUrl.startsWith("https://firebasestorage.googleapis.com/")) {
                     try {
                         deleteImageFromFirebase(imageUrl)
+                        android.util.Log.d("CommunityRepository", "Deleted image: $imageUrl")
                     } catch (e: Exception) {
                         android.util.Log.e("CommunityRepository", "Error deleting image: $imageUrl", e)
                     }
@@ -278,11 +273,16 @@ class CommunityRepository @Inject constructor(
             communityPostDao.deletePost(postId)
             communityCommentDao.deleteCommentsForPost(postId)
             communityLikeDao.deleteLikesForPost(postId)
+            android.util.Log.d("CommunityRepository", "Post deleted from local database successfully")
 
             // Delete from Firebase
             try {
-                firestoreService.deleteCommunityPost(postId.toString())
-                android.util.Log.d("CommunityRepository", "Post deleted from Firebase successfully")
+                if (post.firebaseId.isNotEmpty()) {
+                    firestoreService.deleteCommunityPost(post.firebaseId)
+                    android.util.Log.d("CommunityRepository", "Post deleted from Firebase successfully")
+                } else {
+                    android.util.Log.w("CommunityRepository", "Post has no Firebase ID, skipping Firebase deletion")
+                }
             } catch (e: Exception) {
                 android.util.Log.e("CommunityRepository", "Error deleting post from Firebase", e)
                 // Continue with local success even if Firebase fails
@@ -366,33 +366,6 @@ class CommunityRepository @Inject constructor(
         }
     }
 
-    /**
-     * Sync posts from Firebase (for initial load or refresh)
-     */
-    suspend fun syncPostsFromFirebase() {
-        try {
-            android.util.Log.d("CommunityRepository", "Syncing posts from Firebase...")
-            
-            // Get all posts from Firebase
-            val firebasePosts = firestoreService.getAllCommunityPosts().first()
-            android.util.Log.d("CommunityRepository", "Retrieved ${firebasePosts.size} posts from Firebase")
-            
-            // Convert and save to local database
-            firebasePosts.forEach { firebasePost ->
-                try {
-                    val localPost = firebasePost.toLocalModel()
-                    communityPostDao.insertPost(localPost)
-                    android.util.Log.d("CommunityRepository", "Synced post to local DB: ${localPost.title}")
-                } catch (e: Exception) {
-                    android.util.Log.e("CommunityRepository", "Error syncing post: ${firebasePost.title}", e)
-                }
-            }
-            
-            android.util.Log.d("CommunityRepository", "Firebase sync completed successfully")
-        } catch (e: Exception) {
-            android.util.Log.e("CommunityRepository", "Error syncing from Firebase", e)
-        }
-    }
 
     /**
      * Clear all demo/sample posts from the database

@@ -71,7 +71,8 @@ class CommunityFeedActivity : AppCompatActivity() {
             onShareClick = { post -> sharePost(post) },
             onPostClick = { post -> openPostDetail(post) },
             onTagClick = { tag -> filterByTag(tag) },
-            onVideoClick = { videoUrl -> openVideoPlayer(videoUrl) }
+            onVideoClick = { videoUrl -> openVideoPlayer(videoUrl) },
+            onAuthorClick = { authorId -> openUserProfile(authorId) }
         )
         
         // Use responsive layout manager
@@ -135,7 +136,6 @@ class CommunityFeedActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 android.util.Log.d("CommunityFeedActivity", "Starting Firebase sync...")
-                communityRepository.syncPostsFromFirebase()
                 
                 val testPosts = communityRepository.getAllCommunityPosts().first()
                 android.util.Log.d("CommunityFeedActivity", "Database test: Found ${testPosts.size} posts in database")
@@ -177,19 +177,9 @@ class CommunityFeedActivity : AppCompatActivity() {
                         android.util.Log.d("CommunityFeedActivity", "First post details: ${posts.first().title} by ${posts.first().authorName}")
                     }
                     
-                    // Update posts with like status
-                    val postsWithLikeStatus = posts.map { post ->
-                        val isLiked = try {
-                            communityRepository.hasUserLikedPost(post.id)
-                        } catch (e: Exception) {
-                            android.util.Log.w("CommunityFeedActivity", "Error checking like status for post ${post.id}", e)
-                            false
-                        }
-                        post.copy(isLikedByUser = isLiked)
-                    }
-                    
-                    android.util.Log.d("CommunityFeedActivity", "Submitting ${postsWithLikeStatus.size} posts to adapter")
-                    adapter.submitList(postsWithLikeStatus)
+                    // Submit posts directly - like status will be updated when user interacts
+                    android.util.Log.d("CommunityFeedActivity", "Submitting ${posts.size} posts to adapter")
+                    adapter.submitList(posts)
                     binding.textViewEmpty.visibility = if (posts.isEmpty()) View.VISIBLE else View.GONE
                     binding.progressBar.visibility = View.GONE
                 }
@@ -207,6 +197,20 @@ class CommunityFeedActivity : AppCompatActivity() {
     }
 
 
+    private fun updatePostLikeStatus(postId: Long, isLiked: Boolean) {
+        // Update the specific post in the adapter without refreshing all posts
+        val currentList = adapter.currentList.toMutableList()
+        val postIndex = currentList.indexOfFirst { it.id == postId }
+        if (postIndex != -1) {
+            val updatedPost = currentList[postIndex].copy(
+                isLikedByUser = isLiked,
+                likesCount = if (isLiked) currentList[postIndex].likesCount + 1 else currentList[postIndex].likesCount - 1
+            )
+            currentList[postIndex] = updatedPost
+            adapter.submitList(currentList)
+        }
+    }
+
     private fun toggleLike(post: CommunityPost) {
         lifecycleScope.launch {
             try {
@@ -215,8 +219,8 @@ class CommunityFeedActivity : AppCompatActivity() {
                 when (result) {
                     is com.example.ecosort.data.model.Result.Success -> {
                         android.util.Log.d("CommunityFeedActivity", "Like toggled successfully: ${result.data}")
-                        // Refresh the posts to show updated like status
-                        loadPosts(null)
+                        // Update the specific post in the adapter instead of refreshing all posts
+                        updatePostLikeStatus(post.id, result.data)
                     }
                     is com.example.ecosort.data.model.Result.Error -> {
                         android.util.Log.e("CommunityFeedActivity", "Error toggling like", result.exception)
@@ -373,6 +377,12 @@ class CommunityFeedActivity : AppCompatActivity() {
                 Toast.makeText(this@CommunityFeedActivity, "Error adding sample posts: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun openUserProfile(authorId: Long) {
+        val intent = Intent(this, com.example.ecosort.profile.UserProfileViewActivity::class.java)
+        intent.putExtra("user_id", authorId)
+        startActivity(intent)
     }
 
     override fun onResume() {

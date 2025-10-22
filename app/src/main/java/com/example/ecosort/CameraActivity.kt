@@ -103,7 +103,7 @@ class CameraActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 2001 && resultCode == RESULT_OK) {
             photoUri?.let { uri ->
-                // Persist last captured image URI for SellActivity / marketplace usage
+                // Persist last captured image URI for future use
                 getSharedPreferences("EcoSortImages", MODE_PRIVATE).edit()
                     .putString("last_captured_uri", uri.toString())
                     .apply()

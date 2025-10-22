@@ -1,29 +1,74 @@
 package com.example.ecosort
 
+import android.Manifest
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.Button
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
 import com.example.ecosort.data.model.UserType
 import com.example.ecosort.data.preferences.UserPreferencesManager
+import com.example.ecosort.data.repository.UserRepository
 import com.example.ecosort.ui.login.LoginActivity
+import com.example.ecosort.utils.ProfileImageManager
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class UserProfileActivity : AppCompatActivity() {
 
-    private lateinit var userPreferencesManager: UserPreferencesManager
+    @Inject
+    lateinit var userPreferencesManager: UserPreferencesManager
+    
+    @Inject
+    lateinit var userRepository: UserRepository
+    
+    @Inject
+    lateinit var profileImageManager: ProfileImageManager
+
+    private var currentUserId: Long = 0L
+    private var currentImageUrl: String? = null
+
+    // Image picker launcher
+    private val imagePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { uploadProfileImage(it) }
+    }
+
+    // Camera launcher
+    private var currentPhotoUri: Uri? = null
+    private val cameraLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        android.util.Log.d("UserProfileActivity", "Camera result: success=$success, uri=$currentPhotoUri")
+        if (success && currentPhotoUri != null) {
+            // Image was captured successfully, upload it
+            uploadProfileImage(currentPhotoUri!!)
+        } else {
+            android.util.Log.e("UserProfileActivity", "Camera capture failed or no URI available")
+            Toast.makeText(this, "Failed to capture image", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_user_profile)
-
-        userPreferencesManager = UserPreferencesManager(applicationContext)
 
         val tvUsername = findViewById<TextView>(R.id.tvUsername)
         val tvUserType = findViewById<TextView>(R.id.tvUserType)
@@ -33,6 +78,9 @@ class UserProfileActivity : AppCompatActivity() {
         val btnSettings = findViewById<Button>(R.id.btnSettings)
         val btnLogout = findViewById<Button>(R.id.btnLogout)
         val btnBack = findViewById<Button>(R.id.btnBack)
+        val profileImageContainer = findViewById<LinearLayout>(R.id.profileImageContainer)
+        val ivProfileImage = findViewById<ImageView>(R.id.ivProfileImage)
+        val tvProfilePlaceholder = findViewById<TextView>(R.id.tvProfilePlaceholder)
 
         // Populate user info from DataStore session
         lifecycleScope.launch {
@@ -42,17 +90,28 @@ class UserProfileActivity : AppCompatActivity() {
                 finish()
                 return@launch
             }
+            
+            currentUserId = session.userId
             tvUsername.text = session.username.ifBlank { "User" }
             tvUserType.text = if (session.userType == UserType.ADMIN) "Administrator" else "Regular User"
+            
+            // Load user profile data
+            loadUserProfile()
         }
         
         // Display stats (you can make these dynamic later)
         tvStatsRecycled.text = "24"
         tvStatsEarnings.text = "RM 156"
 
+        // Profile image click listener
+        profileImageContainer.setOnClickListener {
+            showImagePickerDialog()
+        }
+
         // Button click listeners
         btnEditProfile.setOnClickListener {
-            Toast.makeText(this, "Edit Profile - Coming Soon!", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, com.example.ecosort.profile.EditProfileActivity::class.java)
+            startActivityForResult(intent, 100)
         }
 
         btnSettings.setOnClickListener {
@@ -75,6 +134,207 @@ class UserProfileActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         finish()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 100 && resultCode == RESULT_OK) {
+            // Profile was updated, reload the profile data
+            loadUserProfile()
+        }
+    }
+
+    private fun loadUserProfile() {
+        lifecycleScope.launch {
+            try {
+                val userResult = userRepository.getCurrentUser()
+                if (userResult is com.example.ecosort.data.model.Result.Success) {
+                    val user = userResult.data
+                    currentImageUrl = user.profileImageUrl
+                    
+                    // Load profile image
+                    loadProfileImage(user.profileImageUrl)
+                    
+                    // Update stats with real data
+                    findViewById<TextView>(R.id.tvStatsRecycled).text = user.itemsRecycled.toString()
+                    findViewById<TextView>(R.id.tvStatsEarnings).text = "RM ${String.format("%.2f", user.totalEarnings)}"
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("UserProfileActivity", "Error loading user profile", e)
+            }
+        }
+    }
+
+    private fun loadProfileImage(imageUrl: String?) {
+        val ivProfileImage = findViewById<ImageView>(R.id.ivProfileImage)
+        val tvProfilePlaceholder = findViewById<TextView>(R.id.tvProfilePlaceholder)
+        
+        if (!imageUrl.isNullOrBlank()) {
+            // Load image with Glide
+            Glide.with(this)
+                .load(imageUrl)
+                .circleCrop()
+                .into(ivProfileImage)
+            
+            // Hide placeholder
+            tvProfilePlaceholder.visibility = android.view.View.GONE
+            ivProfileImage.visibility = android.view.View.VISIBLE
+        } else {
+            // Show placeholder
+            tvProfilePlaceholder.visibility = android.view.View.VISIBLE
+            ivProfileImage.visibility = android.view.View.GONE
+        }
+    }
+
+    private fun showImagePickerDialog() {
+        val options = arrayOf("Take Photo", "Choose from Gallery", "Remove Photo")
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Select Profile Picture")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> takePhoto()
+                    1 -> chooseFromGallery()
+                    2 -> removePhoto()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun takePhoto() {
+        if (checkCameraPermission()) {
+            // Create temporary file for camera capture
+            val photoFile = java.io.File.createTempFile(
+                "profile_${System.currentTimeMillis()}",
+                ".jpg",
+                cacheDir
+            )
+            val photoUri = androidx.core.content.FileProvider.getUriForFile(
+                this,
+                "${packageName}.fileprovider",
+                photoFile
+            )
+            currentPhotoUri = photoUri
+            cameraLauncher.launch(photoUri)
+        } else {
+            requestCameraPermission()
+        }
+    }
+
+    private fun chooseFromGallery() {
+        if (checkStoragePermission()) {
+            imagePickerLauncher.launch("image/*")
+        } else {
+            requestStoragePermission()
+        }
+    }
+
+    private fun removePhoto() {
+        if (currentImageUrl != null) {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Remove Profile Picture")
+                .setMessage("Are you sure you want to remove your profile picture?")
+                .setPositiveButton("Remove") { _, _ ->
+                    deleteProfileImage()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+    }
+
+    private fun uploadProfileImage(imageUri: Uri) {
+        android.util.Log.d("UserProfileActivity", "Starting profile image upload for user: $currentUserId")
+        lifecycleScope.launch {
+            try {
+                val result = profileImageManager.uploadProfileImage(
+                    this@UserProfileActivity,
+                    currentUserId,
+                    imageUri,
+                    currentImageUrl
+                )
+                
+                android.util.Log.d("UserProfileActivity", "Upload result: ${result.isSuccess}")
+                
+                if (result.isSuccess) {
+                    val newImageUrl = result.getOrNull()
+                    android.util.Log.d("UserProfileActivity", "New image URL: $newImageUrl")
+                    currentImageUrl = newImageUrl
+                    loadProfileImage(newImageUrl)
+                    Toast.makeText(this@UserProfileActivity, "Profile picture updated successfully!", Toast.LENGTH_SHORT).show()
+                } else {
+                    val error = result.exceptionOrNull()
+                    android.util.Log.e("UserProfileActivity", "Upload failed: ${error?.message}", error)
+                    Toast.makeText(this@UserProfileActivity, "Failed to upload profile picture: ${error?.message}", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("UserProfileActivity", "Error uploading profile image", e)
+                Toast.makeText(this@UserProfileActivity, "Error uploading profile picture", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun deleteProfileImage() {
+        lifecycleScope.launch {
+            try {
+                val result = profileImageManager.deleteProfileImage(currentUserId, currentImageUrl ?: "")
+                
+                if (result.isSuccess) {
+                    currentImageUrl = null
+                    loadProfileImage(null)
+                    Toast.makeText(this@UserProfileActivity, "Profile picture removed successfully!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@UserProfileActivity, "Failed to remove profile picture: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("UserProfileActivity", "Error deleting profile image", e)
+                Toast.makeText(this@UserProfileActivity, "Error removing profile picture", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun checkCameraPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun checkStoragePermission(): Boolean {
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun requestCameraPermission() {
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 100)
+    }
+
+    private fun requestStoragePermission() {
+        val permissions = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
+        } else {
+            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+        ActivityCompat.requestPermissions(this, permissions, 101)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            100 -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    takePhoto()
+                } else {
+                    Toast.makeText(this, "Camera permission is required to take photos", Toast.LENGTH_SHORT).show()
+                }
+            }
+            101 -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    chooseFromGallery()
+                } else {
+                    Toast.makeText(this, "Storage permission is required to select photos", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 }
 

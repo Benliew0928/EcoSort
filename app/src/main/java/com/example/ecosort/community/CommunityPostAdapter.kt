@@ -25,7 +25,8 @@ class CommunityPostAdapter(
     private val onShareClick: (CommunityPost) -> Unit,
     private val onPostClick: (CommunityPost) -> Unit,
     private val onTagClick: (String) -> Unit = {},
-    private val onVideoClick: (String) -> Unit = {}
+    private val onVideoClick: (String) -> Unit = {},
+    private val onAuthorClick: (Long) -> Unit = {}
 ) : ListAdapter<CommunityPost, CommunityPostAdapter.PostViewHolder>(PostDiffCallback()) {
 
     override fun submitList(list: List<CommunityPost>?) {
@@ -70,12 +71,12 @@ class CommunityPostAdapter(
 
         fun bind(post: CommunityPost) {
             try {
-                authorName.text = post.authorName ?: "Unknown User"
+                authorName.text = post.authorName
                 postTime.text = formatTime(post.postedAt)
-                postTitle.text = post.title ?: "Untitled Post"
+                postTitle.text = post.title
                 
                 // Smart content display with preview
-                setupContentPreview(post.content ?: "")
+                setupContentPreview(post.content)
                 
                 // Display post type with better formatting
                 val displayText = when (post.postType) {
@@ -126,6 +127,12 @@ class CommunityPostAdapter(
                 onShareClick(post) 
             }
             
+            // Author name click listener
+            authorName.setOnClickListener {
+                android.util.Log.d("CommunityPostAdapter", "Author name clicked for post: ${post.id}, author: ${post.authorId}")
+                onAuthorClick(post.authorId)
+            }
+            
             // Make entire post card clickable (but not the image area for videos)
             itemView.setOnClickListener { 
                 android.util.Log.d("CommunityPostAdapter", "Post card clicked for post: ${post.id}")
@@ -173,24 +180,8 @@ class CommunityPostAdapter(
                                             .load(uri)
                                             .placeholder(R.drawable.ic_image_placeholder)
                                             .error(R.drawable.ic_image_placeholder)
-                                            .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
-                                                override fun onResourceReady(
-                                                    resource: android.graphics.drawable.Drawable,
-                                                    transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?
-                                                ) {
-                                                    android.util.Log.d("CommunityPostAdapter", "Successfully loaded image from URI")
-                                                    postImage.setImageDrawable(resource)
-                                                }
-                                                
-                                                override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
-                                                    android.util.Log.e("CommunityPostAdapter", "Failed to load image from URI: $imageUrl")
-                                                    postImage.setImageResource(R.drawable.ic_image_placeholder)
-                                                }
-                                                
-                                                override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
-                                                    // Called when the image is cleared
-                                                }
-                                            })
+                                            .into(postImage)
+                                        android.util.Log.d("CommunityPostAdapter", "Successfully loaded image from URI")
                                     } catch (e: Exception) {
                                         android.util.Log.e("CommunityPostAdapter", "Error loading URI: $imageUrl", e)
                                         postImage.setImageResource(R.drawable.ic_image_placeholder)
@@ -203,24 +194,8 @@ class CommunityPostAdapter(
                                         .load(imageUrl)
                                         .placeholder(R.drawable.ic_image_placeholder)
                                         .error(R.drawable.ic_image_placeholder)
-                                        .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
-                                            override fun onResourceReady(
-                                                resource: android.graphics.drawable.Drawable,
-                                                transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?
-                                            ) {
-                                                android.util.Log.d("CommunityPostAdapter", "Successfully loaded image from Firebase URL")
-                                                postImage.setImageDrawable(resource)
-                                            }
-                                            
-                                            override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
-                                                android.util.Log.e("CommunityPostAdapter", "Failed to load image from Firebase URL: $imageUrl")
-                                                postImage.setImageResource(R.drawable.ic_image_placeholder)
-                                            }
-                                            
-                                            override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
-                                                // Called when the image is cleared
-                                            }
-                                        })
+                                        .into(postImage)
+                                    android.util.Log.d("CommunityPostAdapter", "Successfully loaded image from Firebase URL")
                                 }
                             }
                         } catch (e: Exception) {

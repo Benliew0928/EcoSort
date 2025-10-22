@@ -16,11 +16,77 @@ data class User(
     val createdAt: Long = System.currentTimeMillis(),
     val itemsRecycled: Int = 0,
     val totalEarnings: Double = 0.0,
-    val profileImageUrl: String? = null
+    val profileImageUrl: String? = null,
+    val bio: String? = null,
+    val location: String? = null,
+    val joinDate: Long = System.currentTimeMillis(),
+    val lastActive: Long = System.currentTimeMillis(),
+    val profileCompletion: Int = 0, // 0-100%
+    val privacySettings: String? = null, // JSON string for PrivacySettings
+    val achievements: String? = null, // JSON string for List<Achievement>
+    val socialLinks: String? = null, // JSON string for SocialLinks
+    val preferences: String? = null // JSON string for UserPreferences
 )
 
 enum class UserType {
     USER, ADMIN
+}
+
+// ==================== USER PROFILE SUPPORTING MODELS ====================
+
+data class PrivacySettings(
+    val profileVisibility: ProfileVisibility = ProfileVisibility.PUBLIC,
+    val showEmail: Boolean = false,
+    val showLocation: Boolean = true,
+    val showStats: Boolean = true,
+    val allowMessages: Boolean = true
+) : Serializable
+
+enum class ProfileVisibility {
+    PUBLIC, FRIENDS_ONLY, PRIVATE
+}
+
+data class Achievement(
+    val id: String,
+    val title: String,
+    val description: String,
+    val icon: String,
+    val unlockedAt: Long,
+    val category: AchievementCategory
+) : Serializable
+
+enum class AchievementCategory {
+    RECYCLING, COMMUNITY, CONSISTENCY, MILESTONE
+}
+
+data class SocialLinks(
+    val website: String? = null,
+    val instagram: String? = null,
+    val twitter: String? = null,
+    val linkedin: String? = null
+) : Serializable
+
+data class UserPreferences(
+    val notifications: NotificationPreferences = NotificationPreferences(),
+    val theme: AppTheme = AppTheme.SYSTEM,
+    val language: String = "en",
+    val units: MeasurementUnits = MeasurementUnits.METRIC
+) : Serializable
+
+data class NotificationPreferences(
+    val pushNotifications: Boolean = true,
+    val emailNotifications: Boolean = true,
+    val communityUpdates: Boolean = true,
+    val achievementAlerts: Boolean = true,
+    val weeklyReports: Boolean = true
+) : Serializable
+
+enum class AppTheme {
+    LIGHT, DARK, SYSTEM
+}
+
+enum class MeasurementUnits {
+    METRIC, IMPERIAL
 }
 
 // ==================== SCANNED ITEM MODEL ====================
@@ -72,44 +138,13 @@ data class RecyclingStation(
     val distance: Float? = null
 )
 
-// ==================== MARKETPLACE ITEM MODEL ====================
-@Entity(tableName = "marketplace_items")
-data class MarketplaceItem(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    val sellerId: Long,
-    val sellerName: String,
-    val title: String,
-    val description: String,
-    val price: Double,
-    val category: WasteCategory,
-    val condition: ItemCondition,
-    val imageUrls: List<String>,
-    val postedAt: Long = System.currentTimeMillis(),
-    val status: ItemStatus = ItemStatus.AVAILABLE,
-    val views: Int = 0
-)
-
-enum class ItemCondition {
-    NEW,
-    LIKE_NEW,
-    GOOD,
-    FAIR,
-    POOR
-}
-
-enum class ItemStatus {
-    AVAILABLE,
-    SOLD,
-    RESERVED,
-    REMOVED
-}
 
 // ==================== COMMUNITY POST MODEL ====================
 @Entity(tableName = "community_posts")
 data class CommunityPost(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val firebaseId: String = "", // Store the original Firebase document ID
     val authorId: Long,
     val authorName: String,
     val authorAvatar: String? = null,
@@ -154,6 +189,7 @@ enum class PostStatus : Serializable {
 data class CommunityComment(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val firebaseId: String = "", // Store the original Firebase document ID
     val postId: Long,
     val authorId: Long,
     val authorName: String,

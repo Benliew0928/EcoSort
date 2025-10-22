@@ -31,7 +31,7 @@ class ResultActivity : AppCompatActivity() {
         btnSell.setOnClickListener {
             Toast.makeText(this, "Item listed for Selling", Toast.LENGTH_SHORT).show()
             // Navigate to sell activity to complete the listing
-            startActivity(Intent(this, SellActivity::class.java))
+            startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
             finish()
         }
     }

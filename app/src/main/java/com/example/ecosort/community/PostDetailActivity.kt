@@ -14,6 +14,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -177,9 +178,11 @@ class PostDetailActivity : AppCompatActivity() {
         currentPost?.let { post ->
             lifecycleScope.launch {
                 try {
-                    communityRepository.getCommentsForPost(post.id).collectLatest { comments ->
-                        commentAdapter.submitList(comments)
-                        updateEmptyState(comments.isEmpty())
+                    repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                        communityRepository.getCommentsForPost(post.id).collectLatest { comments ->
+                            commentAdapter.submitList(comments)
+                            updateEmptyState(comments.isEmpty())
+                        }
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("PostDetailActivity", "Error loading comments", e)
@@ -281,24 +284,8 @@ class PostDetailActivity : AppCompatActivity() {
                                         .load(uri)
                                         .placeholder(R.drawable.ic_image_placeholder)
                                         .error(R.drawable.ic_image_placeholder)
-                                        .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
-                                            override fun onResourceReady(
-                                                resource: android.graphics.drawable.Drawable,
-                                                transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?
-                                            ) {
-                                                android.util.Log.d("PostDetailActivity", "Successfully loaded image from URI")
-                                                postImage.setImageDrawable(resource)
-                                            }
-                                            
-                                            override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
-                                                android.util.Log.e("PostDetailActivity", "Failed to load image from URI: $imageUrl")
-                                                postImage.setImageResource(R.drawable.ic_image_placeholder)
-                                            }
-                                            
-                                            override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
-                                                // Called when the image is cleared
-                                            }
-                                        })
+                                        .into(postImage)
+                                    android.util.Log.d("PostDetailActivity", "Successfully loaded image from URI")
                                 } catch (e: Exception) {
                                     android.util.Log.e("PostDetailActivity", "Error loading URI: $imageUrl", e)
                                     postImage.setImageResource(R.drawable.ic_image_placeholder)
@@ -311,24 +298,8 @@ class PostDetailActivity : AppCompatActivity() {
                                     .load(imageUrl)
                                     .placeholder(R.drawable.ic_image_placeholder)
                                     .error(R.drawable.ic_image_placeholder)
-                                    .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
-                                        override fun onResourceReady(
-                                            resource: android.graphics.drawable.Drawable,
-                                            transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?
-                                        ) {
-                                            android.util.Log.d("PostDetailActivity", "Successfully loaded image from Firebase URL")
-                                            postImage.setImageDrawable(resource)
-                                        }
-                                        
-                                        override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
-                                            android.util.Log.e("PostDetailActivity", "Failed to load image from Firebase URL: $imageUrl")
-                                            postImage.setImageResource(R.drawable.ic_image_placeholder)
-                                        }
-                                        
-                                        override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
-                                            // Called when the image is cleared
-                                        }
-                                    })
+                                    .into(postImage)
+                                android.util.Log.d("PostDetailActivity", "Successfully loaded image from Firebase URL")
                             }
                         }
                     } catch (e: Exception) {

@@ -5,6 +5,7 @@ import com.example.ecosort.data.local.*
 import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.data.firebase.FirebaseStorageService
 import com.example.ecosort.data.firebase.FirestoreService
+import com.example.ecosort.data.firebase.ProfileImageStorageService
 import com.example.ecosort.utils.SecurityManager
 import dagger.Module
 import dagger.Provides
@@ -41,11 +42,6 @@ object DatabaseModule {
         return database.recyclingStationDao()
     }
 
-    @Provides
-    @Singleton
-    fun provideMarketplaceItemDao(database: EcoSortDatabase): MarketplaceItemDao {
-        return database.marketplaceItemDao()
-    }
 
     @Provides
     @Singleton
@@ -115,5 +111,11 @@ object FirebaseModule {
     @Singleton
     fun provideFirestoreService(): FirestoreService {
         return FirestoreService()
+    }
+
+    @Provides
+    @Singleton
+    fun provideProfileImageStorageService(): ProfileImageStorageService {
+        return ProfileImageStorageService()
     }
 }

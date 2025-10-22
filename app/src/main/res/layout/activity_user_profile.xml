@@ -85,13 +85,25 @@
                         android:layout_height="80dp"
                         android:background="@color/primary_green"
                         android:gravity="center"
-                        android:elevation="4dp">
+                        android:elevation="4dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:id="@+id/profileImageContainer">
+
+                        <ImageView
+                            android:id="@+id/ivProfileImage"
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:scaleType="centerCrop"
+                            android:background="@color/primary_green" />
 
                         <TextView
+                            android:id="@+id/tvProfilePlaceholder"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="👤"
-                            android:textSize="32sp" />
+                            android:textSize="32sp"
+                            android:layout_gravity="center" />
                     </LinearLayout>
 
                     <LinearLayout

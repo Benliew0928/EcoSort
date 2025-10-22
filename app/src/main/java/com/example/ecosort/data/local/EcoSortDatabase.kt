@@ -46,17 +46,6 @@ class Converters {
     @TypeConverter
     fun toWasteCategory(value: String): WasteCategory = WasteCategory.valueOf(value)
 
-    @TypeConverter
-    fun fromItemCondition(value: ItemCondition): String = value.name
-
-    @TypeConverter
-    fun toItemCondition(value: String): ItemCondition = ItemCondition.valueOf(value)
-
-    @TypeConverter
-    fun fromItemStatus(value: ItemStatus): String = value.name
-
-    @TypeConverter
-    fun toItemStatus(value: String): ItemStatus = ItemStatus.valueOf(value)
 
     @TypeConverter
     fun fromItemAction(value: ItemAction?): String? = value?.name
@@ -87,6 +76,48 @@ class Converters {
 
     @TypeConverter
     fun toInputType(value: String): InputType = InputType.valueOf(value)
+
+    // User Profile Type Converters
+    @TypeConverter
+    fun fromPrivacySettings(value: PrivacySettings): String {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toPrivacySettings(value: String): PrivacySettings {
+        return gson.fromJson(value, PrivacySettings::class.java)
+    }
+
+    @TypeConverter
+    fun fromAchievementList(value: List<Achievement>): String {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toAchievementList(value: String): List<Achievement> {
+        val type = object : TypeToken<List<Achievement>>() {}.type
+        return gson.fromJson(value, type)
+    }
+
+    @TypeConverter
+    fun fromSocialLinks(value: SocialLinks): String {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toSocialLinks(value: String): SocialLinks {
+        return gson.fromJson(value, SocialLinks::class.java)
+    }
+
+    @TypeConverter
+    fun fromUserPreferences(value: UserPreferences): String {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toUserPreferences(value: String): UserPreferences {
+        return gson.fromJson(value, UserPreferences::class.java)
+    }
 }
 
 // ==================== USER DAO ====================
@@ -124,6 +155,34 @@ interface UserDao {
 
     @Query("DELETE FROM users WHERE id = :userId")
     suspend fun deleteUser(userId: Long)
+
+    // Profile management methods
+    @Query("UPDATE users SET bio = :bio WHERE id = :userId")
+    suspend fun updateBio(userId: Long, bio: String?)
+
+    @Query("UPDATE users SET location = :location WHERE id = :userId")
+    suspend fun updateLocation(userId: Long, location: String?)
+
+    @Query("UPDATE users SET profileImageUrl = :imageUrl WHERE id = :userId")
+    suspend fun updateProfileImage(userId: Long, imageUrl: String?)
+
+    @Query("UPDATE users SET lastActive = :timestamp WHERE id = :userId")
+    suspend fun updateLastActive(userId: Long, timestamp: Long)
+
+    @Query("UPDATE users SET profileCompletion = :completion WHERE id = :userId")
+    suspend fun updateProfileCompletion(userId: Long, completion: Int)
+
+    @Query("UPDATE users SET privacySettings = :privacySettings WHERE id = :userId")
+    suspend fun updatePrivacySettings(userId: Long, privacySettings: String?)
+
+    @Query("UPDATE users SET achievements = :achievements WHERE id = :userId")
+    suspend fun updateAchievements(userId: Long, achievements: String?)
+
+    @Query("UPDATE users SET socialLinks = :socialLinks WHERE id = :userId")
+    suspend fun updateSocialLinks(userId: Long, socialLinks: String?)
+
+    @Query("UPDATE users SET preferences = :preferences WHERE id = :userId")
+    suspend fun updatePreferences(userId: Long, preferences: String?)
 }
 
 // ==================== SCANNED ITEMS DAO ====================
@@ -179,42 +238,6 @@ interface RecyclingStationDao {
     suspend fun deleteAllStations()
 }
 
-// ==================== MARKETPLACE ITEM DAO ====================
-@Dao
-interface MarketplaceItemDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertItem(item: MarketplaceItem): Long
-
-    @Query("SELECT * FROM marketplace_items WHERE status = 'AVAILABLE' ORDER BY postedAt DESC")
-    fun getAvailableItems(): Flow<List<MarketplaceItem>>
-
-    @Query("SELECT * FROM marketplace_items WHERE sellerId = :userId ORDER BY postedAt DESC")
-    fun getUserItems(userId: Long): Flow<List<MarketplaceItem>>
-
-    @Query("SELECT * FROM marketplace_items WHERE id = :itemId LIMIT 1")
-    suspend fun getItemById(itemId: Long): MarketplaceItem?
-
-    @Query("SELECT * FROM marketplace_items WHERE title = :title LIMIT 1")
-    suspend fun getItemByTitle(title: String): MarketplaceItem?
-
-    @Query("DELETE FROM marketplace_items WHERE title IN (:titles)")
-    suspend fun deleteItemsByTitles(titles: List<String>)
-
-    @Query("SELECT * FROM marketplace_items WHERE category = :category AND status = 'AVAILABLE' ORDER BY postedAt DESC")
-    fun getItemsByCategory(category: WasteCategory): Flow<List<MarketplaceItem>>
-
-    @Update
-    suspend fun updateItem(item: MarketplaceItem)
-
-    @Query("UPDATE marketplace_items SET status = :status WHERE id = :itemId")
-    suspend fun updateItemStatus(itemId: Long, status: ItemStatus)
-
-    @Query("UPDATE marketplace_items SET views = views + 1 WHERE id = :itemId")
-    suspend fun incrementViews(itemId: Long)
-
-    @Query("DELETE FROM marketplace_items WHERE id = :itemId")
-    suspend fun deleteItem(itemId: Long)
-}
 
 // ==================== CHAT MESSAGE DAO ====================
 @Dao
@@ -383,14 +406,13 @@ interface CommunityLikeDao {
         User::class,
         ScannedItem::class,
         RecyclingStation::class,
-        MarketplaceItem::class,
         ChatMessage::class,
         Conversation::class,
         CommunityPost::class,
         CommunityComment::class,
         CommunityLike::class
     ],
-    version = 8,
+    version = 12,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -399,7 +421,6 @@ abstract class EcoSortDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun scannedItemDao(): ScannedItemDao
     abstract fun recyclingStationDao(): RecyclingStationDao
-    abstract fun marketplaceItemDao(): MarketplaceItemDao
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun conversationDao(): ConversationDao
     abstract fun communityPostDao(): CommunityPostDao
@@ -424,7 +445,11 @@ abstract class EcoSortDatabase : RoomDatabase() {
                 MIGRATION_4_5,
                 MIGRATION_5_6,
                 MIGRATION_6_7,
-                MIGRATION_7_8
+                MIGRATION_7_8,
+                MIGRATION_8_9,
+                MIGRATION_9_10,
+                MIGRATION_10_11,
+                MIGRATION_11_12
             )
                     .allowMainThreadQueries() // Temporary for debugging
                     .build()
@@ -597,6 +622,62 @@ internal val MIGRATION_7_8 = object : androidx.room.migration.Migration(7, 8) {
             android.util.Log.d("Migration", "Added demo images to existing posts in migration 7_8")
         } catch (e: Exception) {
             android.util.Log.e("Migration", "Error in migration 7_8: ${e.message}")
+        }
+    }
+}
+
+internal val MIGRATION_8_9 = object : androidx.room.migration.Migration(8, 9) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Remove marketplace tables that are no longer needed
+            database.execSQL("DROP TABLE IF EXISTS marketplace_items")
+            android.util.Log.d("Migration", "Removed marketplace_items table in migration 8_9")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration", "Error in migration 8_9: ${e.message}")
+        }
+    }
+}
+
+internal val MIGRATION_9_10 = object : androidx.room.migration.Migration(9, 10) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add firebaseId column to community_posts table
+            database.execSQL("ALTER TABLE community_posts ADD COLUMN firebaseId TEXT NOT NULL DEFAULT ''")
+            android.util.Log.d("Migration", "Added firebaseId column to community_posts table in migration 9_10")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration", "Error in migration 9_10: ${e.message}")
+        }
+    }
+}
+
+internal val MIGRATION_10_11 = object : androidx.room.migration.Migration(10, 11) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add firebaseId column to community_comments table
+            database.execSQL("ALTER TABLE community_comments ADD COLUMN firebaseId TEXT NOT NULL DEFAULT ''")
+            android.util.Log.d("Migration", "Added firebaseId column to community_comments table in migration 10_11")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration", "Error in migration 10_11: ${e.message}")
+        }
+    }
+}
+
+internal val MIGRATION_11_12 = object : androidx.room.migration.Migration(11, 12) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add new user profile columns
+            database.execSQL("ALTER TABLE users ADD COLUMN bio TEXT")
+            database.execSQL("ALTER TABLE users ADD COLUMN location TEXT")
+            database.execSQL("ALTER TABLE users ADD COLUMN joinDate INTEGER NOT NULL DEFAULT ${System.currentTimeMillis()}")
+            database.execSQL("ALTER TABLE users ADD COLUMN lastActive INTEGER NOT NULL DEFAULT ${System.currentTimeMillis()}")
+            database.execSQL("ALTER TABLE users ADD COLUMN profileCompletion INTEGER NOT NULL DEFAULT 0")
+            database.execSQL("ALTER TABLE users ADD COLUMN privacySettings TEXT")
+            database.execSQL("ALTER TABLE users ADD COLUMN achievements TEXT")
+            database.execSQL("ALTER TABLE users ADD COLUMN socialLinks TEXT")
+            database.execSQL("ALTER TABLE users ADD COLUMN preferences TEXT")
+            android.util.Log.d("Migration", "Added user profile columns in migration 11_12")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration", "Error in migration 11_12: ${e.message}")
         }
     }
 }

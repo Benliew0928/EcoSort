@@ -5,6 +5,10 @@ import com.example.ecosort.data.model.User
 import com.example.ecosort.data.model.UserSession
 import com.example.ecosort.data.model.UserType
 import com.example.ecosort.data.model.Result
+import com.example.ecosort.data.model.PrivacySettings
+import com.example.ecosort.data.model.Achievement
+import com.example.ecosort.data.model.SocialLinks
+import com.example.ecosort.data.model.UserPreferences
 import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.utils.SecurityManager
 import kotlinx.coroutines.flow.Flow
@@ -168,6 +172,177 @@ class UserRepository @Inject constructor(
         return try {
             userDao.incrementItemsRecycled(userId)
             Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    // ==================== PROFILE MANAGEMENT ====================
+
+    suspend fun updateProfileBio(userId: Long, bio: String?): Result<Unit> {
+        return try {
+            userDao.updateBio(userId, bio)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun updateProfileLocation(userId: Long, location: String?): Result<Unit> {
+        return try {
+            userDao.updateLocation(userId, location)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun updateProfileImage(userId: Long, imageUrl: String?): Result<Unit> {
+        return try {
+            userDao.updateProfileImage(userId, imageUrl)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun updateLastActive(userId: Long): Result<Unit> {
+        return try {
+            userDao.updateLastActive(userId, System.currentTimeMillis())
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun calculateProfileCompletion(userId: Long): Result<Int> {
+        return try {
+            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            
+            var completion = 0
+            if (user.username.isNotEmpty()) completion += 20
+            if (!user.email.isBlank()) completion += 20
+            if (!user.bio.isNullOrBlank()) completion += 20
+            if (!user.location.isNullOrBlank()) completion += 20
+            if (!user.profileImageUrl.isNullOrBlank()) completion += 20
+            
+            userDao.updateProfileCompletion(userId, completion)
+            Result.Success(completion)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun updatePrivacySettings(userId: Long, privacySettings: PrivacySettings): Result<Unit> {
+        return try {
+            val gson = com.google.gson.Gson()
+            val json = gson.toJson(privacySettings)
+            userDao.updatePrivacySettings(userId, json)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun getPrivacySettings(userId: Long): Result<PrivacySettings> {
+        return try {
+            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            if (user.privacySettings.isNullOrBlank()) {
+                Result.Success(PrivacySettings()) // Return default settings
+            } else {
+                val gson = com.google.gson.Gson()
+                val settings = gson.fromJson(user.privacySettings, PrivacySettings::class.java)
+                Result.Success(settings)
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun addAchievement(userId: Long, achievement: Achievement): Result<Unit> {
+        return try {
+            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            val gson = com.google.gson.Gson()
+            val type = object : com.google.gson.reflect.TypeToken<List<Achievement>>() {}.type
+            
+            val currentAchievements = if (user.achievements.isNullOrBlank()) {
+                emptyList<Achievement>()
+            } else {
+                gson.fromJson(user.achievements, type)
+            }
+            
+            val updatedAchievements = currentAchievements + achievement
+            val json = gson.toJson(updatedAchievements)
+            userDao.updateAchievements(userId, json)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun getAchievements(userId: Long): Result<List<Achievement>> {
+        return try {
+            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            if (user.achievements.isNullOrBlank()) {
+                Result.Success(emptyList())
+            } else {
+                val gson = com.google.gson.Gson()
+                val type = object : com.google.gson.reflect.TypeToken<List<Achievement>>() {}.type
+                val achievements = gson.fromJson<List<Achievement>>(user.achievements, type)
+                Result.Success(achievements)
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun updateSocialLinks(userId: Long, socialLinks: SocialLinks): Result<Unit> {
+        return try {
+            val gson = com.google.gson.Gson()
+            val json = gson.toJson(socialLinks)
+            userDao.updateSocialLinks(userId, json)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun getSocialLinks(userId: Long): Result<SocialLinks> {
+        return try {
+            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            if (user.socialLinks.isNullOrBlank()) {
+                Result.Success(SocialLinks()) // Return default social links
+            } else {
+                val gson = com.google.gson.Gson()
+                val socialLinks = gson.fromJson(user.socialLinks, SocialLinks::class.java)
+                Result.Success(socialLinks)
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun updateUserPreferences(userId: Long, preferences: UserPreferences): Result<Unit> {
+        return try {
+            val gson = com.google.gson.Gson()
+            val json = gson.toJson(preferences)
+            userDao.updatePreferences(userId, json)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun getUserPreferences(userId: Long): Result<UserPreferences> {
+        return try {
+            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            if (user.preferences.isNullOrBlank()) {
+                Result.Success(UserPreferences()) // Return default preferences
+            } else {
+                val gson = com.google.gson.Gson()
+                val preferences = gson.fromJson(user.preferences, UserPreferences::class.java)
+                Result.Success(preferences)
+            }
         } catch (e: Exception) {
             Result.Error(e)
         }

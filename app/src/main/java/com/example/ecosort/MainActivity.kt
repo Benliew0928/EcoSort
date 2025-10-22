@@ -10,7 +10,6 @@ import androidx.lifecycle.lifecycleScope
 import com.example.ecosort.data.model.UserType
 import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.data.firebase.FirestoreService
-import com.example.ecosort.data.firebase.FirebaseMarketplaceItem
 import com.example.ecosort.ui.login.LoginActivity
 import com.example.ecosort.utils.DatabaseDebugHelper
 import dagger.hilt.android.AndroidEntryPoint
@@ -20,7 +19,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import android.view.View
 import com.example.ecosort.data.local.EcoSortDatabase
-import com.example.ecosort.data.model.MarketplaceItem
 import com.bumptech.glide.Glide
 import javax.inject.Inject
 import com.example.ecosort.hms.MapActivity // <--- FIX: Added the necessary import for MapActivity
@@ -113,12 +111,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnCommunity.setOnClickListener {
-            try {
-                startActivity(Intent(this, com.example.ecosort.chat.ChatListActivity::class.java))
-            } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "Error starting ChatListActivity", e)
-                Toast.makeText(this, "Chat feature coming soon!", Toast.LENGTH_SHORT).show()
-            }
+            startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
         }
 
         // Bottom navigation
@@ -133,7 +126,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, MapActivity::class.java))
         }
         bottomSell.setOnClickListener {
-            startActivity(Intent(this, SellActivity::class.java))
+            startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
         }
 
         // Community Feeds: View All -> Community
@@ -186,14 +179,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         posts.take(3).forEach { post ->
-            val card = layoutInflater.inflate(R.layout.row_marketplace_item, container, false)
+            val card = layoutInflater.inflate(R.layout.item_community_post, container, false)
 
             // Set post details
-            card.findViewById<TextView>(R.id.rowTitle).text = post.title
-            card.findViewById<TextView>(R.id.rowPrice).text = post.postType // Show post type instead of price
+            card.findViewById<TextView>(R.id.textPostTitle).text = post.title
+            card.findViewById<TextView>(R.id.textPostType).text = post.postType // Show post type instead of price
 
             // Load image using enhanced Glide with proper error handling
-            val thumb = card.findViewById<android.widget.ImageView>(R.id.rowThumb)
+            val thumb = card.findViewById<android.widget.ImageView>(R.id.imagePost)
             val imageUrl = post.imageUrls.firstOrNull()
             val videoUrl = post.videoUrl
             
