@@ -73,10 +73,12 @@ class UserProfileActivity : AppCompatActivity() {
         val tvUsername = findViewById<TextView>(R.id.tvUsername)
         val tvUserType = findViewById<TextView>(R.id.tvUserType)
         val tvStatsRecycled = findViewById<TextView>(R.id.tvStatsRecycled)
-        val tvStatsEarnings = findViewById<TextView>(R.id.tvStatsEarnings)
+        val tvStatsPoints = findViewById<TextView>(R.id.tvStatsPoints)
         val btnEditProfile = findViewById<Button>(R.id.btnEditProfile)
         val btnPrivacySettings = findViewById<Button>(R.id.btnPrivacySettings)
         val btnSettings = findViewById<Button>(R.id.btnSettings)
+        val btnPreferences = findViewById<Button>(R.id.btnPreferences)
+        val btnFriendRequests = findViewById<Button>(R.id.btnFriendRequests)
         val btnLogout = findViewById<Button>(R.id.btnLogout)
         val btnBack = findViewById<Button>(R.id.btnBack)
         val profileImageContainer = findViewById<LinearLayout>(R.id.profileImageContainer)
@@ -102,7 +104,7 @@ class UserProfileActivity : AppCompatActivity() {
         
         // Display stats (you can make these dynamic later)
         tvStatsRecycled.text = "24"
-        tvStatsEarnings.text = "RM 156"
+        tvStatsPoints.text = "1,250 points"
 
         // Profile image click listener
         profileImageContainer.setOnClickListener {
@@ -122,6 +124,16 @@ class UserProfileActivity : AppCompatActivity() {
 
         btnSettings.setOnClickListener {
             Toast.makeText(this, "Settings - Coming Soon!", Toast.LENGTH_SHORT).show()
+        }
+
+        btnPreferences.setOnClickListener {
+            val intent = Intent(this, com.example.ecosort.preferences.UserPreferencesActivity::class.java)
+            startActivity(intent)
+        }
+
+        btnFriendRequests.setOnClickListener {
+            val intent = Intent(this, com.example.ecosort.friends.FriendRequestsActivity::class.java)
+            startActivity(intent)
         }
 
         btnLogout.setOnClickListener {
@@ -163,7 +175,7 @@ class UserProfileActivity : AppCompatActivity() {
                     
                     // Update stats with real data
                     findViewById<TextView>(R.id.tvStatsRecycled).text = user.itemsRecycled.toString()
-                    findViewById<TextView>(R.id.tvStatsEarnings).text = "RM ${String.format("%.2f", user.totalEarnings)}"
+                    findViewById<TextView>(R.id.tvStatsPoints).text = "${user.totalPoints} points"
                 }
             } catch (e: Exception) {
                 android.util.Log.e("UserProfileActivity", "Error loading user profile", e)

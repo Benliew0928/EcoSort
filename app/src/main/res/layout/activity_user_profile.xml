@@ -43,7 +43,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Profile"
+                    android:text="@string/profile"
                     android:textSize="24sp"
                     android:textStyle="bold"
                     android:textColor="@color/white"
@@ -115,7 +115,7 @@
                             android:id="@+id/tvUsername"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Username"
+                            android:text="@string/username"
                             android:textSize="24sp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary"
@@ -179,7 +179,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Items Recycled"
+                        android:text="@string/items_recycled"
                         android:textSize="12sp"
                         android:textColor="@color/text_secondary"
                         android:fontFamily="@string/font_family_caption" />
@@ -208,23 +208,23 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="💰"
+                        android:text="⭐"
                         android:textSize="24sp"
                         android:layout_marginBottom="8dp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Total Earnings"
+                        android:text="@string/total_points"
                         android:textSize="12sp"
                         android:textColor="@color/text_secondary"
                         android:fontFamily="@string/font_family_caption" />
 
                     <TextView
-                        android:id="@+id/tvStatsEarnings"
+                        android:id="@+id/tvStatsPoints"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="RM 156"
+                        android:text="1,250 points"
                         android:textSize="28sp"
                         android:textStyle="bold"
                         android:textColor="@color/accent_teal"
@@ -247,7 +247,7 @@
                 android:id="@+id/btnEditProfile"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="✏️ Edit Profile"
+                android:text="@string/edit_profile"
                 android:textSize="16sp"
                 android:fontFamily="@string/font_family_primary"
                 android:background="@drawable/button_secondary"
@@ -259,7 +259,7 @@
                 android:id="@+id/btnPrivacySettings"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="🔒 Privacy Settings"
+                android:text="@string/privacy_settings"
                 android:textSize="16sp"
                 android:fontFamily="@string/font_family_primary"
                 android:background="@drawable/button_secondary"
@@ -280,10 +280,34 @@
                 android:elevation="2dp" />
 
             <Button
+                android:id="@+id/btnPreferences"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="@string/preferences"
+                android:textSize="16sp"
+                android:fontFamily="@string/font_family_primary"
+                android:background="@drawable/button_secondary"
+                android:textColor="@color/white"
+                android:layout_marginBottom="12dp"
+                android:elevation="2dp" />
+
+            <Button
+                android:id="@+id/btnFriendRequests"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="📬 Friend Requests"
+                android:textSize="16sp"
+                android:fontFamily="@string/font_family_primary"
+                android:background="@drawable/button_secondary"
+                android:textColor="@color/white"
+                android:layout_marginBottom="12dp"
+                android:elevation="2dp" />
+
+            <Button
                 android:id="@+id/btnLogout"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="🚪 Logout"
+                android:text="@string/logout"
                 android:textSize="16sp"
                 android:fontFamily="@string/font_family_primary"
                 android:background="@drawable/button_primary"

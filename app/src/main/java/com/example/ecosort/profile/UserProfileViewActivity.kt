@@ -51,7 +51,7 @@ class UserProfileViewActivity : AppCompatActivity() {
     private lateinit var tvLocation: TextView
     private lateinit var tvJoinDate: TextView
     private lateinit var tvStatsRecycled: TextView
-    private lateinit var tvStatsEarnings: TextView
+    private lateinit var tvStatsPoints: TextView
     private lateinit var tvStatsFollowers: TextView
     private lateinit var followersContainer: LinearLayout
     private lateinit var tvProfileCompletion: TextView
@@ -81,7 +81,7 @@ class UserProfileViewActivity : AppCompatActivity() {
         tvLocation = findViewById(R.id.tvLocation)
         tvJoinDate = findViewById(R.id.tvJoinDate)
         tvStatsRecycled = findViewById(R.id.tvStatsRecycled)
-        tvStatsEarnings = findViewById(R.id.tvStatsEarnings)
+        tvStatsPoints = findViewById(R.id.tvStatsPoints)
         tvStatsFollowers = findViewById(R.id.tvStatsFollowers)
         followersContainer = findViewById(R.id.followersContainer)
         tvProfileCompletion = findViewById(R.id.tvProfileCompletion)
@@ -205,7 +205,7 @@ class UserProfileViewActivity : AppCompatActivity() {
         
         // Stats
         tvStatsRecycled.text = user.itemsRecycled.toString()
-        tvStatsEarnings.text = "RM ${String.format("%.2f", user.totalEarnings)}"
+        tvStatsPoints.text = "${user.totalPoints} points"
         
         // Load followers count
         loadFollowersCount(user.id)
@@ -288,7 +288,7 @@ class UserProfileViewActivity : AppCompatActivity() {
             // Hide private information
             tvLocation.visibility = View.GONE
             tvStatsRecycled.text = "Hidden"
-            tvStatsEarnings.text = "Hidden"
+            tvStatsPoints.text = "Hidden"
             tvProfileCompletion.text = "Profile hidden"
             progressBarCompletion.progress = 0
             

@@ -66,7 +66,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="EcoSort"
+                        android:text="@string/app_title"
                         android:textSize="24sp"
                         android:textStyle="bold"
                         android:textColor="@color/white"
@@ -75,7 +75,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Smart recycling • Marketplace • Community"
+                        android:text="@string/app_subtitle"
                         android:textSize="12sp"
                         android:textColor="@color/white"
                         android:alpha="0.9"
@@ -99,7 +99,7 @@
                 android:id="@+id/tvWelcomeMessage"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Welcome back, User!"
+                android:text="@string/welcome_message"
                 android:textSize="18sp"
                 android:textColor="@color/white"
                 android:fontFamily="@string/font_family_primary"
@@ -108,7 +108,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Let's make the world greener together 🌱"
+                android:text="@string/welcome_subtitle"
                 android:textSize="14sp"
                 android:textColor="@color/white"
                 android:alpha="0.9"
@@ -125,7 +125,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Quick Actions"
+                android:text="@string/quick_actions"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
@@ -143,7 +143,7 @@
                     android:layout_width="0dp"
                     android:layout_height="120dp"
                     android:layout_weight="1"
-                    android:text="📸\nScan Item"
+                    android:text="@string/scan_item"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:fontFamily="@string/font_family_primary"
@@ -157,7 +157,7 @@
                     android:layout_width="0dp"
                     android:layout_height="120dp"
                     android:layout_weight="1"
-                    android:text="🗺️\nFind Stations"
+                    android:text="@string/find_stations"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:fontFamily="@string/font_family_primary"
@@ -173,11 +173,11 @@
                 android:orientation="horizontal">
 
                 <Button
-                    android:id="@+id/btnSell"
+                    android:id="@+id/btnFriends"
                     android:layout_width="0dp"
                     android:layout_height="120dp"
                     android:layout_weight="1"
-                    android:text="👥\nCommunity"
+                    android:text="👥 Friends"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:fontFamily="@string/font_family_primary"
@@ -191,7 +191,7 @@
                     android:layout_width="0dp"
                     android:layout_height="120dp"
                     android:layout_weight="1"
-                    android:text="💬\nChat"
+                    android:text="@string/community"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:fontFamily="@string/font_family_primary"
@@ -213,7 +213,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Your Impact"
+                android:text="@string/your_impact"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
@@ -245,7 +245,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Items Recycled"
+                        android:text="@string/items_recycled"
                         android:textSize="12sp"
                         android:textColor="@color/text_secondary"
                         android:fontFamily="@string/font_family_caption" />
@@ -273,14 +273,14 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="💰"
+                        android:text="⭐"
                         android:textSize="24sp"
                         android:layout_marginBottom="8dp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Earnings"
+                        android:text="@string/points_label"
                         android:textSize="12sp"
                         android:textColor="@color/text_secondary"
                         android:fontFamily="@string/font_family_caption" />
@@ -288,7 +288,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="RM 156"
+                        android:text="1,250"
                         android:textSize="28sp"
                         android:textStyle="bold"
                         android:textColor="@color/accent_teal"
@@ -316,7 +316,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Community Feeds"
+                    android:text="@string/community_feeds"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
@@ -326,7 +326,7 @@
                     android:id="@+id/featuredViewAll"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="View All"
+                    android:text="@string/view_all"
                     android:textSize="14sp"
                     android:textColor="@color/primary_green"
                     android:fontFamily="@string/font_family_primary" />
@@ -368,7 +368,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Vintage Radio"
+                            android:text="@string/vintage_radio"
                             android:layout_marginTop="12dp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary"
@@ -377,7 +377,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="RM 120"
+                            android:text="850"
                             android:textColor="@color/primary_green"
                             android:textSize="16sp"
                             android:textStyle="bold"
@@ -386,7 +386,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Good condition"
+                            android:text="@string/good_condition"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp"
                             android:fontFamily="@string/font_family_caption" />
@@ -416,7 +416,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Glass Vase"
+                            android:text="@string/glass_vase"
                             android:layout_marginTop="12dp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary"
@@ -425,7 +425,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="RM 45"
+                            android:text="320"
                             android:textColor="@color/primary_green"
                             android:textSize="16sp"
                             android:textStyle="bold"
@@ -434,7 +434,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Excellent condition"
+                            android:text="@string/excellent_condition"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp"
                             android:fontFamily="@string/font_family_caption" />
@@ -463,7 +463,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Metal Frame"
+                            android:text="@string/metal_frame"
                             android:layout_marginTop="12dp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary"
@@ -472,7 +472,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="RM 80"
+                            android:text="560"
                             android:textColor="@color/primary_green"
                             android:textSize="16sp"
                             android:textStyle="bold"
@@ -481,7 +481,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Like new"
+                            android:text="@string/like_new"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp"
                             android:fontFamily="@string/font_family_caption" />
@@ -509,7 +509,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="🏠\nHome"
+            android:text="@string/nav_home"
             android:textSize="12sp"
             android:fontFamily="@string/font_family_primary"
             android:background="@drawable/button_primary"
@@ -520,7 +520,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="📸\nScan"
+            android:text="@string/nav_scan"
             android:textSize="12sp"
             android:fontFamily="@string/font_family_primary"
             android:background="@drawable/button_secondary"
@@ -531,7 +531,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="🗺️\nMap"
+            android:text="@string/nav_map"
             android:textSize="12sp"
             android:fontFamily="@string/font_family_primary"
             android:background="@drawable/button_secondary"
@@ -542,7 +542,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="👥\nCommunity"
+            android:text="@string/nav_community"
             android:textSize="12sp"
             android:fontFamily="@string/font_family_primary"
             android:background="@drawable/button_secondary"

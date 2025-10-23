@@ -1,3 +1,237 @@
 <resources>
     <string name="app_name">EcoSort</string>
+    
+    <!-- Theme Options -->
+    <string-array name="theme_options">
+        <item>Light</item>
+        <item>Dark</item>
+        <item>System</item>
+    </string-array>
+    
+    <!-- Language Options -->
+    <string-array name="language_options">
+        <item>English</item>
+        <item>Chinese</item>
+        <item>Malay</item>
+    </string-array>
+    
+    <string-array name="language_values">
+        <item>en</item>
+        <item>zh</item>
+        <item>ms</item>
+    </string-array>
+    
+    <!-- Font Size Options -->
+    <string-array name="font_size_options">
+        <item>Small</item>
+        <item>Medium</item>
+        <item>Large</item>
+        <item>Extra Large</item>
+    </string-array>
+    
+    <!-- Units Options -->
+    <string-array name="units_options">
+        <item>Metric</item>
+        <item>Imperial</item>
+    </string-array>
+    
+    <!-- Reminder Frequency Options -->
+    <string-array name="reminder_frequency_options">
+        <item>Daily</item>
+        <item>Weekly</item>
+        <item>Monthly</item>
+        <item>Never</item>
+    </string-array>
+    
+    <!-- Common UI Strings -->
+    <string name="preferences_title">Preferences &amp; Settings</string>
+    <string name="appearance_title">🎨 Appearance</string>
+    <string name="notifications_title">🔔 Notifications</string>
+    <string name="accessibility_title">♿ Accessibility</string>
+    <string name="privacy_title">🔒 Privacy</string>
+    <string name="recycling_title">♻️ Recycling</string>
+    
+    <string name="theme_label">Theme</string>
+    <string name="language_label">Language</string>
+    <string name="font_size_label">Font Size</string>
+    <string name="units_label">Units</string>
+    
+    <string name="push_notifications">Push Notifications</string>
+    <string name="email_notifications">Email Notifications</string>
+    <string name="community_updates">Community Updates</string>
+    <string name="achievement_alerts">Achievement Alerts</string>
+    <string name="weekly_reports">Weekly Reports</string>
+    <string name="recycling_reminders">Recycling Reminders</string>
+    <string name="friend_requests">Friend Requests</string>
+    <string name="message_notifications">Message Notifications</string>
+    
+    <string name="high_contrast">High Contrast</string>
+    <string name="reduce_motion">Reduce Motion</string>
+    <string name="screen_reader">Screen Reader</string>
+    <string name="large_text">Large Text</string>
+    <string name="bold_text">Bold Text</string>
+    <string name="color_blind_support">Color Blind Support</string>
+    
+    <string name="show_online_status">Show Online Status</string>
+    <string name="allow_friend_requests">Allow Friend Requests</string>
+    <string name="show_last_seen">Show Last Seen</string>
+    <string name="allow_profile_views">Allow Profile Views</string>
+    <string name="share_recycling_stats">Share Recycling Stats</string>
+    <string name="allow_data_collection">Allow Data Collection</string>
+    
+    <string name="reminder_frequency">Reminder Frequency</string>
+    <string name="auto_categorize">Auto Categorize</string>
+    <string name="share_stats">Share Stats</string>
+    <string name="show_tips">Show Tips</string>
+    <string name="enable_gamification">Enable Gamification</string>
+    
+    <string name="save_button">Save</string>
+    <string name="reset_button">Reset</string>
+    <string name="back_button">Back</string>
+    
+    <string name="preferences_saved">Preferences saved and applied successfully!</string>
+    <string name="preferences_reset">Preferences reset to defaults</string>
+    <string name="error_saving">Error saving preferences</string>
+    
+    <!-- Main Activity Strings -->
+    <string name="app_title">EcoSort</string>
+    <string name="app_subtitle">Smart recycling • Marketplace • Community</string>
+    <string name="welcome_message">Welcome back, User!</string>
+    <string name="welcome_subtitle">Let\'s make the world greener together 🌱</string>
+    <string name="quick_actions">Quick Actions</string>
+    <string name="scan_item">📸\nScan Item</string>
+    <string name="find_stations">🗺️\nFind Stations</string>
+    <string name="community">👥\nCommunity</string>
+    <string name="chat">💬\nChat</string>
+    <string name="your_impact">Your Impact</string>
+    <string name="items_recycled">Items Recycled</string>
+    <string name="points_label">Points</string>
+    <string name="community_feeds">Community Feeds</string>
+    <string name="view_all">View All</string>
+    <string name="vintage_radio">Vintage Radio</string>
+    <string name="glass_vase">Glass Vase</string>
+    <string name="metal_frame">Metal Frame</string>
+    <string name="good_condition">Good condition</string>
+    <string name="excellent_condition">Excellent condition</string>
+    <string name="like_new">Like new</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">🏠\nHome</string>
+    <string name="nav_scan">📸\nScan</string>
+    <string name="nav_map">🗺️\nMap</string>
+    <string name="nav_community">👥\nCommunity</string>
+    
+    <!-- User Profile -->
+    <string name="profile">Profile</string>
+    <string name="edit_profile">✏️ Edit Profile</string>
+    <string name="privacy_settings">🔒 Privacy Settings</string>
+    <string name="preferences">🎨 Preferences</string>
+    <string name="logout">🚪 Logout</string>
+    <string name="total_points">Total Points</string>
+    <string name="profile_completion">Profile Completion</string>
+    <string name="last_active">Last Active</string>
+    <string name="join_date">Join Date</string>
+    <string name="bio">Bio</string>
+    <string name="location">Location</string>
+    <string name="social_links">Social Links</string>
+    <string name="achievements">Achievements</string>
+    
+    <!-- Login/Register -->
+    <string name="login">Login</string>
+    <string name="register">Register</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="username">Username</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="dont_have_account">Don\'t have an account?</string>
+    <string name="already_have_account">Already have an account?</string>
+    <string name="login_success">Login successful!</string>
+    <string name="register_success">Registration successful!</string>
+    <string name="login_failed">Login failed. Please check your credentials.</string>
+    <string name="register_failed">Registration failed. Please try again.</string>
+    
+    <!-- Community -->
+    <string name="create_post">Create Post</string>
+    <string name="post_content">What\'s on your mind?</string>
+    <string name="add_image">Add Image</string>
+    <string name="add_video">Add Video</string>
+    <string name="post_type">Post Type</string>
+    <string name="share_tip">Share Tip</string>
+    <string name="showcase_item">Showcase Item</string>
+    <string name="ask_question">Ask Question</string>
+    <string name="publish">Publish</string>
+    <string name="like">Like</string>
+    <string name="comment">Comment</string>
+    <string name="share">Share</string>
+    <string name="comments">Comments</string>
+    <string name="write_comment">Write a comment...</string>
+    <string name="post_comment">Post Comment</string>
+    
+    <!-- Chat -->
+    <string name="chat_list">Chat List</string>
+    <string name="search_users">Search Users</string>
+    <string name="type_message">Type a message...</string>
+    <string name="send">Send</string>
+    <string name="online">Online</string>
+    <string name="offline">Offline</string>
+    <string name="last_seen">Last seen</string>
+    <string name="typing">Typing...</string>
+    <string name="message_delivered">Delivered</string>
+    <string name="message_read">Read</string>
+    
+    <!-- Camera/Scan -->
+    <string name="camera">Camera</string>
+    <string name="gallery">Gallery</string>
+    <string name="scan_item_title">Scan Item</string>
+    <string name="take_photo">Take Photo</string>
+    <string name="choose_from_gallery">Choose from Gallery</string>
+    <string name="analyzing">Analyzing...</string>
+    <string name="item_detected">Item Detected</string>
+    <string name="recyclable">Recyclable</string>
+    <string name="not_recyclable">Not Recyclable</string>
+    <string name="confidence">Confidence</string>
+    
+    <!-- Map/Stations -->
+    <string name="map">Map</string>
+    <string name="recycling_stations">Recycling Stations</string>
+    <string name="find_nearby_stations">Find Nearby Stations</string>
+    <string name="station_details">Station Details</string>
+    <string name="accepted_materials">Accepted Materials</string>
+    <string name="opening_hours">Opening Hours</string>
+    <string name="contact">Contact</string>
+    <string name="directions">Directions</string>
+    <string name="distance">Distance</string>
+    <string name="rating">Rating</string>
+    
+    <!-- Admin -->
+    <string name="admin_panel">Admin Panel</string>
+    <string name="user_management">User Management</string>
+    <string name="content_moderation">Content Moderation</string>
+    <string name="analytics">Analytics</string>
+    <string name="settings">Settings</string>
+    
+    <!-- Common Actions -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="back">Back</string>
+    <string name="next">Next</string>
+    <string name="done">Done</string>
+    <string name="ok">OK</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="loading">Loading...</string>
+    <string name="error">Error</string>
+    <string name="success">Success</string>
+    <string name="warning">Warning</string>
+    <string name="info">Info</string>
+    
+    <!-- Status Messages -->
+    <string name="no_data">No data available</string>
+    <string name="network_error">Network error. Please check your connection.</string>
+    <string name="server_error">Server error. Please try again later.</string>
+    <string name="permission_denied">Permission denied</string>
+    <string name="feature_coming_soon">Feature coming soon!</string>
 </resources>

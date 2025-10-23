@@ -179,9 +179,9 @@ class SocialRepository @Inject constructor(
 
     // ==================== USER SEARCH ====================
 
-    suspend fun searchUsers(query: String): Result<List<User>> {
+    suspend fun searchUsers(query: String, currentUserId: Long): Result<List<User>> {
         return try {
-            val users = userDao.searchUsers("%$query%")
+            val users = userDao.searchUsers(query, currentUserId)
             Result.Success(users)
         } catch (e: Exception) {
             Result.Error(e)

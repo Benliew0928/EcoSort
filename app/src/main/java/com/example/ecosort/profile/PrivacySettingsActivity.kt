@@ -33,7 +33,7 @@ class PrivacySettingsActivity : AppCompatActivity() {
     private lateinit var btnCancel: Button
     private lateinit var progressBar: ProgressBar
     
-    private var currentUserId: Long = 1L
+    private var currentUserId: Long = 0L
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

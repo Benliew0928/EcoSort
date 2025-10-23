@@ -152,7 +152,7 @@ class UserRepository @Inject constructor(
             val currentSession = preferencesManager.userSession.first()
                 ?: return Result.Error(Exception("No active session"))
             
-            val users = userDao.searchUsersByUsername(query, currentSession.username)
+            val users = userDao.searchUsersByUsername(query, currentSession.userId)
             Result.Success(users)
         } catch (e: Exception) {
             Result.Error(e)
@@ -348,9 +348,9 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun addEarnings(userId: Long, amount: Double): Result<Unit> {
+    suspend fun addPoints(userId: Long, points: Int): Result<Unit> {
         return try {
-            userDao.addEarnings(userId, amount)
+            userDao.addPoints(userId, points)
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e)

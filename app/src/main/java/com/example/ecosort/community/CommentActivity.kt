@@ -40,7 +40,7 @@ class CommentActivity : AppCompatActivity() {
     
     private lateinit var commentAdapter: CommentAdapter
     private var currentPost: CommunityPost? = null
-    private var currentUserId: Long = 1L
+    private var currentUserId: Long = 0L
     private var currentUsername: String = "User"
     
     override fun onCreate(savedInstanceState: Bundle?) {

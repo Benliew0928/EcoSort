@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">EcoSort</string>
+    
+    <!-- Theme Options -->
+    <string-array name="theme_options">
+        <item>Terang</item>
+        <item>Gelap</item>
+        <item>Sistem</item>
+    </string-array>
+    
+    <!-- Language Options -->
+    <string-array name="language_options">
+        <item>Bahasa Inggeris</item>
+        <item>Bahasa Cina</item>
+        <item>Bahasa Melayu</item>
+    </string-array>
+    
+    <string-array name="language_values">
+        <item>en</item>
+        <item>zh</item>
+        <item>ms</item>
+    </string-array>
+    
+    <!-- Font Size Options -->
+    <string-array name="font_size_options">
+        <item>Kecil</item>
+        <item>Sederhana</item>
+        <item>Besar</item>
+        <item>Sangat Besar</item>
+    </string-array>
+    
+    <!-- Units Options -->
+    <string-array name="units_options">
+        <item>Metrik</item>
+        <item>Imperial</item>
+    </string-array>
+    
+    <!-- Reminder Frequency Options -->
+    <string-array name="reminder_frequency_options">
+        <item>Harian</item>
+        <item>Mingguan</item>
+        <item>Bulanan</item>
+        <item>Tidak Pernah</item>
+    </string-array>
+    
+    <!-- Common UI Strings -->
+    <string name="preferences_title">Keutamaan &amp; Tetapan</string>
+    <string name="appearance_title">🎨 Penampilan</string>
+    <string name="notifications_title">🔔 Notifikasi</string>
+    <string name="accessibility_title">♿ Kebolehcapaian</string>
+    <string name="privacy_title">🔒 Privasi</string>
+    <string name="recycling_title">♻️ Kitar Semula</string>
+    
+    <string name="theme_label">Tema</string>
+    <string name="language_label">Bahasa</string>
+    <string name="font_size_label">Saiz Fon</string>
+    <string name="units_label">Unit</string>
+    
+    <string name="push_notifications">Notifikasi Tolak</string>
+    <string name="email_notifications">Notifikasi E-mel</string>
+    <string name="community_updates">Kemaskini Komuniti</string>
+    <string name="achievement_alerts">Amaran Pencapaian</string>
+    <string name="weekly_reports">Laporan Mingguan</string>
+    <string name="recycling_reminders">Peringatan Kitar Semula</string>
+    <string name="friend_requests">Permintaan Rakan</string>
+    <string name="message_notifications">Notifikasi Mesej</string>
+    
+    <string name="high_contrast">Kontras Tinggi</string>
+    <string name="reduce_motion">Kurangkan Pergerakan</string>
+    <string name="screen_reader">Pembaca Skrin</string>
+    <string name="large_text">Teks Besar</string>
+    <string name="bold_text">Teks Tebal</string>
+    <string name="color_blind_support">Sokongan Buta Warna</string>
+    
+    <string name="show_online_status">Tunjukkan Status Dalam Talian</string>
+    <string name="allow_friend_requests">Benarkan Permintaan Rakan</string>
+    <string name="show_last_seen">Tunjukkan Terakhir Dilihat</string>
+    <string name="allow_profile_views">Benarkan Paparan Profil</string>
+    <string name="share_recycling_stats">Kongsi Statistik Kitar Semula</string>
+    <string name="allow_data_collection">Benarkan Pengumpulan Data</string>
+    
+    <string name="reminder_frequency">Kekerapan Peringatan</string>
+    <string name="auto_categorize">Kategori Automatik</string>
+    <string name="share_stats">Kongsi Statistik</string>
+    <string name="show_tips">Tunjukkan Petua</string>
+    <string name="enable_gamification">Dayakan Gamifikasi</string>
+    
+    <string name="save_button">Simpan</string>
+    <string name="reset_button">Set Semula</string>
+    <string name="back_button">Kembali</string>
+    
+    <string name="preferences_saved">Keutamaan disimpan dan digunakan dengan jayanya!</string>
+    <string name="preferences_reset">Keutamaan diset semula kepada lalai</string>
+    <string name="error_saving">Ralat menyimpan keutamaan</string>
+    
+    <!-- Main Activity Strings -->
+    <string name="app_title">EcoSort</string>
+    <string name="app_subtitle">Kitar semula pintar • Pasaran • Komuniti</string>
+    <string name="welcome_message">Selamat kembali, Pengguna!</string>
+    <string name="welcome_subtitle">Mari kita jadikan dunia lebih hijau bersama 🌱</string>
+    <string name="quick_actions">Tindakan Pantas</string>
+    <string name="scan_item">📸\nImbas Item</string>
+    <string name="find_stations">🗺️\nCari Stesen</string>
+    <string name="community">👥\nKomuniti</string>
+    <string name="chat">💬\nChat</string>
+    <string name="your_impact">Impak Anda</string>
+    <string name="items_recycled">Item Dikitar Semula</string>
+    <string name="points_label">Mata</string>
+    <string name="community_feeds">Suapan Komuniti</string>
+    <string name="view_all">Lihat Semua</string>
+    <string name="vintage_radio">Radio Vintage</string>
+    <string name="glass_vase">Pasu Kaca</string>
+    <string name="metal_frame">Bingkai Logam</string>
+    <string name="good_condition">Keadaan baik</string>
+    <string name="excellent_condition">Keadaan cemerlang</string>
+    <string name="like_new">Seperti baru</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">🏠\nUtama</string>
+    <string name="nav_scan">📸\nImbas</string>
+    <string name="nav_map">🗺️\nPeta</string>
+    <string name="nav_community">👥\nKomuniti</string>
+    
+    <!-- User Profile -->
+    <string name="profile">Profil</string>
+    <string name="edit_profile">✏️ Edit Profil</string>
+    <string name="privacy_settings">🔒 Tetapan Privasi</string>
+    <string name="preferences">🎨 Keutamaan</string>
+    <string name="logout">🚪 Log Keluar</string>
+    <string name="total_points">Jumlah Mata</string>
+    <string name="profile_completion">Penyiapan Profil</string>
+    <string name="last_active">Aktif Terakhir</string>
+    <string name="join_date">Tarikh Sertai</string>
+    <string name="bio">Bio</string>
+    <string name="location">Lokasi</string>
+    <string name="social_links">Pautan Sosial</string>
+    <string name="achievements">Pencapaian</string>
+    
+    <!-- Login/Register -->
+    <string name="login">Log Masuk</string>
+    <string name="register">Daftar</string>
+    <string name="email">E-mel</string>
+    <string name="password">Kata Laluan</string>
+    <string name="confirm_password">Sahkan Kata Laluan</string>
+    <string name="username">Nama Pengguna</string>
+    <string name="forgot_password">Lupa Kata Laluan?</string>
+    <string name="dont_have_account">Tiada akaun?</string>
+    <string name="already_have_account">Sudah ada akaun?</string>
+    <string name="login_success">Log masuk berjaya!</string>
+    <string name="register_success">Pendaftaran berjaya!</string>
+    <string name="login_failed">Log masuk gagal. Sila periksa kelayakan anda.</string>
+    <string name="register_failed">Pendaftaran gagal. Sila cuba lagi.</string>
+    
+    <!-- Community -->
+    <string name="create_post">Cipta Catatan</string>
+    <string name="post_content">Apa yang anda fikirkan?</string>
+    <string name="add_image">Tambah Imej</string>
+    <string name="add_video">Tambah Video</string>
+    <string name="post_type">Jenis Catatan</string>
+    <string name="share_tip">Kongsi Tip</string>
+    <string name="showcase_item">Pamerkan Item</string>
+    <string name="ask_question">Tanya Soalan</string>
+    <string name="publish">Terbitkan</string>
+    <string name="like">Suka</string>
+    <string name="comment">Komen</string>
+    <string name="share">Kongsi</string>
+    <string name="comments">Komen</string>
+    <string name="write_comment">Tulis komen...</string>
+    <string name="post_comment">Hantar Komen</string>
+    
+    <!-- Chat -->
+    <string name="chat_list">Senarai Chat</string>
+    <string name="search_users">Cari Pengguna</string>
+    <string name="type_message">Taip mesej...</string>
+    <string name="send">Hantar</string>
+    <string name="online">Dalam Talian</string>
+    <string name="offline">Luar Talian</string>
+    <string name="last_seen">Terakhir dilihat</string>
+    <string name="typing">Menulis...</string>
+    <string name="message_delivered">Dihantar</string>
+    <string name="message_read">Dibaca</string>
+    
+    <!-- Camera/Scan -->
+    <string name="camera">Kamera</string>
+    <string name="gallery">Galeri</string>
+    <string name="scan_item_title">Imbas Item</string>
+    <string name="take_photo">Ambil Foto</string>
+    <string name="choose_from_gallery">Pilih dari Galeri</string>
+    <string name="analyzing">Menganalisis...</string>
+    <string name="item_detected">Item Dikesan</string>
+    <string name="recyclable">Boleh Dikitar Semula</string>
+    <string name="not_recyclable">Tidak Boleh Dikitar Semula</string>
+    <string name="confidence">Keyakinan</string>
+    
+    <!-- Map/Stations -->
+    <string name="map">Peta</string>
+    <string name="recycling_stations">Stesen Kitar Semula</string>
+    <string name="find_nearby_stations">Cari Stesen Berhampiran</string>
+    <string name="station_details">Butiran Stesen</string>
+    <string name="accepted_materials">Bahan Diterima</string>
+    <string name="opening_hours">Waktu Operasi</string>
+    <string name="contact">Hubungi</string>
+    <string name="directions">Arah</string>
+    <string name="distance">Jarak</string>
+    <string name="rating">Penilaian</string>
+    
+    <!-- Admin -->
+    <string name="admin_panel">Panel Admin</string>
+    <string name="user_management">Pengurusan Pengguna</string>
+    <string name="content_moderation">Moderasi Kandungan</string>
+    <string name="analytics">Analitik</string>
+    <string name="settings">Tetapan</string>
+    
+    <!-- Common Actions -->
+    <string name="save">Simpan</string>
+    <string name="cancel">Batal</string>
+    <string name="delete">Padam</string>
+    <string name="edit">Edit</string>
+    <string name="back">Kembali</string>
+    <string name="next">Seterusnya</string>
+    <string name="done">Selesai</string>
+    <string name="ok">OK</string>
+    <string name="yes">Ya</string>
+    <string name="no">Tidak</string>
+    <string name="loading">Memuatkan...</string>
+    <string name="error">Ralat</string>
+    <string name="success">Berjaya</string>
+    <string name="warning">Amaran</string>
+    <string name="info">Maklumat</string>
+    
+    <!-- Status Messages -->
+    <string name="no_data">Tiada data tersedia</string>
+    <string name="network_error">Ralat rangkaian. Sila periksa sambungan anda.</string>
+    <string name="server_error">Ralat pelayan. Sila cuba lagi kemudian.</string>
+    <string name="permission_denied">Kebenaran ditolak</string>
+    <string name="feature_coming_soon">Ciri akan datang!</string>
+</resources>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- User Info Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <!-- Profile Image -->
+            <ImageView
+                android:id="@+id/imageViewProfile"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:src="@drawable/ic_user_placeholder"
+                android:scaleType="centerCrop"
+                android:background="@drawable/circle_background"
+                android:layout_marginEnd="12dp" />
+
+            <!-- User Details -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/textViewUsername"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Username"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:fontFamily="@string/font_family_heading" />
+
+                <TextView
+                    android:id="@+id/textViewUserType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Regular User"
+                    android:textSize="12sp"
+                    android:textColor="@color/primary_green"
+                    android:fontFamily="@string/font_family_caption" />
+
+                <TextView
+                    android:id="@+id/textViewLocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Location"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:fontFamily="@string/font_family_caption" />
+
+            </LinearLayout>
+
+            <!-- Time -->
+            <TextView
+                android:id="@+id/textViewTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2 days ago"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:fontFamily="@string/font_family_caption" />
+
+        </LinearLayout>
+
+        <!-- Message Section -->
+        <TextView
+            android:id="@+id/textViewMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Message"
+            android:textSize="14sp"
+            android:textColor="@color/text_primary"
+            android:fontFamily="@string/font_family_body"
+            android:background="@color/surface_light"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone" />
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end">
+
+            <Button
+                android:id="@+id/buttonDecline"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="Decline"
+                android:textSize="14sp"
+                android:fontFamily="@string/font_family_primary"
+                android:background="@drawable/button_secondary"
+                android:textColor="@color/text_primary"
+                android:minWidth="80dp"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/buttonAccept"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="Accept"
+                android:textSize="14sp"
+                android:fontFamily="@string/font_family_primary"
+                android:background="@drawable/button_primary"
+                android:textColor="@color/white"
+                android:minWidth="80dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

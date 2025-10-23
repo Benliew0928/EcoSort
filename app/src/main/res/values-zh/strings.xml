@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">EcoSort</string>
+    
+    <!-- Theme Options -->
+    <string-array name="theme_options">
+        <item>浅色</item>
+        <item>深色</item>
+        <item>系统</item>
+    </string-array>
+    
+    <!-- Language Options -->
+    <string-array name="language_options">
+        <item>英语</item>
+        <item>中文</item>
+        <item>马来语</item>
+    </string-array>
+    
+    <string-array name="language_values">
+        <item>en</item>
+        <item>zh</item>
+        <item>ms</item>
+    </string-array>
+    
+    <!-- Font Size Options -->
+    <string-array name="font_size_options">
+        <item>小</item>
+        <item>中</item>
+        <item>大</item>
+        <item>特大</item>
+    </string-array>
+    
+    <!-- Units Options -->
+    <string-array name="units_options">
+        <item>公制</item>
+        <item>英制</item>
+    </string-array>
+    
+    <!-- Reminder Frequency Options -->
+    <string-array name="reminder_frequency_options">
+        <item>每日</item>
+        <item>每周</item>
+        <item>每月</item>
+        <item>从不</item>
+    </string-array>
+    
+    <!-- Common UI Strings -->
+    <string name="preferences_title">偏好设置</string>
+    <string name="appearance_title">🎨 外观</string>
+    <string name="notifications_title">🔔 通知</string>
+    <string name="accessibility_title">♿ 无障碍</string>
+    <string name="privacy_title">🔒 隐私</string>
+    <string name="recycling_title">♻️ 回收</string>
+    
+    <string name="theme_label">主题</string>
+    <string name="language_label">语言</string>
+    <string name="font_size_label">字体大小</string>
+    <string name="units_label">单位</string>
+    
+    <string name="push_notifications">推送通知</string>
+    <string name="email_notifications">邮件通知</string>
+    <string name="community_updates">社区更新</string>
+    <string name="achievement_alerts">成就提醒</string>
+    <string name="weekly_reports">周报</string>
+    <string name="recycling_reminders">回收提醒</string>
+    <string name="friend_requests">好友请求</string>
+    <string name="message_notifications">消息通知</string>
+    
+    <string name="high_contrast">高对比度</string>
+    <string name="reduce_motion">减少动画</string>
+    <string name="screen_reader">屏幕阅读器</string>
+    <string name="large_text">大字体</string>
+    <string name="bold_text">粗体</string>
+    <string name="color_blind_support">色盲支持</string>
+    
+    <string name="show_online_status">显示在线状态</string>
+    <string name="allow_friend_requests">允许好友请求</string>
+    <string name="show_last_seen">显示最后在线</string>
+    <string name="allow_profile_views">允许查看资料</string>
+    <string name="share_recycling_stats">分享回收统计</string>
+    <string name="allow_data_collection">允许数据收集</string>
+    
+    <string name="reminder_frequency">提醒频率</string>
+    <string name="auto_categorize">自动分类</string>
+    <string name="share_stats">分享统计</string>
+    <string name="show_tips">显示提示</string>
+    <string name="enable_gamification">启用游戏化</string>
+    
+    <string name="save_button">保存</string>
+    <string name="reset_button">重置</string>
+    <string name="back_button">返回</string>
+    
+    <string name="preferences_saved">偏好设置已保存并应用！</string>
+    <string name="preferences_reset">偏好设置已重置为默认值</string>
+    <string name="error_saving">保存偏好设置时出错</string>
+    
+    <!-- Main Activity Strings -->
+    <string name="app_title">EcoSort</string>
+    <string name="app_subtitle">智能回收 • 市场 • 社区</string>
+    <string name="welcome_message">欢迎回来，用户！</string>
+    <string name="welcome_subtitle">让我们一起让世界更绿色 🌱</string>
+    <string name="quick_actions">快速操作</string>
+    <string name="scan_item">📸\n扫描物品</string>
+    <string name="find_stations">🗺️\n查找站点</string>
+    <string name="community">👥\n社区</string>
+    <string name="chat">💬\n聊天</string>
+    <string name="your_impact">您的影响</string>
+    <string name="items_recycled">回收物品</string>
+    <string name="points_label">积分</string>
+    <string name="community_feeds">社区动态</string>
+    <string name="view_all">查看全部</string>
+    <string name="vintage_radio">复古收音机</string>
+    <string name="glass_vase">玻璃花瓶</string>
+    <string name="metal_frame">金属框架</string>
+    <string name="good_condition">状况良好</string>
+    <string name="excellent_condition">状况极佳</string>
+    <string name="like_new">如新</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">🏠\n首页</string>
+    <string name="nav_scan">📸\n扫描</string>
+    <string name="nav_map">🗺️\n地图</string>
+    <string name="nav_community">👥\n社区</string>
+    
+    <!-- User Profile -->
+    <string name="profile">资料</string>
+    <string name="edit_profile">✏️ 编辑资料</string>
+    <string name="privacy_settings">🔒 隐私设置</string>
+    <string name="preferences">🎨 偏好设置</string>
+    <string name="logout">🚪 退出登录</string>
+    <string name="total_points">总积分</string>
+    <string name="profile_completion">资料完成度</string>
+    <string name="last_active">最后活跃</string>
+    <string name="join_date">加入日期</string>
+    <string name="bio">个人简介</string>
+    <string name="location">位置</string>
+    <string name="social_links">社交链接</string>
+    <string name="achievements">成就</string>
+    
+    <!-- Login/Register -->
+    <string name="login">登录</string>
+    <string name="register">注册</string>
+    <string name="email">邮箱</string>
+    <string name="password">密码</string>
+    <string name="confirm_password">确认密码</string>
+    <string name="username">用户名</string>
+    <string name="forgot_password">忘记密码？</string>
+    <string name="dont_have_account">没有账户？</string>
+    <string name="already_have_account">已有账户？</string>
+    <string name="login_success">登录成功！</string>
+    <string name="register_success">注册成功！</string>
+    <string name="login_failed">登录失败。请检查您的凭据。</string>
+    <string name="register_failed">注册失败。请重试。</string>
+    
+    <!-- Community -->
+    <string name="create_post">创建帖子</string>
+    <string name="post_content">您在想什么？</string>
+    <string name="add_image">添加图片</string>
+    <string name="add_video">添加视频</string>
+    <string name="post_type">帖子类型</string>
+    <string name="share_tip">分享技巧</string>
+    <string name="showcase_item">展示物品</string>
+    <string name="ask_question">提问</string>
+    <string name="publish">发布</string>
+    <string name="like">点赞</string>
+    <string name="comment">评论</string>
+    <string name="share">分享</string>
+    <string name="comments">评论</string>
+    <string name="write_comment">写评论...</string>
+    <string name="post_comment">发布评论</string>
+    
+    <!-- Chat -->
+    <string name="chat_list">聊天列表</string>
+    <string name="search_users">搜索用户</string>
+    <string name="type_message">输入消息...</string>
+    <string name="send">发送</string>
+    <string name="online">在线</string>
+    <string name="offline">离线</string>
+    <string name="last_seen">最后在线</string>
+    <string name="typing">正在输入...</string>
+    <string name="message_delivered">已送达</string>
+    <string name="message_read">已读</string>
+    
+    <!-- Camera/Scan -->
+    <string name="camera">相机</string>
+    <string name="gallery">相册</string>
+    <string name="scan_item_title">扫描物品</string>
+    <string name="take_photo">拍照</string>
+    <string name="choose_from_gallery">从相册选择</string>
+    <string name="analyzing">分析中...</string>
+    <string name="item_detected">检测到物品</string>
+    <string name="recyclable">可回收</string>
+    <string name="not_recyclable">不可回收</string>
+    <string name="confidence">置信度</string>
+    
+    <!-- Map/Stations -->
+    <string name="map">地图</string>
+    <string name="recycling_stations">回收站点</string>
+    <string name="find_nearby_stations">查找附近站点</string>
+    <string name="station_details">站点详情</string>
+    <string name="accepted_materials">接受材料</string>
+    <string name="opening_hours">营业时间</string>
+    <string name="contact">联系方式</string>
+    <string name="directions">路线</string>
+    <string name="distance">距离</string>
+    <string name="rating">评分</string>
+    
+    <!-- Admin -->
+    <string name="admin_panel">管理面板</string>
+    <string name="user_management">用户管理</string>
+    <string name="content_moderation">内容审核</string>
+    <string name="analytics">分析</string>
+    <string name="settings">设置</string>
+    
+    <!-- Common Actions -->
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="delete">删除</string>
+    <string name="edit">编辑</string>
+    <string name="back">返回</string>
+    <string name="next">下一步</string>
+    <string name="done">完成</string>
+    <string name="ok">确定</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+    <string name="loading">加载中...</string>
+    <string name="error">错误</string>
+    <string name="success">成功</string>
+    <string name="warning">警告</string>
+    <string name="info">信息</string>
+    
+    <!-- Status Messages -->
+    <string name="no_data">暂无数据</string>
+    <string name="network_error">网络错误。请检查您的连接。</string>
+    <string name="server_error">服务器错误。请稍后重试。</string>
+    <string name="permission_denied">权限被拒绝</string>
+    <string name="feature_coming_soon">功能即将推出！</string>
+</resources>

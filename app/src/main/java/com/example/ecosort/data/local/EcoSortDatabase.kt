@@ -118,6 +118,12 @@ class Converters {
     fun toUserPreferences(value: String): UserPreferences {
         return gson.fromJson(value, UserPreferences::class.java)
     }
+
+    @TypeConverter
+    fun fromFriendRequestStatus(value: FriendRequestStatus): String = value.name
+
+    @TypeConverter
+    fun toFriendRequestStatus(value: String): FriendRequestStatus = FriendRequestStatus.valueOf(value)
 }
 
 // ==================== USER DAO ====================
@@ -129,14 +135,17 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE username = :username LIMIT 1")
     suspend fun getUserByUsername(username: String): User?
 
-    @Query("SELECT * FROM users WHERE username LIKE '%' || :query || '%' AND username != :currentUsername LIMIT 20")
-    suspend fun searchUsersByUsername(query: String, currentUsername: String): List<User>
+    @Query("SELECT * FROM users WHERE username LIKE '%' || :query || '%' AND id != :currentUserId LIMIT 20")
+    suspend fun searchUsersByUsername(query: String, currentUserId: Long): List<User>
 
-    @Query("SELECT * FROM users WHERE username LIKE :query OR email LIKE :query LIMIT 20")
-    suspend fun searchUsers(query: String): List<User>
+    @Query("SELECT * FROM users WHERE (username LIKE '%' || :query || '%' OR email LIKE '%' || :query || '%') AND id != :currentUserId LIMIT 20")
+    suspend fun searchUsers(query: String, currentUserId: Long): List<User>
 
     @Query("SELECT * FROM users")
     suspend fun getAllUsers(): List<User>
+
+    @Query("SELECT * FROM users")
+    fun getAllUsersFlow(): Flow<List<User>>
 
     @Query("SELECT COUNT(*) FROM users")
     suspend fun getUserCount(): Int
@@ -153,8 +162,8 @@ interface UserDao {
     @Query("UPDATE users SET itemsRecycled = itemsRecycled + 1 WHERE id = :userId")
     suspend fun incrementItemsRecycled(userId: Long)
 
-    @Query("UPDATE users SET totalEarnings = totalEarnings + :amount WHERE id = :userId")
-    suspend fun addEarnings(userId: Long, amount: Double)
+    @Query("UPDATE users SET totalPoints = totalPoints + :points WHERE id = :userId")
+    suspend fun addPoints(userId: Long, points: Int)
 
     @Query("DELETE FROM users WHERE id = :userId")
     suspend fun deleteUser(userId: Long)
@@ -471,6 +480,84 @@ interface UserFriendDao {
     suspend fun areFriends(userId: Long, friendId: Long): Boolean
 }
 
+// ==================== FRIEND REQUEST DAO ====================
+@Dao
+interface FriendRequestDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFriendRequest(friendRequest: FriendRequest): Long
+
+    @Update
+    suspend fun updateFriendRequest(friendRequest: FriendRequest)
+
+    @Delete
+    suspend fun deleteFriendRequest(friendRequest: FriendRequest)
+
+    @Query("SELECT * FROM friend_requests WHERE receiverId = :userId AND status = 'PENDING' ORDER BY createdAt DESC")
+    fun getPendingFriendRequests(userId: Long): Flow<List<FriendRequest>>
+
+    @Query("SELECT * FROM friend_requests WHERE senderId = :userId ORDER BY createdAt DESC")
+    fun getSentFriendRequests(userId: Long): Flow<List<FriendRequest>>
+
+    @Query("SELECT * FROM friend_requests WHERE id = :requestId")
+    suspend fun getFriendRequestById(requestId: Long): FriendRequest?
+
+    @Query("SELECT * FROM friend_requests WHERE senderId = :senderId AND receiverId = :receiverId AND status = 'PENDING'")
+    suspend fun getPendingRequestBetweenUsers(senderId: Long, receiverId: Long): FriendRequest?
+
+    @Query("UPDATE friend_requests SET status = :status, updatedAt = :updatedAt WHERE id = :requestId")
+    suspend fun updateFriendRequestStatus(requestId: Long, status: FriendRequestStatus, updatedAt: Long)
+
+    @Query("DELETE FROM friend_requests WHERE senderId = :userId OR receiverId = :userId")
+    suspend fun deleteAllFriendRequestsForUser(userId: Long)
+}
+
+// ==================== FRIENDSHIP DAO ====================
+@Dao
+interface FriendshipDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFriendship(friendship: Friendship): Long
+
+    @Delete
+    suspend fun deleteFriendship(friendship: Friendship)
+
+    @Query("SELECT * FROM friendships WHERE userId1 = :userId OR userId2 = :userId ORDER BY lastInteraction DESC")
+    fun getFriendships(userId: Long): Flow<List<Friendship>>
+
+    @Query("SELECT * FROM friendships WHERE (userId1 = :userId1 AND userId2 = :userId2) OR (userId1 = :userId2 AND userId2 = :userId1)")
+    suspend fun getFriendshipBetweenUsers(userId1: Long, userId2: Long): Friendship?
+
+    @Query("DELETE FROM friendships WHERE (userId1 = :userId1 AND userId2 = :userId2) OR (userId1 = :userId2 AND userId2 = :userId1)")
+    suspend fun removeFriendship(userId1: Long, userId2: Long)
+
+    @Query("UPDATE friendships SET lastInteraction = :timestamp WHERE (userId1 = :userId1 AND userId2 = :userId2) OR (userId1 = :userId2 AND userId2 = :userId1)")
+    suspend fun updateLastInteraction(userId1: Long, userId2: Long, timestamp: Long)
+
+    @Query("SELECT COUNT(*) FROM friendships WHERE userId1 = :userId OR userId2 = :userId")
+    suspend fun getFriendCount(userId: Long): Int
+}
+
+// ==================== BLOCKED USER DAO ====================
+@Dao
+interface BlockedUserDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBlockedUser(blockedUser: BlockedUser): Long
+
+    @Delete
+    suspend fun deleteBlockedUser(blockedUser: BlockedUser)
+
+    @Query("SELECT * FROM blocked_users WHERE blockerId = :userId ORDER BY createdAt DESC")
+    fun getBlockedUsers(userId: Long): Flow<List<BlockedUser>>
+
+    @Query("SELECT * FROM blocked_users WHERE blockerId = :blockerId AND blockedId = :blockedId")
+    suspend fun getBlockedUser(blockerId: Long, blockedId: Long): BlockedUser?
+
+    @Query("DELETE FROM blocked_users WHERE blockerId = :blockerId AND blockedId = :blockedId")
+    suspend fun unblockUser(blockerId: Long, blockedId: Long)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM blocked_users WHERE (blockerId = :userId1 AND blockedId = :userId2) OR (blockerId = :userId2 AND blockedId = :userId1))")
+    suspend fun isBlocked(userId1: Long, userId2: Long): Boolean
+}
+
 // ==================== MAIN DATABASE ====================
 @Database(
     entities = [
@@ -483,9 +570,12 @@ interface UserFriendDao {
         CommunityComment::class,
         CommunityLike::class,
         UserFollow::class,
-        UserFriend::class
+        UserFriend::class,
+        FriendRequest::class,
+        Friendship::class,
+        BlockedUser::class
     ],
-    version = 13,
+    version = 15,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -501,6 +591,9 @@ abstract class EcoSortDatabase : RoomDatabase() {
     abstract fun communityLikeDao(): CommunityLikeDao
     abstract fun userFollowDao(): UserFollowDao
     abstract fun userFriendDao(): UserFriendDao
+    abstract fun friendRequestDao(): FriendRequestDao
+    abstract fun friendshipDao(): FriendshipDao
+    abstract fun blockedUserDao(): BlockedUserDao
 
     companion object {
         @Volatile
@@ -525,7 +618,9 @@ abstract class EcoSortDatabase : RoomDatabase() {
                 MIGRATION_9_10,
                 MIGRATION_10_11,
                 MIGRATION_11_12,
-                MIGRATION_12_13
+                MIGRATION_12_13,
+                MIGRATION_13_14,
+                MIGRATION_14_15
             )
                     .allowMainThreadQueries() // Temporary for debugging
                     .build()
@@ -786,6 +881,115 @@ internal val MIGRATION_12_13 = object : androidx.room.migration.Migration(12, 13
             android.util.Log.d("Migration", "Created social features tables in migration 12_13")
         } catch (e: Exception) {
             android.util.Log.e("Migration", "Error in migration 12_13: ${e.message}")
+        }
+    }
+}
+
+internal val MIGRATION_13_14 = object : androidx.room.migration.Migration(13, 14) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add totalPoints column and migrate data from totalEarnings
+            database.execSQL("""
+                ALTER TABLE users ADD COLUMN totalPoints INTEGER NOT NULL DEFAULT 0
+            """.trimIndent())
+            
+            // Migrate existing totalEarnings data to totalPoints (convert Double to Int)
+            database.execSQL("""
+                UPDATE users SET totalPoints = CAST(totalEarnings AS INTEGER) WHERE totalEarnings IS NOT NULL
+            """.trimIndent())
+            
+            // Drop the old totalEarnings column
+            database.execSQL("""
+                CREATE TABLE users_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    username TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    passwordHash TEXT NOT NULL,
+                    userType TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    itemsRecycled INTEGER NOT NULL,
+                    totalPoints INTEGER NOT NULL,
+                    profileImageUrl TEXT,
+                    bio TEXT,
+                    location TEXT,
+                    joinDate INTEGER NOT NULL,
+                    lastActive INTEGER NOT NULL,
+                    profileCompletion INTEGER NOT NULL,
+                    privacySettings TEXT,
+                    achievements TEXT,
+                    socialLinks TEXT,
+                    preferences TEXT
+                )
+            """.trimIndent())
+            
+            // Copy data from old table to new table
+            database.execSQL("""
+                INSERT INTO users_new (
+                    id, username, email, passwordHash, userType, createdAt, itemsRecycled,
+                    totalPoints, profileImageUrl, bio, location, joinDate, lastActive,
+                    profileCompletion, privacySettings, achievements, socialLinks, preferences
+                )
+                SELECT 
+                    id, username, email, passwordHash, userType, createdAt, itemsRecycled,
+                    totalPoints, profileImageUrl, bio, location, joinDate, lastActive,
+                    profileCompletion, privacySettings, achievements, socialLinks, preferences
+                FROM users
+            """.trimIndent())
+            
+            // Drop old table and rename new table
+            database.execSQL("DROP TABLE users")
+            database.execSQL("ALTER TABLE users_new RENAME TO users")
+            
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_13_14", "Migration failed: ${e.message}")
+            throw e
+        }
+    }
+}
+
+internal val MIGRATION_14_15 = object : androidx.room.migration.Migration(14, 15) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Create friend_requests table
+            database.execSQL("""
+                CREATE TABLE friend_requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    senderId INTEGER NOT NULL,
+                    receiverId INTEGER NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'PENDING',
+                    message TEXT,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL
+                )
+            """.trimIndent())
+
+            // Create friendships table
+            database.execSQL("""
+                CREATE TABLE friendships (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    userId1 INTEGER NOT NULL,
+                    userId2 INTEGER NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    lastInteraction INTEGER NOT NULL
+                )
+            """.trimIndent())
+
+            // Create blocked_users table
+            database.execSQL("""
+                CREATE TABLE blocked_users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    blockerId INTEGER NOT NULL,
+                    blockedId INTEGER NOT NULL,
+                    reason TEXT,
+                    createdAt INTEGER NOT NULL
+                )
+            """.trimIndent())
+
+            android.util.Log.d("Migration_14_15", "Created friend system tables successfully")
+
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_14_15", "Migration failed: ${e.message}")
+            throw e
         }
     }
 }

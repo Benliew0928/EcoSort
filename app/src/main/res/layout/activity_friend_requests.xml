@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_light">
+
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/primary_green"
+        android:elevation="4dp"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:title="Friend Requests"
+        app:titleTextColor="@color/white" />
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="@color/white"
+        android:elevation="2dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Friend Requests"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:fontFamily="@string/font_family_heading"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Accept or decline friend requests from other users"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:fontFamily="@string/font_family_body" />
+
+    </LinearLayout>
+
+    <!-- Friend Requests List -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewRequests"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="16dp"
+        android:visibility="gone" />
+
+    <!-- No Requests Message -->
+    <TextView
+        android:id="@+id/textViewNoRequests"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="32dp"
+        android:text="No friend requests"
+        android:textSize="16sp"
+        android:textColor="@color/text_secondary"
+        android:fontFamily="@string/font_family_body"
+        android:gravity="center"
+        android:visibility="gone" />
+
+</LinearLayout>

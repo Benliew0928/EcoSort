@@ -15,7 +15,7 @@ data class User(
     val userType: UserType,
     val createdAt: Long = System.currentTimeMillis(),
     val itemsRecycled: Int = 0,
-    val totalEarnings: Double = 0.0,
+    val totalPoints: Int = 0,
     val profileImageUrl: String? = null,
     val bio: String? = null,
     val location: String? = null,
@@ -67,9 +67,24 @@ data class SocialLinks(
 ) : Serializable
 
 data class UserPreferences(
-    val notifications: NotificationPreferences = NotificationPreferences(),
+    // ==================== APPEARANCE SETTINGS ====================
     val theme: AppTheme = AppTheme.SYSTEM,
     val language: String = "en",
+    val fontSize: FontSize = FontSize.MEDIUM,
+
+    // ==================== NOTIFICATION SETTINGS ====================
+    val notifications: NotificationPreferences = NotificationPreferences(),
+
+    // ==================== ACCESSIBILITY SETTINGS ====================
+    val accessibility: AccessibilitySettings = AccessibilitySettings(),
+
+    // ==================== PRIVACY SETTINGS ====================
+    val privacy: PrivacyPreferences = PrivacyPreferences(),
+
+    // ==================== RECYCLING SETTINGS ====================
+    val recycling: RecyclingPreferences = RecyclingPreferences(),
+
+    // ==================== UNITS SETTINGS ====================
     val units: MeasurementUnits = MeasurementUnits.METRIC
 ) : Serializable
 
@@ -78,16 +93,127 @@ data class NotificationPreferences(
     val emailNotifications: Boolean = true,
     val communityUpdates: Boolean = true,
     val achievementAlerts: Boolean = true,
-    val weeklyReports: Boolean = true
+    val weeklyReports: Boolean = true,
+    val recyclingReminders: Boolean = true,
+    val friendRequests: Boolean = true,
+    val messageNotifications: Boolean = true
+) : Serializable
+
+data class AccessibilitySettings(
+    val highContrast: Boolean = false,
+    val reduceMotion: Boolean = false,
+    val screenReader: Boolean = false,
+    val largeText: Boolean = false,
+    val boldText: Boolean = false,
+    val colorBlindSupport: Boolean = false
+) : Serializable
+
+data class PrivacyPreferences(
+    val showOnlineStatus: Boolean = true,
+    val allowFriendRequests: Boolean = true,
+    val showLastSeen: Boolean = true,
+    val allowProfileViews: Boolean = true,
+    val shareRecyclingStats: Boolean = true,
+    val allowDataCollection: Boolean = true
+) : Serializable
+
+data class RecyclingPreferences(
+    val favoriteCategories: List<String> = emptyList(),
+    val reminderFrequency: ReminderFrequency = ReminderFrequency.WEEKLY,
+    val autoCategorize: Boolean = true,
+    val shareStats: Boolean = true,
+    val showTips: Boolean = true,
+    val enableGamification: Boolean = true
 ) : Serializable
 
 enum class AppTheme {
     LIGHT, DARK, SYSTEM
 }
 
+enum class FontSize {
+    SMALL, MEDIUM, LARGE, EXTRA_LARGE
+}
+
+enum class ReminderFrequency {
+    DAILY, WEEKLY, MONTHLY, NEVER
+}
+
 enum class MeasurementUnits {
     METRIC, IMPERIAL
 }
+
+// ==================== FRIEND SYSTEM MODELS ====================
+
+@Entity(tableName = "friend_requests")
+data class FriendRequest(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val senderId: Long,
+    val receiverId: Long,
+    val status: FriendRequestStatus = FriendRequestStatus.PENDING,
+    val message: String? = null,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
+enum class FriendRequestStatus {
+    PENDING, ACCEPTED, DECLINED, CANCELLED
+}
+
+@Entity(tableName = "friendships")
+data class Friendship(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val userId1: Long,
+    val userId2: Long,
+    val createdAt: Long = System.currentTimeMillis(),
+    val lastInteraction: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "blocked_users")
+data class BlockedUser(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val blockerId: Long,
+    val blockedId: Long,
+    val reason: String? = null,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+data class FriendActivity(
+    val userId: Long,
+    val username: String,
+    val profileImageUrl: String?,
+    val activityType: FriendActivityType,
+    val description: String,
+    val timestamp: Long,
+    val points: Int? = null,
+    val itemType: String? = null
+) : Serializable
+
+enum class FriendActivityType {
+    RECYCLED_ITEM, ACHIEVEMENT_UNLOCKED, LEVEL_UP, POST_CREATED, COMMENT_ADDED
+}
+
+data class FriendRecommendation(
+    val userId: Long,
+    val username: String,
+    val profileImageUrl: String?,
+    val mutualFriends: Int,
+    val commonInterests: List<String>,
+    val location: String?,
+    val reason: String
+) : Serializable
+
+data class FriendLeaderboard(
+    val userId: Long,
+    val username: String,
+    val profileImageUrl: String?,
+    val rank: Int,
+    val points: Int,
+    val itemsRecycled: Int,
+    val isCurrentUser: Boolean = false
+) : Serializable
 
 // ==================== SCANNED ITEM MODEL ====================
 @Entity(tableName = "scanned_items")

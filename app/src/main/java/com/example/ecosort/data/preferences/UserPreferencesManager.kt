@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.ecosort.data.model.UserSession
 import com.example.ecosort.data.model.UserType
+import com.example.ecosort.data.model.UserPreferences
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -15,6 +17,8 @@ import java.io.IOException
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
 
 class UserPreferencesManager(private val context: Context) {
+
+    private val gson = Gson()
 
     private object PreferencesKeys {
         val USER_ID = longPreferencesKey("user_id")
@@ -26,6 +30,7 @@ class UserPreferencesManager(private val context: Context) {
         val LANGUAGE = stringPreferencesKey("language")
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val USER_PREFERENCES = stringPreferencesKey("user_preferences")
     }
 
     // ==================== USER SESSION ====================
@@ -152,6 +157,35 @@ class UserPreferencesManager(private val context: Context) {
         } catch (e: Exception) {
             android.util.Log.e("UserPreferencesManager", "Error getting current user", e)
             null
+        }
+    }
+    
+    // ==================== USER PREFERENCES MANAGEMENT ====================
+    
+    suspend fun getUserPreferences(): UserPreferences {
+        return try {
+            val preferences = context.dataStore.data.first()
+            val preferencesJson = preferences[PreferencesKeys.USER_PREFERENCES]
+            if (preferencesJson != null) {
+                gson.fromJson(preferencesJson, UserPreferences::class.java)
+            } else {
+                UserPreferences() // Return default preferences
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("UserPreferencesManager", "Error getting user preferences", e)
+            UserPreferences() // Return default preferences on error
+        }
+    }
+    
+    suspend fun saveUserPreferences(preferences: UserPreferences) {
+        try {
+            context.dataStore.edit { dataStore ->
+                dataStore[PreferencesKeys.USER_PREFERENCES] = gson.toJson(preferences)
+            }
+            android.util.Log.d("UserPreferencesManager", "User preferences saved successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("UserPreferencesManager", "Error saving user preferences", e)
+            throw e
         }
     }
 }

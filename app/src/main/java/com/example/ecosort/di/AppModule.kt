@@ -73,6 +73,36 @@ object DatabaseModule {
         return database.communityLikeDao()
     }
 
+    @Provides
+    @Singleton
+    fun provideUserFollowDao(database: EcoSortDatabase): UserFollowDao {
+        return database.userFollowDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserFriendDao(database: EcoSortDatabase): UserFriendDao {
+        return database.userFriendDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFriendRequestDao(database: EcoSortDatabase): FriendRequestDao {
+        return database.friendRequestDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFriendshipDao(database: EcoSortDatabase): FriendshipDao {
+        return database.friendshipDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideBlockedUserDao(database: EcoSortDatabase): BlockedUserDao {
+        return database.blockedUserDao()
+    }
+
 }
 
 @Module

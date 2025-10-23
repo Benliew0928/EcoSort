@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <!-- Profile Image -->
+        <ImageView
+            android:id="@+id/imageViewProfile"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/ic_user_placeholder"
+            android:scaleType="centerCrop"
+            android:background="@drawable/circle_background"
+            android:layout_marginEnd="16dp" />
+
+        <!-- User Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textViewUsername"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Username"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:fontFamily="@string/font_family_heading" />
+
+            <TextView
+                android:id="@+id/textViewUserType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Regular User"
+                android:textSize="12sp"
+                android:textColor="@color/primary_green"
+                android:fontFamily="@string/font_family_caption"
+                android:layout_marginTop="2dp" />
+
+            <TextView
+                android:id="@+id/textViewLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Location"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:fontFamily="@string/font_family_body"
+                android:layout_marginTop="4dp" />
+
+            <TextView
+                android:id="@+id/textViewBio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bio"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:fontFamily="@string/font_family_body"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <!-- Action Button -->
+        <Button
+            android:id="@+id/buttonAction"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="Add Friend"
+            android:textSize="14sp"
+            android:fontFamily="@string/font_family_primary"
+            android:background="@drawable/button_primary"
+            android:textColor="@color/white"
+            android:minWidth="100dp"
+            android:layout_marginStart="16dp" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

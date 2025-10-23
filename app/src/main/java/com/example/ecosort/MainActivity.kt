@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         val btnFindStations = findViewById<Button>(R.id.btnFindStations)
         val btnChat = findViewById<Button>(R.id.btnChat)
         val btnCommunity = findViewById<Button>(R.id.btnCommunity)
+        val btnFriends = findViewById<Button>(R.id.btnFriends)
         val btnProfile = findViewById<android.widget.ImageView>(R.id.btnProfile)
         val tvWelcomeMessage = findViewById<TextView>(R.id.tvWelcomeMessage)
         val featuredViewAll = findViewById<TextView>(R.id.featuredViewAll)
@@ -78,6 +79,19 @@ class MainActivity : AppCompatActivity() {
             try {
                 val session = withContext(Dispatchers.IO) { userPreferencesManager.getCurrentUser() }
                 if (session == null || !session.isLoggedIn) {
+                    // Quick database check - log how many users exist
+                    val userCount = withContext(Dispatchers.IO) {
+                        try {
+                            val database = com.example.ecosort.data.local.EcoSortDatabase.getDatabase(this@MainActivity)
+                            val userDao = database.userDao()
+                            userDao.getAllUsers().size
+                        } catch (e: Exception) {
+                            android.util.Log.e("MainActivity", "Database error: ${e.message}")
+                            0
+                        }
+                    }
+                    android.util.Log.d("MainActivity", "No active session. Users in database: $userCount")
+                    
                     startActivity(Intent(this@MainActivity, LoginActivity::class.java))
                     finish()
                     return@launch
@@ -123,6 +137,10 @@ class MainActivity : AppCompatActivity() {
 
         btnCommunity.setOnClickListener {
             startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
+        }
+
+        btnFriends.setOnClickListener {
+            startActivity(Intent(this, com.example.ecosort.friends.FriendsListActivity::class.java))
         }
 
         // Bottom navigation

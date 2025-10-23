@@ -206,7 +206,7 @@
                         android:layout_width="0dp"
                         android:layout_height="120dp"
                         android:layout_weight="1"
-                        android:text="👥\nCommunity"
+                        android:text="💬\nCommunity"
                         android:textSize="@dimen/text_md"
                         android:textStyle="bold"
                         android:fontFamily="@string/font_family_primary"
@@ -215,6 +215,20 @@
                         android:layout_marginStart="@dimen/spacing_sm"
                         android:elevation="2dp" />
                 </LinearLayout>
+
+                <!-- Friends Button Row -->
+                <Button
+                    android:id="@+id/btnFriends"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="👥 Friends"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:fontFamily="@string/font_family_primary"
+                    android:background="@drawable/button_secondary"
+                    android:textColor="@color/white"
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:elevation="2dp" />
             </LinearLayout>
 
             <!-- Stats Dashboard -->
@@ -280,7 +294,7 @@
                             android:fontFamily="@string/font_family_heading" />
                     </LinearLayout>
 
-                    <!-- Earnings card -->
+                    <!-- Points card -->
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -294,14 +308,14 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="💰"
+                            android:text="⭐"
                             android:textSize="@dimen/text_xxxl"
                             android:layout_marginBottom="@dimen/spacing_sm" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Earnings"
+                            android:text="Points"
                             android:textSize="@dimen/text_sm"
                             android:textColor="@color/text_secondary"
                             android:fontFamily="@string/font_family_caption" />
@@ -309,7 +323,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="RM 156"
+                            android:text="1,250"
                             android:textSize="@dimen/text_display"
                             android:textStyle="bold"
                             android:textColor="@color/accent_teal"

@@ -61,7 +61,7 @@ class PostDetailActivity : AppCompatActivity() {
     private lateinit var editTextComment: EditText
     private lateinit var buttonSendComment: ImageButton
     private var currentPost: CommunityPost? = null
-    private var currentUserId: Long = 1L
+    private var currentUserId: Long = 0L
     private var currentUsername: String = "User"
     
     override fun onCreate(savedInstanceState: Bundle?) {

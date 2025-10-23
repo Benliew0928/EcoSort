@@ -95,6 +95,12 @@
         <activity android:name=".profile.EditProfileActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".profile.UserProfileViewActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".profile.PrivacySettingsActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".preferences.UserPreferencesActivity" android:exported="false" android:screenOrientation="portrait" />
+        
+        <!-- Friend System Activities -->
+        <activity android:name=".friends.FriendSearchActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".friends.FriendRequestsActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".friends.FriendsListActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".AdminActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".marketplace.MarketplaceActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".marketplace.MarketplaceDetailActivity" android:exported="false" android:screenOrientation="portrait" />
