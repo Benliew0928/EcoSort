@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import android.view.View
 import com.example.ecosort.data.local.EcoSortDatabase
 import com.bumptech.glide.Glide
@@ -50,8 +51,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Apply saved language before setting content view
-        applySavedLanguage()
+        // Apply saved language synchronously before setting content view
+        applySavedLanguageSync()
         
         setContentView(R.layout.activity_main_responsive)
 
@@ -113,7 +114,15 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 currentUserType = session.userType
-                tvWelcomeMessage.text = getString(R.string.welcome_message).replace("User", session.username)
+                // Get the welcome message and replace the placeholder with actual username
+                val welcomeText = getString(R.string.welcome_message)
+                val personalizedWelcome = when {
+                    welcomeText.contains("User!") -> welcomeText.replace("User!", session.username)
+                    welcomeText.contains("用户！") -> welcomeText.replace("用户！", session.username)
+                    welcomeText.contains("Pengguna!") -> welcomeText.replace("Pengguna!", session.username)
+                    else -> welcomeText.replace("User", session.username)
+                }
+                tvWelcomeMessage.text = personalizedWelcome
 
                 // Load user profile picture
                 loadUserProfilePicture(btnProfile)
@@ -219,12 +228,64 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Language changes are handled by the preferences activity
+        // Check if language has changed and apply it
+        applySavedLanguage()
     }
     
     override fun onBackPressed() {
         // Prevent going back to login screen
         moveTaskToBack(true)
+    }
+    
+    private fun applySavedLanguageSync() {
+        try {
+            // Use runBlocking to make this synchronous
+            val preferences = runBlocking(Dispatchers.IO) {
+                userPreferencesManager.getUserPreferences()
+            }
+            
+            // Check current language
+            val currentLocale = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                resources.configuration.locales[0]
+            } else {
+                @Suppress("DEPRECATION")
+                resources.configuration.locale
+            }
+            
+            val currentLanguage = when (currentLocale.language) {
+                "zh" -> "zh"
+                "ms" -> "ms"
+                else -> "en"
+            }
+            
+            // Only apply if different
+            if (preferences.language != currentLanguage) {
+                val locale = when (preferences.language) {
+                    "zh" -> java.util.Locale("zh", "CN")
+                    "ms" -> java.util.Locale("ms", "MY")
+                    else -> java.util.Locale("en", "US")
+                }
+                
+                // Set locale globally
+                java.util.Locale.setDefault(locale)
+                
+                val configuration = android.content.res.Configuration(resources.configuration)
+                configuration.setLocale(locale)
+                
+                // Apply to current context
+                resources.updateConfiguration(configuration, resources.displayMetrics)
+                
+                // Apply to application context for global effect
+                applicationContext.resources.updateConfiguration(configuration, applicationContext.resources.displayMetrics)
+                
+                android.util.Log.d("MainActivity", "Applied saved language: ${preferences.language}")
+
+            } else {
+                android.util.Log.d("MainActivity", "Language already correct: ${preferences.language}")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error applying saved language", e)
+        }
     }
     
     private fun applySavedLanguage() {
@@ -269,6 +330,11 @@ class MainActivity : AppCompatActivity() {
                     applicationContext.resources.updateConfiguration(configuration, applicationContext.resources.displayMetrics)
                     
                     android.util.Log.d("MainActivity", "Applied saved language: ${preferences.language}")
+                    
+                    // Recreate the activity to apply language changes to the UI
+                    if (!isFinishing && !isDestroyed) {
+                        recreate()
+                    }
 
                 } else {
                     android.util.Log.d("MainActivity", "Language already correct: ${preferences.language}")

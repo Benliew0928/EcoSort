@@ -97,17 +97,24 @@
     <string name="app_title">EcoSort</string>
     <string name="app_subtitle">Smart recycling • Marketplace • Community</string>
     <string name="welcome_message">Welcome back, User!</string>
+    <string name="make_world_greener">Let\'s make the world greener together</string>
+    <string name="scan_waste">Scan Waste</string>
+    <string name="find_stations">Find Stations</string>
+    <string name="friends">Friends</string>
+    <string name="your_impact">🌿 Your Impact</string>
+    <string name="points">Points</string>
+    <string name="items_recycled">Items Recycled</string>
+    <string name="following_feed">👤 Following\'s Feed</string>
+    <string name="view_all">View All</string>
+    <string name="home">Home</string>
+    <string name="community">Community</string>
+    <string name="chat">Chat</string>
+    <string name="profile">Profile</string>
     <string name="welcome_subtitle">Let\'s make the world greener together 🌱</string>
     <string name="quick_actions">Quick Actions</string>
     <string name="scan_item">📸\nScan Item</string>
-    <string name="find_stations">🗺️\nFind Stations</string>
-    <string name="community">👥\nCommunity</string>
-    <string name="chat">💬\nChat</string>
-    <string name="your_impact">Your Impact</string>
-    <string name="items_recycled">Items Recycled</string>
     <string name="points_label">Points</string>
     <string name="community_feeds">Community Feeds</string>
-    <string name="view_all">View All</string>
     <string name="vintage_radio">Vintage Radio</string>
     <string name="glass_vase">Glass Vase</string>
     <string name="metal_frame">Metal Frame</string>
@@ -122,7 +129,6 @@
     <string name="nav_community">👥\nCommunity</string>
     
     <!-- User Profile -->
-    <string name="profile">Profile</string>
     <string name="edit_profile">✏️ Edit Profile</string>
     <string name="privacy_settings">🔒 Privacy Settings</string>
     <string name="preferences">🎨 Preferences</string>
@@ -236,7 +242,6 @@
     <string name="feature_coming_soon">Feature coming soon!</string>
     
     <!-- Missing Strings from Layouts -->
-    <string name="friends">Friends</string>
     <string name="my_friends">My Friends</string>
     <string name="manage_friends">Manage your friends and connections</string>
     <string name="no_friends_yet">No friends yet</string>
@@ -341,4 +346,16 @@
     
     <!-- Community -->
     <string name="no_community_posts">No community posts yet. Be the first to share!</string>
+    
+    <!-- Google Sign-In -->
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="google_sign_in_success">Successfully signed in with Google</string>
+    <string name="google_sign_in_failed">Google sign-in failed</string>
+    <string name="google_sign_in_cancelled">Google sign-in was cancelled</string>
+    <string name="google_sign_in_error">Error during Google sign-in</string>
+    <string name="google_signin_complete">Google Sign-In Complete</string>
+    <string name="choose_username">Choose Your Username</string>
+    <string name="username_instructions">Please choose a username for your account. This will be your display name in the app.</string>
+    <string name="enter_username">Enter your username</string>
+    <string name="account_created_successfully">Account created successfully!</string>
 </resources>

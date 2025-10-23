@@ -250,4 +250,14 @@ class LoginViewModel @Inject constructor(
     fun resetRegistrationState() {
         _registerState.value = RegisterUiState()
     }
+
+    // ==================== GOOGLE USER CHECK ====================
+
+    suspend fun checkGoogleUserExists(email: String): Result<com.example.ecosort.data.model.User?> {
+        return userRepository.checkGoogleUserExists(email)
+    }
+
+    suspend fun loginGoogleUser(email: String, googleId: String): Result<com.example.ecosort.data.model.UserSession> {
+        return userRepository.loginGoogleUser(email, googleId)
+    }
 }

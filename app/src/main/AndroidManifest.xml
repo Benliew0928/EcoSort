@@ -67,6 +67,11 @@
             android:name="com.huawei.hms.client.appid"
             android:value="YOUR_APP_ID_HERE" /> -->
 
+        <!-- ==================== GOOGLE SIGN-IN CONFIGURATION ==================== -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
         <!-- ==================== ACTIVITIES ==================== -->
 
         <!-- MAIN ACTIVITY (LAUNCHER) -->
@@ -82,6 +87,7 @@
 
         <!-- Other Activities -->
         <activity android:name=".ui.login.LoginActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".ui.login.GoogleUsernameActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".CameraActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ResultActivity" android:exported="false" android:screenOrientation="portrait" />
 

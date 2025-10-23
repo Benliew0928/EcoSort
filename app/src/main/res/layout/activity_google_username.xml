@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_light"
-    tools:context=".ui.login.LoginActivity">
+    tools:context=".ui.login.GoogleUsernameActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -53,14 +53,14 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/smart_recycling_marketplace"
+                android:text="@string/google_signin_complete"
                 android:textSize="16sp"
                 android:textColor="@color/white"
                 android:fontFamily="@string/font_family_body"
                 android:layout_marginTop="8dp" />
         </LinearLayout>
 
-        <!-- Login Form Card -->
+        <!-- Username Form Card -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -72,7 +72,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/welcome_back"
+                android:text="@string/choose_username"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
@@ -82,7 +82,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/sign_in_to_continue"
+                android:text="@string/username_instructions"
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary"
                 android:fontFamily="@string/font_family_body"
@@ -92,7 +92,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Username"
+                android:text="@string/username"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
@@ -103,7 +103,7 @@
                 android:id="@+id/etUsername"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:hint="Enter your username"
+                android:hint="@string/enter_username"
                 android:padding="12dp"
                 android:background="@drawable/input_field"
                 android:textSize="16sp"
@@ -112,58 +112,6 @@
 
             <TextView
                 android:id="@+id/tvUsernameError"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="@color/error_red"
-                android:fontFamily="@string/font_family_caption"
-                android:layout_marginBottom="12dp"
-                android:visibility="gone" />
-
-            <!-- Password Field -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Password"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:fontFamily="@string/font_family_primary"
-                android:layout_marginBottom="8dp" />
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginBottom="4dp">
-
-                <EditText
-                    android:id="@+id/etPassword"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:hint="Enter your password"
-                    android:inputType="textPassword"
-                    android:padding="12dp"
-                    android:paddingEnd="48dp"
-                    android:background="@drawable/input_field"
-                    android:textSize="16sp"
-                    android:fontFamily="@string/font_family_body" />
-
-                <ImageButton
-                    android:id="@+id/btnTogglePassword"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:layout_marginEnd="4dp"
-                    android:background="@android:color/transparent"
-                    android:src="@drawable/ic_visibility_off"
-                    android:contentDescription="Show password"
-                    android:scaleType="centerInside" />
-
-            </RelativeLayout>
-
-            <TextView
-                android:id="@+id/tvPasswordError"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
@@ -214,10 +162,10 @@
 
             <!-- Action Buttons -->
             <Button
-                android:id="@+id/btnLogin"
+                android:id="@+id/btnCreateAccount"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="@string/sign_in"
+                android:text="@string/create_account"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:fontFamily="@string/font_family_primary"
@@ -227,101 +175,15 @@
                 android:elevation="4dp" />
 
             <Button
-                android:id="@+id/btnRegister"
+                android:id="@+id/btnCancel"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:text="@string/create_account"
+                android:text="@string/cancel"
                 android:textSize="14sp"
                 android:fontFamily="@string/font_family_primary"
                 android:background="@drawable/button_secondary"
                 android:textColor="@color/white"
-                android:elevation="2dp"
-                android:layout_marginBottom="16dp" />
-
-            <!-- Divider -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="16dp">
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1"
-                    android:background="@color/text_secondary"
-                    android:alpha="0.3" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="OR"
-                    android:textSize="12sp"
-                    android:textColor="@color/text_secondary"
-                    android:fontFamily="@string/font_family_caption"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginEnd="16dp" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1"
-                    android:background="@color/text_secondary"
-                    android:alpha="0.3" />
-            </LinearLayout>
-
-            <!-- Google Sign-In Button -->
-            <Button
-                android:id="@+id/btnGoogleSignIn"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:text="@string/sign_in_with_google"
-                android:textSize="14sp"
-                android:fontFamily="@string/font_family_primary"
-                android:background="@drawable/button_google_signin"
-                android:textColor="@color/text_primary"
-                android:elevation="2dp"
-                android:drawableStart="@drawable/ic_google_logo"
-                android:drawablePadding="12dp"
-                android:gravity="center" />
-        </LinearLayout>
-
-        <!-- Demo Credentials -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/card_modern"
-            android:padding="16dp"
-            android:layout_marginTop="16dp"
-            android:elevation="2dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/demo_credentials"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:fontFamily="@string/font_family_primary"
-                android:layout_marginBottom="8dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/user_demo_credentials"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary"
-                android:fontFamily="@string/font_family_caption" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/admin_demo_credentials"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary"
-                android:fontFamily="@string/font_family_caption" />
+                android:elevation="2dp" />
         </LinearLayout>
 
     </LinearLayout>

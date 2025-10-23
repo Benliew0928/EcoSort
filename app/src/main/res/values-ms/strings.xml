@@ -98,17 +98,24 @@
     <string name="app_title">EcoSort</string>
     <string name="app_subtitle">Kitar semula pintar • Pasaran • Komuniti</string>
     <string name="welcome_message">Selamat kembali, Pengguna!</string>
+    <string name="make_world_greener">Mari kita jadikan dunia lebih hijau bersama</string>
+    <string name="scan_waste">Imbas Sampah</string>
+    <string name="find_stations">Cari Stesen</string>
+    <string name="friends">Kawan</string>
+    <string name="your_impact">🌿 Impak Anda</string>
+    <string name="points">Mata</string>
+    <string name="items_recycled">Item Dikitar Semula</string>
+    <string name="following_feed">👤 Feed Ikutan</string>
+    <string name="view_all">Lihat Semua</string>
+    <string name="home">Utama</string>
+    <string name="community">Komuniti</string>
+    <string name="chat">Sembang</string>
+    <string name="profile">Profil</string>
     <string name="welcome_subtitle">Mari kita jadikan dunia lebih hijau bersama 🌱</string>
     <string name="quick_actions">Tindakan Pantas</string>
     <string name="scan_item">📸\nImbas Item</string>
-    <string name="find_stations">🗺️\nCari Stesen</string>
-    <string name="community">👥\nKomuniti</string>
-    <string name="chat">💬\nChat</string>
-    <string name="your_impact">Impak Anda</string>
-    <string name="items_recycled">Item Dikitar Semula</string>
     <string name="points_label">Mata</string>
     <string name="community_feeds">Suapan Komuniti</string>
-    <string name="view_all">Lihat Semua</string>
     <string name="vintage_radio">Radio Vintage</string>
     <string name="glass_vase">Pasu Kaca</string>
     <string name="metal_frame">Bingkai Logam</string>
@@ -123,7 +130,6 @@
     <string name="nav_community">👥\nKomuniti</string>
     
     <!-- User Profile -->
-    <string name="profile">Profil</string>
     <string name="edit_profile">✏️ Edit Profil</string>
     <string name="privacy_settings">🔒 Tetapan Privasi</string>
     <string name="preferences">🎨 Keutamaan</string>
@@ -237,7 +243,6 @@
     <string name="feature_coming_soon">Ciri akan datang!</string>
     
     <!-- Missing Strings from Layouts -->
-    <string name="friends">Rakan</string>
     <string name="my_friends">Rakan Saya</string>
     <string name="manage_friends">Urus rakan dan sambungan anda</string>
     <string name="no_friends_yet">Belum ada rakan</string>
@@ -342,4 +347,16 @@
     
     <!-- Community -->
     <string name="no_community_posts">Belum ada catatan komuniti. Jadilah yang pertama berkongsi!</string>
+    
+    <!-- Google Sign-In -->
+    <string name="sign_in_with_google">Log masuk dengan Google</string>
+    <string name="google_sign_in_success">Berjaya log masuk dengan Google</string>
+    <string name="google_sign_in_failed">Log masuk Google gagal</string>
+    <string name="google_sign_in_cancelled">Log masuk Google dibatalkan</string>
+    <string name="google_sign_in_error">Ralat semasa log masuk Google</string>
+    <string name="google_signin_complete">Log Masuk Google Selesai</string>
+    <string name="choose_username">Pilih Nama Pengguna Anda</string>
+    <string name="username_instructions">Sila pilih nama pengguna untuk akaun anda. Ini akan menjadi nama paparan anda dalam aplikasi.</string>
+    <string name="enter_username">Masukkan nama pengguna anda</string>
+    <string name="account_created_successfully">Akaun berjaya dicipta!</string>
 </resources>

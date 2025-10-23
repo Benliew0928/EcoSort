@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doOnTextChanged
@@ -14,6 +15,11 @@ import androidx.lifecycle.lifecycleScope
 import com.example.ecosort.MainActivity
 import com.example.ecosort.R
 import com.example.ecosort.data.model.UserType
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -32,19 +38,55 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var rgUserType: RadioGroup
     private lateinit var btnLogin: android.widget.Button
     private lateinit var btnRegister: android.widget.Button
+    private lateinit var btnGoogleSignIn: android.widget.Button
     
     private var isPasswordVisible = false
+    
+    // Google Sign-In
+    private lateinit var googleSignInClient: GoogleSignInClient
+
+    // Google Sign-In Activity Result Launcher
+    private val googleSignInLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            handleGoogleSignInResult(account)
+        } catch (e: ApiException) {
+            handleGoogleSignInError(e)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        configureGoogleSignIn()
         initViews()
         setupListeners()
         observeViewModel()
     }
 
     // ==================== INITIALIZATION ====================
+
+    private fun configureGoogleSignIn() {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .requestProfile()
+            .build()
+
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
+    }
+
+    private fun signInWithGoogle() {
+        // Always sign out first to ensure account picker is shown
+        googleSignInClient.signOut().addOnCompleteListener {
+            // After signing out, launch the sign-in intent
+            val signInIntent = googleSignInClient.signInIntent
+            googleSignInLauncher.launch(signInIntent)
+        }
+    }
 
     private fun initViews() {
         etUsername = findViewById(R.id.etUsername)
@@ -55,6 +97,7 @@ class LoginActivity : AppCompatActivity() {
         rgUserType = findViewById(R.id.rgUserType)
         btnLogin = findViewById(R.id.btnLogin)
         btnRegister = findViewById(R.id.btnRegister)
+        btnGoogleSignIn = findViewById(R.id.btnGoogleSignIn)
 
         // Set default user type
         findViewById<android.widget.RadioButton>(R.id.rbUser).isChecked = true
@@ -88,6 +131,11 @@ class LoginActivity : AppCompatActivity() {
         // Register button
         btnRegister.setOnClickListener {
             showRegisterDialog()
+        }
+
+        // Google Sign-In button
+        btnGoogleSignIn.setOnClickListener {
+            signInWithGoogle()
         }
     }
 
@@ -311,6 +359,126 @@ class LoginActivity : AppCompatActivity() {
 
     private fun clearFieldError(textView: android.widget.TextView) {
         textView.visibility = View.GONE
+    }
+
+    // ==================== GOOGLE SIGN-IN ====================
+
+    private fun handleGoogleSignInResult(account: GoogleSignInAccount?) {
+        if (account != null) {
+            // Get user information from Google account
+            val email = account.email ?: ""
+            val displayName = account.displayName ?: ""
+            val photoUrl = account.photoUrl?.toString() ?: ""
+            val googleId = account.id ?: ""
+
+            // Check if Google user already exists
+            checkGoogleUserExists(email, displayName, photoUrl, googleId)
+        } else {
+            Toast.makeText(this, getString(R.string.google_sign_in_failed), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun checkGoogleUserExists(
+        email: String,
+        displayName: String,
+        photoUrl: String,
+        googleId: String
+    ) {
+        lifecycleScope.launch {
+            try {
+                when (val result = viewModel.checkGoogleUserExists(email)) {
+                    is com.example.ecosort.data.model.Result.Success -> {
+                        val existingUser = result.data
+                        if (existingUser != null) {
+                            // User exists, log them in directly
+                            loginExistingGoogleUser(email, googleId)
+                        } else {
+                            // User doesn't exist, show username input page
+                            Toast.makeText(this@LoginActivity, getString(R.string.google_sign_in_success), Toast.LENGTH_SHORT).show()
+                            navigateToUsernameInput(email, displayName, photoUrl, googleId)
+                        }
+                    }
+                    is com.example.ecosort.data.model.Result.Error -> {
+                        // Error checking user, show username input page as fallback
+                        Toast.makeText(this@LoginActivity, getString(R.string.google_sign_in_success), Toast.LENGTH_SHORT).show()
+                        navigateToUsernameInput(email, displayName, photoUrl, googleId)
+                    }
+                    is com.example.ecosort.data.model.Result.Loading -> {
+                        // Loading state - shouldn't happen in this context, but handle it
+                        Toast.makeText(this@LoginActivity, "Checking user...", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                // Error checking user, show username input page as fallback
+                Toast.makeText(this@LoginActivity, getString(R.string.google_sign_in_success), Toast.LENGTH_SHORT).show()
+                navigateToUsernameInput(email, displayName, photoUrl, googleId)
+            }
+        }
+    }
+
+    private fun loginExistingGoogleUser(email: String, googleId: String) {
+        lifecycleScope.launch {
+            try {
+                when (val result = viewModel.loginGoogleUser(email, googleId)) {
+                    is com.example.ecosort.data.model.Result.Success -> {
+                        Toast.makeText(this@LoginActivity, "Welcome back!", Toast.LENGTH_SHORT).show()
+                        navigateToMain()
+                    }
+                    is com.example.ecosort.data.model.Result.Error -> {
+                        Toast.makeText(
+                            this@LoginActivity,
+                            "Login failed: ${result.exception.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    is com.example.ecosort.data.model.Result.Loading -> {
+                        // Loading state - shouldn't happen in this context, but handle it
+                        Toast.makeText(this@LoginActivity, "Logging in...", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@LoginActivity,
+                    "Login failed: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    private fun navigateToUsernameInput(
+        email: String,
+        displayName: String,
+        photoUrl: String,
+        googleId: String
+    ) {
+        val intent = Intent(this, GoogleUsernameActivity::class.java).apply {
+            putExtra("google_email", email)
+            putExtra("google_display_name", displayName)
+            putExtra("google_photo_url", photoUrl)
+            putExtra("google_id", googleId)
+        }
+        startActivity(intent)
+    }
+
+    private fun handleGoogleSignInError(e: ApiException) {
+        when (e.statusCode) {
+            7 -> { // NETWORK_ERROR
+                Toast.makeText(this, "Network error. Please check your connection.", Toast.LENGTH_SHORT).show()
+            }
+            8 -> { // INTERNAL_ERROR
+                Toast.makeText(this, "Internal error. Please try again.", Toast.LENGTH_SHORT).show()
+            }
+            5 -> { // INVALID_ACCOUNT
+                Toast.makeText(this, "Invalid account. Please try again.", Toast.LENGTH_SHORT).show()
+            }
+            12501 -> { // SIGN_IN_CANCELLED
+                Toast.makeText(this, getString(R.string.google_sign_in_cancelled), Toast.LENGTH_SHORT).show()
+            }
+            else -> {
+                Toast.makeText(this, getString(R.string.google_sign_in_error), Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // ==================== NAVIGATION ====================

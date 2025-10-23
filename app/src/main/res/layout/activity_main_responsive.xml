@@ -64,7 +64,7 @@
             android:id="@+id/tvWelcomeMessage"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Hello, User Name!"
+            android:text="@string/welcome_message"
             android:textSize="24sp"
             android:textStyle="bold"
             android:textColor="@color/light_bg"
@@ -76,7 +76,7 @@
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Let's make the world greener together"
+            android:text="@string/make_world_greener"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/gray_bg"
@@ -152,7 +152,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Scan Waste"
+                                android:text="@string/scan_waste"
                                 android:textColor="@color/dark_olive"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
@@ -188,7 +188,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Find Stations"
+                                android:text="@string/find_stations"
                                 android:textColor="@color/dark_olive"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
@@ -217,7 +217,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Friends"
+                            android:text="@string/friends"
                             android:background="@color/dark_olive"
                             android:textSize="14sp"
                             android:textStyle="bold"/>
@@ -232,7 +232,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="26dp"
                 android:layout_marginEnd="20dp"
-                android:text="🌿 Your Impact"
+                android:text="@string/your_impact"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
@@ -295,7 +295,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Items Recycled"
+                            android:text="@string/items_recycled"
                             android:textSize="12sp"
                             android:textColor="@color/text_secondary" />
                     </LinearLayout>
@@ -358,7 +358,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Points"
+                                android:text="@string/points"
                                 android:textSize="12sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/white"
@@ -387,7 +387,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="👤 Following's Feed"
+                        android:text="@string/following_feed"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary" />
@@ -396,7 +396,7 @@
                         android:id="@+id/featuredViewAll"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="View All"
+                        android:text="@string/view_all"
                         android:textSize="14sp"
                         android:textColor="@color/primary_green" />
                 </LinearLayout>
@@ -431,7 +431,7 @@
             android:layout_weight="1"
             android:drawableTop="@drawable/ic_home_24"
             android:drawableTint="@color/primary_green"
-            android:text="Home"
+            android:text="@string/home"
             android:textSize="12sp"
             android:textColor="@color/primary_green"
             style="@style/Widget.AppCompat.Button.Borderless" />
@@ -443,7 +443,7 @@
             android:layout_weight="1"
             android:drawableTop="@drawable/ic_com_gray_24"
             android:drawableTint="@color/text_secondary"
-            android:text="Community"
+            android:text="@string/community"
             android:textSize="12sp"
             android:textColor="@color/text_secondary"
             style="@style/Widget.AppCompat.Button.Borderless" />
@@ -455,7 +455,7 @@
             android:layout_weight="1"
             android:drawableTop="@drawable/ic_chat_24"
             android:drawableTint="@color/text_secondary"
-            android:text="Chat"
+            android:text="@string/chat"
             android:textSize="12sp"
             android:textColor="@color/text_secondary"
             style="@style/Widget.AppCompat.Button.Borderless" />
@@ -467,7 +467,7 @@
             android:layout_weight="1"
             android:drawableTop="@drawable/ic_person_24"
             android:drawableTint="@color/text_secondary"
-            android:text="Profile"
+            android:text="@string/profile"
             android:textSize="12sp"
             android:textColor="@color/text_secondary"
             style="@style/Widget.AppCompat.Button.Borderless" />

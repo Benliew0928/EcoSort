@@ -126,6 +126,108 @@ class UserRepository @Inject constructor(
         }
     }
 
+    suspend fun checkGoogleUserExists(email: String): Result<User?> {
+        return try {
+            val user = userDao.getUserByEmail(email)
+            Result.Success(user)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun loginGoogleUser(email: String, googleId: String): Result<UserSession> {
+        return try {
+            // Get user from database by email
+            val user = userDao.getUserByEmail(email)
+                ?: return Result.Error(Exception("Google user not found"))
+
+            // Verify Google ID matches (for Google users, passwordHash contains googleId)
+            if (user.passwordHash != googleId) {
+                return Result.Error(Exception("Invalid Google account"))
+            }
+
+            // Generate session token
+            val token = securityManager.generateSessionToken()
+
+            // Create session
+            val session = UserSession(
+                userId = user.id,
+                username = user.username,
+                userType = user.userType,
+                token = token,
+                isLoggedIn = true
+            )
+
+            // Save session
+            preferencesManager.saveUserSession(session)
+
+            Result.Success(session)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun createGoogleUser(
+        username: String,
+        email: String,
+        displayName: String,
+        photoUrl: String,
+        googleId: String,
+        userType: UserType
+    ): Result<UserSession> {
+        return try {
+            // Validate inputs
+            if (!securityManager.isValidUsername(username)) {
+                return Result.Error(Exception("Username must be 3-20 characters, alphanumeric only"))
+            }
+
+            if (!securityManager.isValidEmail(email)) {
+                return Result.Error(Exception("Invalid email format"))
+            }
+
+            // Check if user already exists
+            if (userDao.getUserByUsername(username) != null) {
+                return Result.Error(Exception("Username already exists"))
+            }
+
+            if (userDao.getUserByEmail(email) != null) {
+                return Result.Error(Exception("Email already registered"))
+            }
+
+            // Create user with Google information
+            val user = User(
+                username = username,
+                email = email,
+                passwordHash = googleId, // Use Google ID as password for Google users
+                userType = userType,
+                profileImageUrl = photoUrl,
+                bio = "Google user: $displayName"
+            )
+
+            val userId = userDao.insertUser(user)
+            val createdUser = user.copy(id = userId)
+
+            // Generate session token
+            val token = securityManager.generateSessionToken()
+
+            // Create session
+            val session = UserSession(
+                userId = createdUser.id,
+                username = createdUser.username,
+                userType = createdUser.userType,
+                token = token,
+                isLoggedIn = true
+            )
+
+            // Save session
+            preferencesManager.saveUserSession(session)
+
+            Result.Success(session)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
     suspend fun logoutUser(): Result<Unit> {
         return try {
             preferencesManager.clearUserSession()

@@ -98,17 +98,24 @@
     <string name="app_title">EcoSort</string>
     <string name="app_subtitle">智能回收 • 市场 • 社区</string>
     <string name="welcome_message">欢迎回来，用户！</string>
+    <string name="make_world_greener">让我们一起让世界更绿色</string>
+    <string name="scan_waste">扫描垃圾</string>
+    <string name="find_stations">查找站点</string>
+    <string name="friends">朋友</string>
+    <string name="your_impact">🌿 您的影响</string>
+    <string name="points">积分</string>
+    <string name="items_recycled">回收物品</string>
+    <string name="following_feed">👤 关注动态</string>
+    <string name="view_all">查看全部</string>
+    <string name="home">首页</string>
+    <string name="community">社区</string>
+    <string name="chat">聊天</string>
+    <string name="profile">个人资料</string>
     <string name="welcome_subtitle">让我们一起让世界更绿色 🌱</string>
     <string name="quick_actions">快速操作</string>
     <string name="scan_item">📸\n扫描物品</string>
-    <string name="find_stations">🗺️\n查找站点</string>
-    <string name="community">👥\n社区</string>
-    <string name="chat">💬\n聊天</string>
-    <string name="your_impact">您的影响</string>
-    <string name="items_recycled">回收物品</string>
     <string name="points_label">积分</string>
     <string name="community_feeds">社区动态</string>
-    <string name="view_all">查看全部</string>
     <string name="vintage_radio">复古收音机</string>
     <string name="glass_vase">玻璃花瓶</string>
     <string name="metal_frame">金属框架</string>
@@ -123,7 +130,6 @@
     <string name="nav_community">👥\n社区</string>
     
     <!-- User Profile -->
-    <string name="profile">资料</string>
     <string name="edit_profile">✏️ 编辑资料</string>
     <string name="privacy_settings">🔒 隐私设置</string>
     <string name="preferences">🎨 偏好设置</string>
@@ -237,7 +243,6 @@
     <string name="feature_coming_soon">功能即将推出！</string>
     
     <!-- Missing Strings from Layouts -->
-    <string name="friends">朋友</string>
     <string name="my_friends">我的朋友</string>
     <string name="manage_friends">管理您的朋友和联系</string>
     <string name="no_friends_yet">还没有朋友</string>
@@ -342,4 +347,16 @@
     
     <!-- Community -->
     <string name="no_community_posts">还没有社区帖子。成为第一个分享的人！</string>
+    
+    <!-- Google Sign-In -->
+    <string name="sign_in_with_google">使用 Google 登录</string>
+    <string name="google_sign_in_success">Google 登录成功</string>
+    <string name="google_sign_in_failed">Google 登录失败</string>
+    <string name="google_sign_in_cancelled">Google 登录已取消</string>
+    <string name="google_sign_in_error">Google 登录时出错</string>
+    <string name="google_signin_complete">Google 登录完成</string>
+    <string name="choose_username">选择您的用户名</string>
+    <string name="username_instructions">请为您的账户选择一个用户名。这将是您在应用中的显示名称。</string>
+    <string name="enter_username">输入您的用户名</string>
+    <string name="account_created_successfully">账户创建成功！</string>
 </resources>
