@@ -1,41 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- CSY Color Palette -->
+    <color name="dark_olive">#4e735b</color>
+    <color name="olive">#70997e</color>
+    <color name="light_olive">#aec0b5</color>
+    <color name="light_bg">#e6e6e6</color>
+    <color name="gray_bg">#b4b4b4</color>
+
+
+
     <!-- Modern Eco-Friendly Color Palette -->
-    <color name="primary_green">#2E7D32</color>
+    <color name="primary_green">#4e735b</color>
     <color name="primary_green_light">#4CAF50</color>
     <color name="primary_green_dark">#1B5E20</color>
-    
+
     <color name="accent_teal">#00BCD4</color>
     <color name="accent_teal_light">#4DD0E1</color>
     <color name="accent_teal_dark">#0097A7</color>
-    
-    <color name="background_light">#FAFAFA</color>
+
+    <color name="background_light">#e6e6e6</color>
     <color name="background_white">#FFFFFF</color>
     <color name="background_secondary">#F5F5F5</color>
     <color name="surface_light">#F5F5F5</color>
-    
+
     <!-- Primary color for consistency -->
     <color name="primary">@color/primary_green</color>
-    
+
     <color name="text_primary">#212121</color>
     <color name="text_secondary">#757575</color>
     <color name="text_hint">#BDBDBD</color>
-    
+
     <color name="success_green">#4CAF50</color>
     <color name="warning_orange">#FF9800</color>
     <color name="error_red">#F44336</color>
-    
+
     <color name="card_shadow">#1A000000</color>
     <color name="divider">#E0E0E0</color>
     <color name="border_light">#E0E0E0</color>
     <color name="image_placeholder">#F5F5F5</color>
-    
+
     <!-- Community post type colors -->
     <color name="tip_color">#4CAF50</color>
     <color name="achievement_color">#FF9800</color>
     <color name="question_color">#2196F3</color>
     <color name="event_color">#9C27B0</color>
-    
+
     <!-- Legacy colors for compatibility -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>

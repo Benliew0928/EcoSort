@@ -21,11 +21,12 @@ import android.view.View
 import com.example.ecosort.data.local.EcoSortDatabase
 import com.bumptech.glide.Glide
 import javax.inject.Inject
-import com.example.ecosort.hms.MapActivity // <--- FIX: Added the necessary import for MapActivity
+import com.example.ecosort.hms.MapActivity
 import com.example.ecosort.utils.ResponsiveUtils
-import com.example.ecosort.utils.ResponsiveLayoutManager
 import com.example.ecosort.utils.VideoThumbnailGenerator
 import kotlinx.coroutines.CoroutineScope
+import androidx.cardview.widget.CardView
+import android.widget.LinearLayout
 
 
 
@@ -61,22 +62,32 @@ class MainActivity : AppCompatActivity() {
         debugHelper.logDatabaseInfo()
         debugHelper.logUserSessionInfo()
 
-        // Initialize UI elements
-        val btnScan = findViewById<Button>(R.id.btnScan)
-        val btnFindStations = findViewById<Button>(R.id.btnFindStations)
-        val btnChat = findViewById<Button>(R.id.btnChat)
-        val btnCommunity = findViewById<Button>(R.id.btnCommunity)
-        val btnFriends = findViewById<Button>(R.id.btnFriends)
+        // --- Initialize UI elements ---
+
+        // Header
         val btnProfile = findViewById<android.widget.ImageView>(R.id.btnProfile)
         val tvWelcomeMessage = findViewById<TextView>(R.id.tvWelcomeMessage)
+
+        // Quick Actions (Buttons inside CardViews)
+        val btnScanContainer = findViewById<LinearLayout>(R.id.btnScanContainer)
+        val btnFindStationsContainer = findViewById<LinearLayout>(R.id.btnFindStationsContainer)
+
+        // NEW: Placeholder container for the Friends button/card
+        val btnFriendsContainer = findViewById<LinearLayout>(R.id.btnFriendsContainer)
+
+        // Stats
+        val tvItemsRecycledCount = findViewById<TextView>(R.id.tvItemsRecycledCount)
+        val tvPointsCount = findViewById<TextView>(R.id.tvPointsCount)
+
+        // Community Feed
         val featuredViewAll = findViewById<TextView>(R.id.featuredViewAll)
         val featuredContainer = findViewById<android.widget.LinearLayout>(R.id.featuredContainer)
 
         // Bottom navigation buttons
         val bottomHome = findViewById<Button>(R.id.bottomHome)
-        val bottomScan = findViewById<Button>(R.id.bottomScan)
-        val bottomMap = findViewById<Button>(R.id.bottomMap)
-        val bottomSell = findViewById<Button>(R.id.bottomSell)
+        val bottomCommunity = findViewById<Button>(R.id.bottomCommunity)
+        val bottomChat = findViewById<Button>(R.id.bottomChat)
+        val bottomProfileNav = findViewById<Button>(R.id.bottomProfile)
 
         // Check login session via DataStore
         lifecycleScope.launch {
@@ -125,41 +136,37 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Main navigation
-        btnScan.setOnClickListener {
+        // --- Main Navigation Clicks (Quick Actions) ---
+
+        // 1. Scan Waste
+        btnScanContainer.setOnClickListener {
             startActivity(Intent(this, CameraActivity::class.java))
         }
 
-        btnFindStations.setOnClickListener {
-            // This now correctly references MapActivity due to the import
+        // 2. Find Stations
+        btnFindStationsContainer.setOnClickListener {
             startActivity(Intent(this, MapActivity::class.java))
         }
 
-        btnChat.setOnClickListener {
-            startActivity(Intent(this, com.example.ecosort.chat.ChatListActivity::class.java))
-        }
-
-        btnCommunity.setOnClickListener {
-            startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
-        }
-
-        btnFriends.setOnClickListener {
+        // 3. Friends (The Empty Card in the design image)
+        btnFriendsContainer.setOnClickListener {
+            // Your friend's logic: Starts the Friends List Activity
             startActivity(Intent(this, com.example.ecosort.friends.FriendsListActivity::class.java))
         }
 
-        // Bottom navigation
+        // --- Bottom Navigation Clicks ---
+
         bottomHome.setOnClickListener {
             Toast.makeText(this, "You're already on the home screen", Toast.LENGTH_SHORT).show()
         }
-        bottomScan.setOnClickListener {
-            startActivity(Intent(this, CameraActivity::class.java))
-        }
-        bottomMap.setOnClickListener {
-            // This now correctly references MapActivity due to the import
-            startActivity(Intent(this, MapActivity::class.java))
-        }
-        bottomSell.setOnClickListener {
+        bottomCommunity.setOnClickListener {
             startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
+        }
+        bottomChat.setOnClickListener {
+            startActivity(Intent(this, com.example.ecosort.chat.ChatListActivity::class.java))
+        }
+        bottomProfileNav.setOnClickListener {
+            startActivity(Intent(this, UserProfileActivity::class.java))
         }
 
         // Community Feeds: View All -> Community
@@ -200,6 +207,13 @@ class MainActivity : AppCompatActivity() {
                 }
                 android.util.Log.e("MainActivity", "Error loading featured posts", e)
             }
+        }
+
+        // Load user stats data (Placeholder logic)
+        lifecycleScope.launch {
+            // Placeholder values set here. Replace with actual data fetching logic later.
+            tvItemsRecycledCount.text = "206"
+            tvPointsCount.text = "206"
         }
     }
 
@@ -255,11 +269,7 @@ class MainActivity : AppCompatActivity() {
                     applicationContext.resources.updateConfiguration(configuration, applicationContext.resources.displayMetrics)
                     
                     android.util.Log.d("MainActivity", "Applied saved language: ${preferences.language}")
-                    
-                    // Recreate the activity to apply language changes
-                    if (!isFinishing && !isDestroyed) {
-                        recreate()
-                    }
+
                 } else {
                     android.util.Log.d("MainActivity", "Language already correct: ${preferences.language}")
                 }
@@ -655,7 +665,6 @@ class MainActivity : AppCompatActivity() {
                 if (!profileImageUrl.isNullOrBlank()) {
                     Glide.with(this@MainActivity)
                         .load(profileImageUrl)
-                        .circleCrop()
                         .placeholder(R.drawable.ic_person_24)
                         .error(R.drawable.ic_person_24)
                         .into(profileImageView)
@@ -663,7 +672,6 @@ class MainActivity : AppCompatActivity() {
                     // Set default placeholder with circular crop
                     Glide.with(this@MainActivity)
                         .load(R.drawable.ic_person_24)
-                        .circleCrop()
                         .into(profileImageView)
                 }
             } catch (e: Exception) {
