@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.ecosort.R
 import com.example.ecosort.data.model.*
 import com.example.ecosort.data.preferences.UserPreferencesManager
+import com.example.ecosort.utils.LanguageManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -425,10 +426,8 @@ class UserPreferencesActivity : AppCompatActivity() {
                 currentPreferences = newPreferences
                 Toast.makeText(this@UserPreferencesActivity, getString(R.string.preferences_saved), Toast.LENGTH_SHORT).show()
                 
-                // Close the activity after a short delay to show the toast
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                    finish()
-                }, 1500)
+                // Refresh the UI to show the new language immediately
+                // The recreate() call in applyLanguageGlobally will handle the refresh
                 
             } catch (e: Exception) {
                 android.util.Log.e("UserPreferencesActivity", "Error saving preferences", e)

@@ -235,4 +235,111 @@
     <string name="server_error">服务器错误。请稍后重试。</string>
     <string name="permission_denied">权限被拒绝</string>
     <string name="feature_coming_soon">功能即将推出！</string>
+    
+    <!-- Missing Strings from Layouts -->
+    <string name="friends">朋友</string>
+    <string name="my_friends">我的朋友</string>
+    <string name="manage_friends">管理您的朋友和联系</string>
+    <string name="no_friends_yet">还没有朋友</string>
+    <string name="friend_requests_title">好友请求</string>
+    <string name="friend_requests_subtitle">接受或拒绝其他用户的好友请求</string>
+    <string name="no_friend_requests">没有好友请求</string>
+    <string name="find_friends">查找朋友</string>
+    <string name="search_friends_subtitle">搜索用户添加为朋友</string>
+    <string name="start_typing_search">开始输入以搜索朋友</string>
+    <string name="regular_user">普通用户</string>
+    <string name="last_active_today">最后活跃：今天</string>
+    <string name="remove">移除</string>
+    <string name="block">屏蔽</string>
+    <string name="add_friend">添加朋友</string>
+    <string name="message">消息</string>
+    <string name="decline">拒绝</string>
+    <string name="accept">接受</string>
+    <string name="days_ago">天前</string>
+    <string name="welcome_ecosort">欢迎来到EcoSort！您正在对环境产生积极影响。🌱</string>
+    <string name="your_stats">您的统计</string>
+    <string name="points_value">1,250积分</string>
+    <string name="account_settings">账户设置</string>
+    <string name="settings_icon">⚙️ 设置</string>
+    <string name="friend_requests_icon">📬 好友请求</string>
+    <string name="profile_completion_percent">资料完成度：0%</string>
+    <string name="statistics">统计</string>
+    <string name="followers">关注者</string>
+    <string name="follow">关注</string>
+    <string name="joined_date">加入于2024年1月</string>
+    <string name="bio_text_placeholder">个人简介在这里</string>
+    <string name="achievement_title">成就标题</string>
+    <string name="achievement_description">成就描述在这里</string>
+    <string name="achievement_date">2024年1月15日</string>
+    <string name="comments_for_post">帖子评论</string>
+    <string name="no_comments_yet">还没有评论。成为第一个评论的人！</string>
+    <string name="write_comment_placeholder">写评论...</string>
+    <string name="post_comment_button">发布评论</string>
+    <string name="push_notifications_label">推送通知</string>
+    <string name="email_notifications_label">邮件通知</string>
+    <string name="community_updates_label">社区更新</string>
+    <string name="achievement_alerts_label">成就提醒</string>
+    <string name="weekly_reports_label">周报</string>
+    <string name="recycling_reminders_label">回收提醒</string>
+    <string name="friend_requests_label">好友请求</string>
+    <string name="message_notifications_label">消息通知</string>
+    <string name="high_contrast_label">高对比度</string>
+    <string name="reduce_motion_label">减少动画</string>
+    <string name="screen_reader_label">屏幕阅读器</string>
+    <string name="large_text_label">大字体</string>
+    <string name="bold_text_label">粗体</string>
+    <string name="color_blind_support_label">色盲支持</string>
+    <string name="show_online_status_label">显示在线状态</string>
+    <string name="allow_friend_requests_label">允许好友请求</string>
+    <string name="show_last_seen_label">显示最后在线</string>
+    <string name="allow_profile_views_label">允许查看资料</string>
+    <string name="share_recycling_stats_label">分享回收统计</string>
+    <string name="allow_data_collection_label">允许数据收集</string>
+    <string name="reminder_frequency_label">提醒频率</string>
+    <string name="auto_categorize_label">自动分类</string>
+    <string name="share_stats_label">分享统计</string>
+    <string name="show_tips_label">显示提示</string>
+    <string name="enable_gamification_label">启用游戏化</string>
+    <string name="notifications_section">🔔 通知</string>
+    <string name="accessibility_section">♿ 无障碍</string>
+    <string name="privacy_section">🔒 隐私</string>
+    <string name="recycling_section">♻️ 回收</string>
+    
+    <!-- Privacy Settings -->
+    <string name="profile_visibility">资料可见性</string>
+    <string name="control_profile_visibility">控制谁可以看到您的资料</string>
+    <string name="visibility">可见性</string>
+    <string name="information_sharing">信息分享</string>
+    <string name="control_information_sharing">控制哪些信息对他人可见</string>
+    <string name="show_email">显示邮箱</string>
+    <string name="show_email_description">允许他人看到您的邮箱地址</string>
+    <string name="show_location">显示位置</string>
+    <string name="show_location_description">允许他人看到您的位置</string>
+    <string name="show_stats">显示统计</string>
+    <string name="show_stats_description">允许他人看到您的回收统计</string>
+    <string name="allow_messages">允许消息</string>
+    <string name="allow_messages_description">允许他人向您发送消息</string>
+    <string name="save_changes">保存更改</string>
+    
+    <!-- Edit Profile -->
+    <string name="edit_profile_title">编辑资料</string>
+    <string name="tap_to_change_profile_picture">点击更改头像</string>
+    <string name="basic_information">基本信息</string>
+    <string name="social_links_title">社交链接</string>
+    
+    <!-- Login/Register -->
+    <string name="smart_recycling_marketplace">智能回收与市场</string>
+    <string name="welcome_back">欢迎回来</string>
+    <string name="sign_in_to_continue">登录以继续</string>
+    <string name="user_type">用户类型</string>
+    <string name="user_role">用户</string>
+    <string name="admin_role">管理员</string>
+    <string name="sign_in">登录</string>
+    <string name="create_account">创建账户</string>
+    <string name="demo_credentials">演示凭据</string>
+    <string name="user_demo_credentials">用户：user123 / password123</string>
+    <string name="admin_demo_credentials">管理员：admin123 / password123</string>
+    
+    <!-- Community -->
+    <string name="no_community_posts">还没有社区帖子。成为第一个分享的人！</string>
 </resources>

@@ -176,7 +176,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🔔 Notifications"
+                    android:text="@string/notifications_section"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:textColor="@color/primary_green"
@@ -193,7 +193,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Push Notifications"
+                        android:text="@string/push_notifications_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -215,7 +215,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Email Notifications"
+                        android:text="@string/email_notifications_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -237,7 +237,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Community Updates"
+                        android:text="@string/community_updates_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -259,7 +259,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Achievement Alerts"
+                        android:text="@string/achievement_alerts_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -281,7 +281,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Weekly Reports"
+                        android:text="@string/weekly_reports_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -303,7 +303,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Recycling Reminders"
+                        android:text="@string/recycling_reminders_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -325,7 +325,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Friend Requests"
+                        android:text="@string/friend_requests_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -346,7 +346,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Message Notifications"
+                        android:text="@string/message_notifications_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -378,7 +378,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="♿ Accessibility"
+                    android:text="@string/accessibility_section"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:textColor="@color/primary_green"
@@ -395,7 +395,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="High Contrast"
+                        android:text="@string/high_contrast_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -417,7 +417,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Reduce Motion"
+                        android:text="@string/reduce_motion_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -439,7 +439,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Screen Reader"
+                        android:text="@string/screen_reader_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -461,7 +461,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Large Text"
+                        android:text="@string/large_text_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -483,7 +483,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Bold Text"
+                        android:text="@string/bold_text_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -504,7 +504,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Color Blind Support"
+                        android:text="@string/color_blind_support_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -536,7 +536,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🔒 Privacy"
+                    android:text="@string/privacy_section"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:textColor="@color/primary_green"
@@ -553,7 +553,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Show Online Status"
+                        android:text="@string/show_online_status_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -575,7 +575,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Allow Friend Requests"
+                        android:text="@string/allow_friend_requests_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -597,7 +597,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Show Last Seen"
+                        android:text="@string/show_last_seen_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -619,7 +619,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Allow Profile Views"
+                        android:text="@string/allow_profile_views_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -641,7 +641,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Share Recycling Stats"
+                        android:text="@string/share_recycling_stats_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -662,7 +662,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Allow Data Collection"
+                        android:text="@string/allow_data_collection_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -694,7 +694,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="♻️ Recycling"
+                    android:text="@string/recycling_section"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:textColor="@color/primary_green"
@@ -712,7 +712,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Reminder Frequency"
+                        android:text="@string/reminder_frequency_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -734,7 +734,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Auto Categorize"
+                        android:text="@string/auto_categorize_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -756,7 +756,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Share Stats"
+                        android:text="@string/share_stats_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -778,7 +778,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Show Tips"
+                        android:text="@string/show_tips_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 
@@ -799,7 +799,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Enable Gamification"
+                        android:text="@string/enable_gamification_label"
                         android:textSize="16sp"
                         android:textColor="@color/text_primary" />
 

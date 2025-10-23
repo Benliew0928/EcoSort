@@ -48,6 +48,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Apply saved language before setting content view
+        applySavedLanguage()
+        
         setContentView(R.layout.activity_main_responsive)
 
         // userPreferencesManager is now injected via Hilt
@@ -98,7 +102,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 currentUserType = session.userType
-                tvWelcomeMessage.text = "Welcome back, ${session.username}!"
+                tvWelcomeMessage.text = getString(R.string.welcome_message).replace("User", session.username)
 
                 // Load user profile picture
                 loadUserProfilePicture(btnProfile)
@@ -180,30 +184,98 @@ class MainActivity : AppCompatActivity() {
                 // Load posts from local database (which has updated profile pictures)
                 communityRepository.getAllCommunityPosts().collect { localPosts ->
                     withContext(Dispatchers.Main) {
-                        renderCommunityPostsFromLocal(localPosts, featuredContainer)
+                        // Check if activity is still valid before rendering
+                        if (!isFinishing && !isDestroyed) {
+                            renderCommunityPostsFromLocal(localPosts, featuredContainer)
+                        }
                     }
                 }
             } catch (e: Exception) {
                 // If database fails, show empty state
                 withContext(Dispatchers.Main) {
-                    renderCommunityPostsFromLocal(emptyList(), featuredContainer)
+                    // Check if activity is still valid before rendering
+                    if (!isFinishing && !isDestroyed) {
+                        renderCommunityPostsFromLocal(emptyList(), featuredContainer)
+                    }
                 }
                 android.util.Log.e("MainActivity", "Error loading featured posts", e)
             }
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Language changes are handled by the preferences activity
+    }
+    
     override fun onBackPressed() {
         // Prevent going back to login screen
         moveTaskToBack(true)
     }
+    
+    private fun applySavedLanguage() {
+        lifecycleScope.launch {
+            try {
+                val preferences = withContext(Dispatchers.IO) {
+                    userPreferencesManager.getUserPreferences()
+                }
+                
+                // Check current language
+                val currentLocale = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    resources.configuration.locales[0]
+                } else {
+                    @Suppress("DEPRECATION")
+                    resources.configuration.locale
+                }
+                
+                val currentLanguage = when (currentLocale.language) {
+                    "zh" -> "zh"
+                    "ms" -> "ms"
+                    else -> "en"
+                }
+                
+                // Only apply if different
+                if (preferences.language != currentLanguage) {
+                    val locale = when (preferences.language) {
+                        "zh" -> java.util.Locale("zh", "CN")
+                        "ms" -> java.util.Locale("ms", "MY")
+                        else -> java.util.Locale("en", "US")
+                    }
+                    
+                    // Set locale globally
+                    java.util.Locale.setDefault(locale)
+                    
+                    val configuration = android.content.res.Configuration(resources.configuration)
+                    configuration.setLocale(locale)
+                    
+                    // Apply to current context
+                    resources.updateConfiguration(configuration, resources.displayMetrics)
+                    
+                    // Apply to application context for global effect
+                    applicationContext.resources.updateConfiguration(configuration, applicationContext.resources.displayMetrics)
+                    
+                    android.util.Log.d("MainActivity", "Applied saved language: ${preferences.language}")
+                    
+                    // Recreate the activity to apply language changes
+                    if (!isFinishing && !isDestroyed) {
+                        recreate()
+                    }
+                } else {
+                    android.util.Log.d("MainActivity", "Language already correct: ${preferences.language}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error applying saved language", e)
+            }
+        }
+    }
+    
 
     private fun renderCommunityPosts(posts: List<com.example.ecosort.data.firebase.FirebaseCommunityPost>, container: android.widget.LinearLayout) {
         container.removeAllViews()
 
         if (posts.isEmpty()) {
             val emptyView = TextView(this).apply {
-                text = "No community posts yet. Be the first to share!"
+                text = getString(R.string.no_community_posts)
                 textSize = ResponsiveUtils.getResponsiveTextSize(this@MainActivity, 14f)
                 setPadding(
                     ResponsiveUtils.getResponsivePadding(this@MainActivity, 16),
@@ -363,7 +435,7 @@ class MainActivity : AppCompatActivity() {
 
         if (posts.isEmpty()) {
             val emptyView = TextView(this).apply {
-                text = "No community posts yet. Be the first to share!"
+                text = getString(R.string.no_community_posts)
                 textSize = ResponsiveUtils.getResponsiveTextSize(this@MainActivity, 14f)
                 setPadding(
                     ResponsiveUtils.getResponsivePadding(this@MainActivity, 16),
@@ -560,12 +632,24 @@ class MainActivity : AppCompatActivity() {
     private fun loadUserProfilePicture(profileImageView: android.widget.ImageView) {
         lifecycleScope.launch {
             try {
+                // Check if activity is still valid before proceeding
+                if (isFinishing || isDestroyed) {
+                    android.util.Log.d("MainActivity", "Activity is finishing or destroyed, skipping profile picture load")
+                    return@launch
+                }
+                
                 // Get current user's profile image
                 val currentUser = userRepository.getCurrentUser()
                 val profileImageUrl = if (currentUser is com.example.ecosort.data.model.Result.Success<*>) {
                     (currentUser.data as? com.example.ecosort.data.model.User)?.profileImageUrl
                 } else {
                     null
+                }
+                
+                // Check again before using Glide
+                if (isFinishing || isDestroyed) {
+                    android.util.Log.d("MainActivity", "Activity is finishing or destroyed, skipping Glide load")
+                    return@launch
                 }
                 
                 if (!profileImageUrl.isNullOrBlank()) {
@@ -584,11 +668,17 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Error loading user profile picture", e)
-                // Set default placeholder on error with circular crop
-                Glide.with(this@MainActivity)
-                    .load(R.drawable.ic_person_24)
-                    .circleCrop()
-                    .into(profileImageView)
+                // Only set default if activity is still valid
+                if (!isFinishing && !isDestroyed) {
+                    try {
+                        Glide.with(this@MainActivity)
+                            .load(R.drawable.ic_person_24)
+                            .circleCrop()
+                            .into(profileImageView)
+                    } catch (glideException: Exception) {
+                        android.util.Log.e("MainActivity", "Error setting default profile picture", glideException)
+                    }
+                }
             }
         }
     }

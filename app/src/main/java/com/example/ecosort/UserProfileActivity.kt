@@ -68,6 +68,10 @@ class UserProfileActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Apply saved language before setting content view
+        applySavedLanguage()
+        
         setContentView(R.layout.activity_user_profile)
 
         val tvUsername = findViewById<TextView>(R.id.tvUsername)
@@ -152,6 +156,62 @@ class UserProfileActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         finish()
+    }
+    
+    private fun applySavedLanguage() {
+        lifecycleScope.launch {
+            try {
+                val preferences = withContext(Dispatchers.IO) {
+                    userPreferencesManager.getUserPreferences()
+                }
+                
+                // Check current language
+                val currentLocale = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    resources.configuration.locales[0]
+                } else {
+                    @Suppress("DEPRECATION")
+                    resources.configuration.locale
+                }
+                
+                val currentLanguage = when (currentLocale.language) {
+                    "zh" -> "zh"
+                    "ms" -> "ms"
+                    else -> "en"
+                }
+                
+                // Only apply if different
+                if (preferences.language != currentLanguage) {
+                    val locale = when (preferences.language) {
+                        "zh" -> java.util.Locale("zh", "CN")
+                        "ms" -> java.util.Locale("ms", "MY")
+                        else -> java.util.Locale("en", "US")
+                    }
+                    
+                    // Set locale globally
+                    java.util.Locale.setDefault(locale)
+                    
+                    val configuration = android.content.res.Configuration(resources.configuration)
+                    configuration.setLocale(locale)
+                    
+                    // Apply to current context
+                    resources.updateConfiguration(configuration, resources.displayMetrics)
+                    
+                    // Apply to application context for global effect
+                    applicationContext.resources.updateConfiguration(configuration, applicationContext.resources.displayMetrics)
+                    
+                    android.util.Log.d("UserProfileActivity", "Applied saved language: ${preferences.language}")
+                    
+                    // Recreate the activity to apply language changes
+                    if (!isFinishing && !isDestroyed) {
+                        recreate()
+                    }
+                } else {
+                    android.util.Log.d("UserProfileActivity", "Language already correct: ${preferences.language}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("UserProfileActivity", "Error applying saved language", e)
+            }
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

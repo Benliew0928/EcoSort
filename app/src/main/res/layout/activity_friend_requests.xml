@@ -29,7 +29,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Friend Requests"
+            android:text="@string/friend_requests_title"
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="@color/text_primary"
@@ -39,7 +39,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Accept or decline friend requests from other users"
+            android:text="@string/friend_requests_subtitle"
             android:textSize="14sp"
             android:textColor="@color/text_secondary"
             android:fontFamily="@string/font_family_body" />
@@ -62,7 +62,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="32dp"
-        android:text="No friend requests"
+        android:text="@string/no_friend_requests"
         android:textSize="16sp"
         android:textColor="@color/text_secondary"
         android:fontFamily="@string/font_family_body"

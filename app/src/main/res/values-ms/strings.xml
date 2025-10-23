@@ -235,4 +235,111 @@
     <string name="server_error">Ralat pelayan. Sila cuba lagi kemudian.</string>
     <string name="permission_denied">Kebenaran ditolak</string>
     <string name="feature_coming_soon">Ciri akan datang!</string>
+    
+    <!-- Missing Strings from Layouts -->
+    <string name="friends">Rakan</string>
+    <string name="my_friends">Rakan Saya</string>
+    <string name="manage_friends">Urus rakan dan sambungan anda</string>
+    <string name="no_friends_yet">Belum ada rakan</string>
+    <string name="friend_requests_title">Permintaan Rakan</string>
+    <string name="friend_requests_subtitle">Terima atau tolak permintaan rakan dari pengguna lain</string>
+    <string name="no_friend_requests">Tiada permintaan rakan</string>
+    <string name="find_friends">Cari Rakan</string>
+    <string name="search_friends_subtitle">Cari pengguna untuk ditambah sebagai rakan</string>
+    <string name="start_typing_search">Mula menaip untuk mencari rakan</string>
+    <string name="regular_user">Pengguna Biasa</string>
+    <string name="last_active_today">Aktif terakhir: Hari ini</string>
+    <string name="remove">Buang</string>
+    <string name="block">Sekat</string>
+    <string name="add_friend">Tambah Rakan</string>
+    <string name="message">Mesej</string>
+    <string name="decline">Tolak</string>
+    <string name="accept">Terima</string>
+    <string name="days_ago">hari yang lalu</string>
+    <string name="welcome_ecosort">Selamat datang ke EcoSort! Anda membuat impak positif kepada alam sekitar. 🌱</string>
+    <string name="your_stats">Statistik Anda</string>
+    <string name="points_value">1,250 mata</string>
+    <string name="account_settings">Tetapan Akaun</string>
+    <string name="settings_icon">⚙️ Tetapan</string>
+    <string name="friend_requests_icon">📬 Permintaan Rakan</string>
+    <string name="profile_completion_percent">Penyiapan Profil: 0%</string>
+    <string name="statistics">Statistik</string>
+    <string name="followers">Pengikut</string>
+    <string name="follow">Ikuti</string>
+    <string name="joined_date">Sertai Jan 2024</string>
+    <string name="bio_text_placeholder">Bio di sini</string>
+    <string name="achievement_title">Tajuk Pencapaian</string>
+    <string name="achievement_description">Penerangan pencapaian di sini</string>
+    <string name="achievement_date">15 Jan 2024</string>
+    <string name="comments_for_post">Komen untuk catatan</string>
+    <string name="no_comments_yet">Belum ada komen. Jadilah yang pertama mengomen!</string>
+    <string name="write_comment_placeholder">Tulis komen...</string>
+    <string name="post_comment_button">Hantar Komen</string>
+    <string name="push_notifications_label">Notifikasi Tolak</string>
+    <string name="email_notifications_label">Notifikasi E-mel</string>
+    <string name="community_updates_label">Kemaskini Komuniti</string>
+    <string name="achievement_alerts_label">Amaran Pencapaian</string>
+    <string name="weekly_reports_label">Laporan Mingguan</string>
+    <string name="recycling_reminders_label">Peringatan Kitar Semula</string>
+    <string name="friend_requests_label">Permintaan Rakan</string>
+    <string name="message_notifications_label">Notifikasi Mesej</string>
+    <string name="high_contrast_label">Kontras Tinggi</string>
+    <string name="reduce_motion_label">Kurangkan Pergerakan</string>
+    <string name="screen_reader_label">Pembaca Skrin</string>
+    <string name="large_text_label">Teks Besar</string>
+    <string name="bold_text_label">Teks Tebal</string>
+    <string name="color_blind_support_label">Sokongan Buta Warna</string>
+    <string name="show_online_status_label">Tunjukkan Status Dalam Talian</string>
+    <string name="allow_friend_requests_label">Benarkan Permintaan Rakan</string>
+    <string name="show_last_seen_label">Tunjukkan Terakhir Dilihat</string>
+    <string name="allow_profile_views_label">Benarkan Paparan Profil</string>
+    <string name="share_recycling_stats_label">Kongsi Statistik Kitar Semula</string>
+    <string name="allow_data_collection_label">Benarkan Pengumpulan Data</string>
+    <string name="reminder_frequency_label">Kekerapan Peringatan</string>
+    <string name="auto_categorize_label">Kategori Automatik</string>
+    <string name="share_stats_label">Kongsi Statistik</string>
+    <string name="show_tips_label">Tunjukkan Petua</string>
+    <string name="enable_gamification_label">Dayakan Gamifikasi</string>
+    <string name="notifications_section">🔔 Notifikasi</string>
+    <string name="accessibility_section">♿ Kebolehcapaian</string>
+    <string name="privacy_section">🔒 Privasi</string>
+    <string name="recycling_section">♻️ Kitar Semula</string>
+    
+    <!-- Privacy Settings -->
+    <string name="profile_visibility">Keterlihatan Profil</string>
+    <string name="control_profile_visibility">Kawal siapa yang boleh melihat profil anda</string>
+    <string name="visibility">Keterlihatan</string>
+    <string name="information_sharing">Perkongsian Maklumat</string>
+    <string name="control_information_sharing">Kawal maklumat apa yang boleh dilihat oleh orang lain</string>
+    <string name="show_email">Tunjukkan E-mel</string>
+    <string name="show_email_description">Benarkan orang lain melihat alamat e-mel anda</string>
+    <string name="show_location">Tunjukkan Lokasi</string>
+    <string name="show_location_description">Benarkan orang lain melihat lokasi anda</string>
+    <string name="show_stats">Tunjukkan Statistik</string>
+    <string name="show_stats_description">Benarkan orang lain melihat statistik kitar semula anda</string>
+    <string name="allow_messages">Benarkan Mesej</string>
+    <string name="allow_messages_description">Benarkan orang lain menghantar mesej kepada anda</string>
+    <string name="save_changes">Simpan Perubahan</string>
+    
+    <!-- Edit Profile -->
+    <string name="edit_profile_title">Edit Profil</string>
+    <string name="tap_to_change_profile_picture">Ketuk untuk menukar gambar profil</string>
+    <string name="basic_information">Maklumat Asas</string>
+    <string name="social_links_title">Pautan Sosial</string>
+    
+    <!-- Login/Register -->
+    <string name="smart_recycling_marketplace">Kitar Semula Pintar &amp; Pasaran</string>
+    <string name="welcome_back">Selamat Kembali</string>
+    <string name="sign_in_to_continue">Log masuk untuk teruskan</string>
+    <string name="user_type">Jenis Pengguna</string>
+    <string name="user_role">Pengguna</string>
+    <string name="admin_role">Admin</string>
+    <string name="sign_in">Log Masuk</string>
+    <string name="create_account">Cipta Akaun</string>
+    <string name="demo_credentials">Kelayakan Demo</string>
+    <string name="user_demo_credentials">Pengguna: user123 / password123</string>
+    <string name="admin_demo_credentials">Admin: admin123 / password123</string>
+    
+    <!-- Community -->
+    <string name="no_community_posts">Belum ada catatan komuniti. Jadilah yang pertama berkongsi!</string>
 </resources>

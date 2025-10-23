@@ -34,7 +34,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="My Friends"
+                android:text="@string/my_friends"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
@@ -44,7 +44,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Manage your friends and connections"
+                android:text="@string/manage_friends"
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary"
                 android:fontFamily="@string/font_family_body" />
@@ -67,7 +67,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="32dp"
-            android:text="No friends yet"
+            android:text="@string/no_friends_yet"
             android:textSize="16sp"
             android:textColor="@color/text_secondary"
             android:fontFamily="@string/font_family_body"

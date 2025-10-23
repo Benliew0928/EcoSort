@@ -234,4 +234,111 @@
     <string name="server_error">Server error. Please try again later.</string>
     <string name="permission_denied">Permission denied</string>
     <string name="feature_coming_soon">Feature coming soon!</string>
+    
+    <!-- Missing Strings from Layouts -->
+    <string name="friends">Friends</string>
+    <string name="my_friends">My Friends</string>
+    <string name="manage_friends">Manage your friends and connections</string>
+    <string name="no_friends_yet">No friends yet</string>
+    <string name="friend_requests_title">Friend Requests</string>
+    <string name="friend_requests_subtitle">Accept or decline friend requests from other users</string>
+    <string name="no_friend_requests">No friend requests</string>
+    <string name="find_friends">Find Friends</string>
+    <string name="search_friends_subtitle">Search for users to add as friends</string>
+    <string name="start_typing_search">Start typing to search for friends</string>
+    <string name="regular_user">Regular User</string>
+    <string name="last_active_today">Last active: Today</string>
+    <string name="remove">Remove</string>
+    <string name="block">Block</string>
+    <string name="add_friend">Add Friend</string>
+    <string name="message">Message</string>
+    <string name="decline">Decline</string>
+    <string name="accept">Accept</string>
+    <string name="days_ago">days ago</string>
+    <string name="welcome_ecosort">Welcome to EcoSort! You\'re making a positive impact on the environment. 🌱</string>
+    <string name="your_stats">Your Stats</string>
+    <string name="points_value">1,250 points</string>
+    <string name="account_settings">Account Settings</string>
+    <string name="settings_icon">⚙️ Settings</string>
+    <string name="friend_requests_icon">📬 Friend Requests</string>
+    <string name="profile_completion_percent">Profile Completion: 0%</string>
+    <string name="statistics">Statistics</string>
+    <string name="followers">Followers</string>
+    <string name="follow">Follow</string>
+    <string name="joined_date">Joined Jan 2024</string>
+    <string name="bio_text_placeholder">Bio text here</string>
+    <string name="achievement_title">Achievement Title</string>
+    <string name="achievement_description">Achievement description goes here</string>
+    <string name="achievement_date">Jan 15, 2024</string>
+    <string name="comments_for_post">Comments for post</string>
+    <string name="no_comments_yet">No comments yet. Be the first to comment!</string>
+    <string name="write_comment_placeholder">Write a comment...</string>
+    <string name="post_comment_button">Post Comment</string>
+    <string name="push_notifications_label">Push Notifications</string>
+    <string name="email_notifications_label">Email Notifications</string>
+    <string name="community_updates_label">Community Updates</string>
+    <string name="achievement_alerts_label">Achievement Alerts</string>
+    <string name="weekly_reports_label">Weekly Reports</string>
+    <string name="recycling_reminders_label">Recycling Reminders</string>
+    <string name="friend_requests_label">Friend Requests</string>
+    <string name="message_notifications_label">Message Notifications</string>
+    <string name="high_contrast_label">High Contrast</string>
+    <string name="reduce_motion_label">Reduce Motion</string>
+    <string name="screen_reader_label">Screen Reader</string>
+    <string name="large_text_label">Large Text</string>
+    <string name="bold_text_label">Bold Text</string>
+    <string name="color_blind_support_label">Color Blind Support</string>
+    <string name="show_online_status_label">Show Online Status</string>
+    <string name="allow_friend_requests_label">Allow Friend Requests</string>
+    <string name="show_last_seen_label">Show Last Seen</string>
+    <string name="allow_profile_views_label">Allow Profile Views</string>
+    <string name="share_recycling_stats_label">Share Recycling Stats</string>
+    <string name="allow_data_collection_label">Allow Data Collection</string>
+    <string name="reminder_frequency_label">Reminder Frequency</string>
+    <string name="auto_categorize_label">Auto Categorize</string>
+    <string name="share_stats_label">Share Stats</string>
+    <string name="show_tips_label">Show Tips</string>
+    <string name="enable_gamification_label">Enable Gamification</string>
+    <string name="notifications_section">🔔 Notifications</string>
+    <string name="accessibility_section">♿ Accessibility</string>
+    <string name="privacy_section">🔒 Privacy</string>
+    <string name="recycling_section">♻️ Recycling</string>
+    
+    <!-- Privacy Settings -->
+    <string name="profile_visibility">Profile Visibility</string>
+    <string name="control_profile_visibility">Control who can see your profile</string>
+    <string name="visibility">Visibility</string>
+    <string name="information_sharing">Information Sharing</string>
+    <string name="control_information_sharing">Control what information is visible to others</string>
+    <string name="show_email">Show Email</string>
+    <string name="show_email_description">Allow others to see your email address</string>
+    <string name="show_location">Show Location</string>
+    <string name="show_location_description">Allow others to see your location</string>
+    <string name="show_stats">Show Stats</string>
+    <string name="show_stats_description">Allow others to see your recycling statistics</string>
+    <string name="allow_messages">Allow Messages</string>
+    <string name="allow_messages_description">Allow others to send you messages</string>
+    <string name="save_changes">Save Changes</string>
+    
+    <!-- Edit Profile -->
+    <string name="edit_profile_title">Edit Profile</string>
+    <string name="tap_to_change_profile_picture">Tap to change profile picture</string>
+    <string name="basic_information">Basic Information</string>
+    <string name="social_links_title">Social Links</string>
+    
+    <!-- Login/Register -->
+    <string name="smart_recycling_marketplace">Smart Recycling &amp; Marketplace</string>
+    <string name="welcome_back">Welcome Back</string>
+    <string name="sign_in_to_continue">Sign in to continue</string>
+    <string name="user_type">User Type</string>
+    <string name="user_role">User</string>
+    <string name="admin_role">Admin</string>
+    <string name="sign_in">Sign In</string>
+    <string name="create_account">Create Account</string>
+    <string name="demo_credentials">Demo Credentials</string>
+    <string name="user_demo_credentials">User: user123 / password123</string>
+    <string name="admin_demo_credentials">Admin: admin123 / password123</string>
+    
+    <!-- Community -->
+    <string name="no_community_posts">No community posts yet. Be the first to share!</string>
 </resources>

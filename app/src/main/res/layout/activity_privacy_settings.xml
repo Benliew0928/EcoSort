@@ -47,7 +47,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Profile Visibility"
+                        android:text="@string/profile_visibility"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"
@@ -56,7 +56,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Control who can see your profile"
+                        android:text="@string/control_profile_visibility"
                         android:textSize="14sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginBottom="16dp" />
@@ -71,7 +71,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Visibility"
+                            android:text="@string/visibility"
                             android:textSize="16sp"
                             android:textColor="@color/text_primary" />
 
@@ -103,7 +103,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Information Sharing"
+                        android:text="@string/information_sharing"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"
@@ -112,7 +112,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Control what information is visible to others"
+                        android:text="@string/control_information_sharing"
                         android:textSize="14sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginBottom="16dp" />
@@ -134,14 +134,14 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Show Email"
+                                android:text="@string/show_email"
                                 android:textSize="16sp"
                                 android:textColor="@color/text_primary" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Allow others to see your email address"
+                                android:text="@string/show_email_description"
                                 android:textSize="12sp"
                                 android:textColor="@color/text_secondary" />
 
@@ -171,14 +171,14 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Show Location"
+                                android:text="@string/show_location"
                                 android:textSize="16sp"
                                 android:textColor="@color/text_primary" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Allow others to see your location"
+                                android:text="@string/show_location_description"
                                 android:textSize="12sp"
                                 android:textColor="@color/text_secondary" />
 
@@ -208,14 +208,14 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Show Stats"
+                                android:text="@string/show_stats"
                                 android:textSize="16sp"
                                 android:textColor="@color/text_primary" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Allow others to see your recycling statistics"
+                                android:text="@string/show_stats_description"
                                 android:textSize="12sp"
                                 android:textColor="@color/text_secondary" />
 
@@ -244,14 +244,14 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Allow Messages"
+                                android:text="@string/allow_messages"
                                 android:textSize="16sp"
                                 android:textColor="@color/text_primary" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Allow others to send you messages"
+                                android:text="@string/allow_messages_description"
                                 android:textSize="12sp"
                                 android:textColor="@color/text_secondary" />
 
@@ -291,7 +291,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    android:text="Save Changes"
+                    android:text="@string/save_changes"
                     android:background="@drawable/button_primary"
                     android:textColor="@color/white" />
 

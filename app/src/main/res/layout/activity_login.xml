@@ -43,7 +43,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="EcoSort"
+                android:text="@string/app_title"
                 android:textSize="32sp"
                 android:textStyle="bold"
                 android:textColor="@color/white"
@@ -53,7 +53,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Smart Recycling &amp; Marketplace"
+                android:text="@string/smart_recycling_marketplace"
                 android:textSize="16sp"
                 android:textColor="@color/white"
                 android:fontFamily="@string/font_family_body"
@@ -72,7 +72,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Welcome Back"
+                android:text="@string/welcome_back"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
@@ -82,7 +82,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sign in to continue"
+                android:text="@string/sign_in_to_continue"
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary"
                 android:fontFamily="@string/font_family_body"
@@ -176,7 +176,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="User Type"
+                android:text="@string/user_type"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
@@ -195,7 +195,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="User"
+                    android:text="@string/user_role"
                     android:textSize="14sp"
                     android:fontFamily="@string/font_family_body"
                     android:textColor="@color/text_primary"
@@ -206,7 +206,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Admin"
+                    android:text="@string/admin_role"
                     android:textSize="14sp"
                     android:fontFamily="@string/font_family_body"
                     android:textColor="@color/text_primary" />
@@ -217,7 +217,7 @@
                 android:id="@+id/btnLogin"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="Sign In"
+                android:text="@string/sign_in"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:fontFamily="@string/font_family_primary"
@@ -230,7 +230,7 @@
                 android:id="@+id/btnRegister"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:text="Create Account"
+                android:text="@string/create_account"
                 android:textSize="14sp"
                 android:fontFamily="@string/font_family_primary"
                 android:background="@drawable/button_secondary"
@@ -251,7 +251,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Demo Credentials"
+                android:text="@string/demo_credentials"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
@@ -261,7 +261,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="User: user123 / password123"
+                android:text="@string/user_demo_credentials"
                 android:textSize="12sp"
                 android:textColor="@color/text_secondary"
                 android:fontFamily="@string/font_family_caption" />
@@ -269,7 +269,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Admin: admin123 / password123"
+                android:text="@string/admin_demo_credentials"
                 android:textSize="12sp"
                 android:textColor="@color/text_secondary"
                 android:fontFamily="@string/font_family_caption" />
