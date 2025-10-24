@@ -50,10 +50,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // Apply saved language synchronously before setting content view
         applySavedLanguageSync()
-        
+
         setContentView(R.layout.activity_main_responsive)
 
         // userPreferencesManager is now injected via Hilt
@@ -107,7 +107,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                     android.util.Log.d("MainActivity", "No active session. Users in database: $userCount")
-                    
+
                     startActivity(Intent(this@MainActivity, LoginActivity::class.java))
                     finish()
                     return@launch
@@ -149,7 +149,7 @@ class MainActivity : AppCompatActivity() {
 
         // 1. Scan Waste
         btnScanContainer.setOnClickListener {
-            startActivity(Intent(this, CameraActivity::class.java))
+            startActivity(Intent(this, ObjectDetectionActivity::class.java))
         }
 
         // 2. Find Stations
@@ -188,7 +188,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 // Wait a bit for database to initialize
                 kotlinx.coroutines.delay(1000)
-                
+
                 // Update existing posts with profile pictures (one-time fix for old posts)
                 try {
                     communityRepository.updateExistingPostsWithProfilePictures()
@@ -196,7 +196,7 @@ class MainActivity : AppCompatActivity() {
                 } catch (e: Exception) {
                     android.util.Log.w("MainActivity", "Failed to update existing posts with profile pictures: ${e.message}")
                 }
-                
+
                 // Load posts from local database (which has updated profile pictures)
                 communityRepository.getAllCommunityPosts().collect { localPosts ->
                     withContext(Dispatchers.Main) {
@@ -231,19 +231,19 @@ class MainActivity : AppCompatActivity() {
         // Check if language has changed and apply it
         applySavedLanguage()
     }
-    
+
     override fun onBackPressed() {
         // Prevent going back to login screen
         moveTaskToBack(true)
     }
-    
+
     private fun applySavedLanguageSync() {
         try {
             // Use runBlocking to make this synchronous
             val preferences = runBlocking(Dispatchers.IO) {
                 userPreferencesManager.getUserPreferences()
             }
-            
+
             // Check current language
             val currentLocale = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                 resources.configuration.locales[0]
@@ -251,13 +251,13 @@ class MainActivity : AppCompatActivity() {
                 @Suppress("DEPRECATION")
                 resources.configuration.locale
             }
-            
+
             val currentLanguage = when (currentLocale.language) {
                 "zh" -> "zh"
                 "ms" -> "ms"
                 else -> "en"
             }
-            
+
             // Only apply if different
             if (preferences.language != currentLanguage) {
                 val locale = when (preferences.language) {
@@ -265,19 +265,19 @@ class MainActivity : AppCompatActivity() {
                     "ms" -> java.util.Locale("ms", "MY")
                     else -> java.util.Locale("en", "US")
                 }
-                
+
                 // Set locale globally
                 java.util.Locale.setDefault(locale)
-                
+
                 val configuration = android.content.res.Configuration(resources.configuration)
                 configuration.setLocale(locale)
-                
+
                 // Apply to current context
                 resources.updateConfiguration(configuration, resources.displayMetrics)
-                
+
                 // Apply to application context for global effect
                 applicationContext.resources.updateConfiguration(configuration, applicationContext.resources.displayMetrics)
-                
+
                 android.util.Log.d("MainActivity", "Applied saved language: ${preferences.language}")
 
             } else {
@@ -287,14 +287,14 @@ class MainActivity : AppCompatActivity() {
             android.util.Log.e("MainActivity", "Error applying saved language", e)
         }
     }
-    
+
     private fun applySavedLanguage() {
         lifecycleScope.launch {
             try {
                 val preferences = withContext(Dispatchers.IO) {
                     userPreferencesManager.getUserPreferences()
                 }
-                
+
                 // Check current language
                 val currentLocale = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                     resources.configuration.locales[0]
@@ -302,13 +302,13 @@ class MainActivity : AppCompatActivity() {
                     @Suppress("DEPRECATION")
                     resources.configuration.locale
                 }
-                
+
                 val currentLanguage = when (currentLocale.language) {
                     "zh" -> "zh"
                     "ms" -> "ms"
                     else -> "en"
                 }
-                
+
                 // Only apply if different
                 if (preferences.language != currentLanguage) {
                     val locale = when (preferences.language) {
@@ -316,21 +316,21 @@ class MainActivity : AppCompatActivity() {
                         "ms" -> java.util.Locale("ms", "MY")
                         else -> java.util.Locale("en", "US")
                     }
-                    
+
                     // Set locale globally
                     java.util.Locale.setDefault(locale)
-                    
+
                     val configuration = android.content.res.Configuration(resources.configuration)
                     configuration.setLocale(locale)
-                    
+
                     // Apply to current context
                     resources.updateConfiguration(configuration, resources.displayMetrics)
-                    
+
                     // Apply to application context for global effect
                     applicationContext.resources.updateConfiguration(configuration, applicationContext.resources.displayMetrics)
-                    
+
                     android.util.Log.d("MainActivity", "Applied saved language: ${preferences.language}")
-                    
+
                     // Recreate the activity to apply language changes to the UI
                     if (!isFinishing && !isDestroyed) {
                         recreate()
@@ -344,7 +344,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-    
+
 
     private fun renderCommunityPosts(posts: List<com.example.ecosort.data.firebase.FirebaseCommunityPost>, container: android.widget.LinearLayout) {
         container.removeAllViews()
@@ -371,10 +371,10 @@ class MainActivity : AppCompatActivity() {
             // Set post details
             card.findViewById<TextView>(R.id.textPostTitle).text = post.title
             card.findViewById<TextView>(R.id.textPostType).text = post.postType // Show post type instead of price
-            
+
             // Set author details
             card.findViewById<TextView>(R.id.textAuthorName).text = post.authorName
-            
+
             // Load author profile picture
             val authorProfileImage = card.findViewById<android.widget.ImageView>(R.id.imageAuthorProfile)
             if (!post.authorAvatar.isNullOrBlank()) {
@@ -392,7 +392,7 @@ class MainActivity : AppCompatActivity() {
             val thumb = card.findViewById<android.widget.ImageView>(R.id.imagePost)
             val imageUrl = post.imageUrls.firstOrNull()
             val videoUrl = post.videoUrl
-            
+
             when {
                 !imageUrl.isNullOrEmpty() && imageUrl != "demo_black_image" -> {
                     // Load image with enhanced error handling
@@ -409,12 +409,12 @@ class MainActivity : AppCompatActivity() {
                                 android.util.Log.d("MainActivity", "Successfully loaded image for home screen")
                                 thumb.setImageDrawable(resource)
                             }
-                            
+
                             override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
                                 android.util.Log.e("MainActivity", "Failed to load image for home screen: $imageUrl")
                                 thumb.setImageResource(R.drawable.ic_image_placeholder)
                             }
-                            
+
                             override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
                                 // Called when the image is cleared
                             }
@@ -436,18 +436,18 @@ class MainActivity : AppCompatActivity() {
                                 android.util.Log.d("MainActivity", "Successfully loaded video thumbnail for home screen")
                                 thumb.setImageBitmap(resource)
                             }
-                            
+
                             override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
                                 android.util.Log.w("MainActivity", "Failed to load video thumbnail for home screen, trying thumbnail generation")
-                                
+
                                 // Try thumbnail generation as fallback
                                 lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                                     try {
                                         val thumbnailUri = com.example.ecosort.utils.VideoThumbnailGenerator.generateThumbnailFromUrl(
-                                            this@MainActivity, 
+                                            this@MainActivity,
                                             videoUrl
                                         )
-                                        
+
                                         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
                                             if (thumbnailUri != null) {
                                                 android.util.Log.d("MainActivity", "Loading generated thumbnail for home screen: $thumbnailUri")
@@ -469,7 +469,7 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 }
                             }
-                            
+
                             override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
                                 // Called when the image is cleared
                             }
@@ -532,11 +532,11 @@ class MainActivity : AppCompatActivity() {
             card.findViewById<TextView>(R.id.textPostTitle).text = post.title
             card.findViewById<TextView>(R.id.textPostContent).text = post.content
             card.findViewById<TextView>(R.id.textPostType).text = post.postType.name
-            
+
             // Set author details
             card.findViewById<TextView>(R.id.textAuthorName).text = post.authorName
             card.findViewById<TextView>(R.id.textPostTime).text = formatTime(post.postedAt)
-            
+
             // Load author profile picture
             val authorProfileImage = card.findViewById<android.widget.ImageView>(R.id.imageAuthorProfile)
             if (!post.authorAvatar.isNullOrBlank()) {
@@ -554,7 +554,7 @@ class MainActivity : AppCompatActivity() {
             val thumb = card.findViewById<android.widget.ImageView>(R.id.imagePost)
             val imageUrl = post.imageUrls.firstOrNull()
             val videoUrl = post.videoUrl
-            
+
             when {
                 !imageUrl.isNullOrEmpty() && imageUrl != "demo_black_image" -> {
                     // Load image with enhanced error handling
@@ -571,12 +571,12 @@ class MainActivity : AppCompatActivity() {
                                 android.util.Log.d("MainActivity", "Successfully loaded image for home screen")
                                 thumb.setImageDrawable(resource)
                             }
-                            
+
                             override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
                                 android.util.Log.e("MainActivity", "Failed to load image for home screen: $imageUrl")
                                 thumb.setImageResource(R.drawable.ic_image_placeholder)
                             }
-                            
+
                             override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
                                 // Called when the image load is cleared
                             }
@@ -587,12 +587,12 @@ class MainActivity : AppCompatActivity() {
                     // For video posts, generate and show video thumbnail
                     android.util.Log.d("MainActivity", "Loading video thumbnail for home screen: $videoUrl")
                     thumb.visibility = android.view.View.VISIBLE
-                    
+
                     // Generate and load video thumbnail
                     CoroutineScope(Dispatchers.Main).launch {
                         try {
                             android.util.Log.d("MainActivity", "Starting thumbnail generation for: $videoUrl")
-                            
+
                             // First, try to load the video URL directly with Glide
                             // This will work for Firebase URLs and show the first frame
                             android.util.Log.d("MainActivity", "Attempting to load video URL directly with Glide")
@@ -609,18 +609,18 @@ class MainActivity : AppCompatActivity() {
                                         android.util.Log.d("MainActivity", "Successfully loaded video thumbnail from URL")
                                         thumb.setImageBitmap(resource)
                                     }
-                                    
+
                                     override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
                                         android.util.Log.w("MainActivity", "Failed to load video thumbnail from URL, trying thumbnail generation")
-                                        
+
                                         // If direct loading fails, try thumbnail generation
                                         CoroutineScope(Dispatchers.IO).launch {
                                             try {
                                                 val thumbnailUri = VideoThumbnailGenerator.generateThumbnailFromUrl(
-                                                    this@MainActivity, 
+                                                    this@MainActivity,
                                                     videoUrl
                                                 )
-                                                
+
                                                 CoroutineScope(Dispatchers.Main).launch {
                                                     if (thumbnailUri != null) {
                                                         android.util.Log.d("MainActivity", "Loading generated thumbnail: $thumbnailUri")
@@ -650,12 +650,12 @@ class MainActivity : AppCompatActivity() {
                                             }
                                         }
                                     }
-                                    
+
                                     override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
                                         // Called when the image is cleared
                                     }
                                 })
-                                
+
                         } catch (e: Exception) {
                             android.util.Log.e("MainActivity", "Error in video thumbnail loading", e)
                             // Final fallback to video icon
@@ -713,7 +713,7 @@ class MainActivity : AppCompatActivity() {
                     android.util.Log.d("MainActivity", "Activity is finishing or destroyed, skipping profile picture load")
                     return@launch
                 }
-                
+
                 // Get current user's profile image
                 val currentUser = userRepository.getCurrentUser()
                 val profileImageUrl = if (currentUser is com.example.ecosort.data.model.Result.Success<*>) {
@@ -721,13 +721,13 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     null
                 }
-                
+
                 // Check again before using Glide
                 if (isFinishing || isDestroyed) {
                     android.util.Log.d("MainActivity", "Activity is finishing or destroyed, skipping Glide load")
                     return@launch
                 }
-                
+
                 if (!profileImageUrl.isNullOrBlank()) {
                     Glide.with(this@MainActivity)
                         .load(profileImageUrl)

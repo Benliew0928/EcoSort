@@ -88,7 +88,7 @@
         <!-- Other Activities -->
         <activity android:name=".ui.login.LoginActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.login.GoogleUsernameActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".CameraActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".ObjectDetectionActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ResultActivity" android:exported="false" android:screenOrientation="portrait" />
 
         <!-- MapActivity: Use the fully qualified name from the Kotlin file package (com.example.ecosort.MapActivity) -->
@@ -96,7 +96,7 @@
         <activity android:name=".hms.AddBinActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".hms.BinDetailActivity" android:exported="false" />
 
-        <activity android:name=".SellActivity" android:exported="false" android:screenOrientation="portrait" />
+
         <activity android:name=".UserProfileActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".profile.EditProfileActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".profile.UserProfileViewActivity" android:exported="false" android:screenOrientation="portrait" />
@@ -108,8 +108,6 @@
         <activity android:name=".friends.FriendRequestsActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".friends.FriendsListActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".AdminActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".marketplace.MarketplaceActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".marketplace.MarketplaceDetailActivity" android:exported="false" android:screenOrientation="portrait" />
 
         <!-- CHAT ACTIVITIES -->
         <activity android:name=".chat.ChatListActivity" android:exported="false" android:screenOrientation="portrait" />
