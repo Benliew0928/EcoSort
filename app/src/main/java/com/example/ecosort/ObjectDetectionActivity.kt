@@ -22,7 +22,15 @@ import com.google.mlkit.vision.objects.ObjectDetector
 import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.math.roundToInt
+import com.google.ai.client.generativeai.GenerativeModel
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.google.ai.client.generativeai.type.content
+import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions // Needed for lower threshold
+
+// NOTE: You must have a top-level AnalysisResult.kt and OverlayView.kt file in this package.
 
 class ObjectDetectionActivity : AppCompatActivity() {
 
@@ -30,31 +38,41 @@ class ObjectDetectionActivity : AppCompatActivity() {
     private lateinit var overlayView: OverlayView
     private lateinit var btnBackCamera: Button
 
+    private lateinit var geminiModel: GenerativeModel
+
+    private var lastGeminiCallTime = 0L
+    private val GEMINI_CALL_INTERVAL_MS = 1500L // Throttle Gemini API calls to 5 seconds
 
     private val cameraExecutor: ExecutorService by lazy {
         Executors.newSingleThreadExecutor()
     }
 
     private val objectDetector: ObjectDetector by lazy {
+        // Use CustomObjectDetectorOptions to explicitly enable and lower thresholds
         val options = ObjectDetectorOptions.Builder()
             .setDetectorMode(ObjectDetectorOptions.STREAM_MODE)
+            .enableClassification() // Must be enabled to get any label (even generic ones)
+            .enableMultipleObjects() // Detect more objects for better Gemini targeting
             .build()
         ObjectDetection.getClient(options)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_object_detection)
 
         viewFinder = findViewById(R.id.viewFinder)
-        overlayView = findViewById<OverlayView>(R.id.overlayView)
+        overlayView = findViewById(R.id.overlayView)
         btnBackCamera = findViewById(R.id.btnBackCamera)
 
         btnBackCamera.setOnClickListener { finish() }
 
-
-
+        // Initialize the Gemini Generative Model
+        // NOTE: BuildConfig.GEMINI_API_KEY must be configured in your build.gradle
+        this.geminiModel = GenerativeModel(
+            modelName = "gemini-2.5-flash",
+            apiKey = BuildConfig.GEMINI_API_KEY
+        )
 
         if (allPermissionsGranted()) {
             startCamera()
@@ -104,6 +122,7 @@ class ObjectDetectionActivity : AppCompatActivity() {
     }
 
     inner class MLKitAnalyzer : ImageAnalysis.Analyzer {
+        // frameWidth/frameHeight are used for manual scaling calculation
         private var frameWidth: Int = 0
         private var frameHeight: Int = 0
 
@@ -111,36 +130,83 @@ class ObjectDetectionActivity : AppCompatActivity() {
         override fun analyze(imageProxy: ImageProxy) {
             val mediaImage = imageProxy.image
             if (mediaImage != null) {
-                frameWidth = mediaImage.width
-                frameHeight = mediaImage.height
+
+                frameWidth = imageProxy.width
+                frameHeight = imageProxy.height
+
                 val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
 
                 objectDetector.process(image)
                     .addOnSuccessListener { results ->
 
+                        // 1. FAST DRAWING PATH: Map all results (defaulting to "Unknown")
                         val analyzedResults = results.map { obj ->
-                            val boundingBoxRect = obj.boundingBox // This is the Rect from ML Kit
-
-                            // 🔑 FIX: Explicitly convert Rect to RectF for the data class
-                            val boundingBoxRectF = RectF(boundingBoxRect)
-
+                            val boundingBoxRectF = RectF(obj.boundingBox)
+                            // We rely on the OverlayView to replace this with the Gemini result
                             val label = obj.labels.firstOrNull()?.text ?: "Unknown"
-                            val areaPercent = calculateAreaPercentage(boundingBoxRect, frameWidth, frameHeight)
-
-                            // Pass the RectF instance
+                            val areaPercent = calculateAreaPercentage(obj.boundingBox, frameWidth, frameHeight)
                             AnalysisResult(boundingBoxRectF, label, areaPercent.toFloat())
                         }
-                        overlayView.updateResults(
-                            analyzedResults,
-                            frameWidth,    // Pass the raw image width
-                            frameHeight    // Pass the raw image height
-                            // NOTE: Remove rotationDegrees from this call if your OverlayView no longer accepts it
-                        )
+                        // Update OverlayView with fast (but temporary) box drawing
+                        overlayView.updateResults(analyzedResults, frameWidth, frameHeight)
+
+                        // 2. SMART GEMINI PATH: Process the best object
+                        val firstObject = results.firstOrNull()
+
+                        // 🔑 CRITICAL: Throttling check
+                        if (firstObject != null && System.currentTimeMillis() > lastGeminiCallTime + GEMINI_CALL_INTERVAL_MS) {
+                            lastGeminiCallTime = System.currentTimeMillis()
+
+                            val croppedBitmap = cropImage(imageProxy, firstObject.boundingBox)
+                            val modelLabel = firstObject.labels.firstOrNull()?.text ?: "Object"
+
+                            // Use the bounding box as the unique key to update the right box later
+                            val boxKey = RectF(firstObject.boundingBox).toString()
+
+                            if (croppedBitmap != null) {
+                                Log.d("GeminiImageCheck", "Sending image: ${croppedBitmap.width}x${croppedBitmap.height} pixels")
+                                callGeminiApi(croppedBitmap, modelLabel, boxKey)
+                            }
+                        }
                     }
+
                     .addOnFailureListener { e -> Log.e("Detector", "Detection failed", e) }
-                    .addOnCompleteListener { imageProxy.close() }
+                    .addOnCompleteListener { imageProxy.close() } // Must close ImageProxy
+
+                Thread.sleep(50)
+
             } else {
                 imageProxy.close()
+            }
+        }
+    }
+
+    private fun callGeminiApi(image: Bitmap, modelLabel: String, boxKey: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+
+            kotlinx.coroutines.delay(500)
+            val prompt = "You are a waste classification expert for Malaysia. The object has been preliminarily detected as '$modelLabel'. Determine the correct bin: Blue (Paper), Brown (Glass), or Orange (Plastics/Metals). If non-recyclable, state 'General Waste'. Provide ONLY a clean, short instruction for the user in this format: 'Object Type - Bin Color (Material)'."
+
+            try {
+                // Construct the multimodal content
+                val inputContent = content {
+                    image(image)
+                    text(prompt)
+                }
+
+                val response = geminiModel.generateContent(inputContent)
+                val finalClassification = response.text ?: "Gemini Classification Failed"
+
+                withContext(Dispatchers.Main) {
+                    // Update the OverlayView using the unique key
+                    overlayView.updateFinalClassification(boxKey, finalClassification)
+                    Log.d("GeminiResult", "Final Classification for $boxKey: $finalClassification")
+                }
+            } catch (e: Exception) {
+                Log.e("GeminiError", "API call failed: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    overlayView.updateFinalClassification(boxKey, "Classification Failed")
+                }
             }
         }
     }
@@ -151,12 +217,66 @@ class ObjectDetectionActivity : AppCompatActivity() {
         return if (frameArea > 0) (bboxArea / frameArea) * 100 else 0.0
     }
 
-
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
         objectDetector.close()
     }
+
+    // --------------------------------------------------
+    // UTILITY FUNCTIONS (Cropping and Bitmap Conversion)
+    // --------------------------------------------------
+
+    // Manual implementation of ImageProxy to Bitmap conversion
+    @SuppressLint("UnsafeOptInUsageError")
+    private fun ImageProxy.toBitmap(): Bitmap? {
+        val yBuffer = planes[0].buffer
+        val uBuffer = planes[1].buffer
+        val vBuffer = planes[2].buffer
+
+        val ySize = yBuffer.remaining()
+        val uSize = uBuffer.remaining()
+        val vSize = vBuffer.remaining()
+
+        val nv21 = ByteArray(ySize + uSize + vSize)
+
+        yBuffer.get(nv21, 0, ySize)
+        vBuffer.get(nv21, ySize, vSize)
+        uBuffer.get(nv21, ySize + vSize, uSize)
+
+        val yuvImage = YuvImage(nv21, ImageFormat.NV21, width, height, null)
+        val out = java.io.ByteArrayOutputStream()
+        yuvImage.compressToJpeg(Rect(0, 0, width, height), 100, out)
+        val imageBytes = out.toByteArray()
+        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+    }
+
+    // Function to crop the ImageProxy using the ML Kit bounding box
+    private fun cropImage(imageProxy: ImageProxy, boundingBox: Rect): Bitmap? {
+        val fullBitmap = imageProxy.toBitmap() ?: return null
+
+        val cropLeft = boundingBox.left.coerceAtLeast(0)
+        val cropTop = boundingBox.top.coerceAtLeast(0)
+        val cropWidth = boundingBox.width().coerceAtMost(fullBitmap.width - cropLeft)
+        val cropHeight = boundingBox.height().coerceAtMost(fullBitmap.height - cropTop)
+
+        return try {
+            Bitmap.createBitmap(
+                fullBitmap,
+                cropLeft,
+                cropTop,
+                cropWidth,
+                cropHeight
+            )
+        } catch (e: Exception) {
+            Log.e("Detector", "Bitmap cropping failed: ${e.message}")
+            null
+        }
+    }
+
+    // NOTE: This function is not used but was requested previously. Removed for final code cleanliness.
+    // private fun convertBitmapToByteArray(bitmap: Bitmap): ByteArray { ... }
+
 
     companion object {
         private const val CAMERA_REQUEST_CODE = 10

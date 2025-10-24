@@ -14,13 +14,17 @@ android {
 
     defaultConfig {
         applicationId 'com.example.ecosort'
-        minSdk 24
+        minSdk 26
         targetSdk 34
         versionCode 1
         versionName '1.0'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         vectorDrawables.useSupportLibrary = true
+
+        def properties = new Properties()
+        properties.load(project.rootProject.file("local.properties").newDataInputStream())
+        buildConfigField "String", "GEMINI_API_KEY", "\"${properties.getProperty("GEMINI_API_KEY")}\""
     }
 
     buildTypes {
@@ -38,6 +42,7 @@ android {
         viewBinding true
         dataBinding true
         compose true
+        buildConfig = true
     }
 
     // Configure Compose compiler version
@@ -56,7 +61,25 @@ android {
 
     packaging {
         resources {
-            excludes += ['/META-INF/{AL2.0,LGPL2.1}']
+            excludes += [
+                    '/META-INF/{AL2.0,LGPL2.1}',
+                    "META-INF/INDEX.LIST",
+                    "META-INF/*.kotlin_module",
+                    "META-INF/DEPENDENCIES",
+                    "META-INF/NOTICE",
+                    "META-INF/LICENSE",
+                    "google/protobuf/field_mask.proto",
+                    'META-INF/LICENSE.md',
+                    'META-INF/LICENSE-notice.md'
+                    ]
+            pickFirst 'google/protobuf/any.proto'
+            pickFirst 'google/protobuf/api.proto'
+            pickFirst 'google/protobuf/duration.proto'
+            pickFirst 'google/protobuf/field_mask.proto'
+            pickFirst 'google/protobuf/source_context.proto'
+            pickFirst 'google/protobuf/timestamp.proto'
+            pickFirst 'google/protobuf/type.proto' // Your specific error file
+            pickFirst 'google/protobuf/wrappers.proto'
         }
     }
 }
@@ -71,7 +94,7 @@ dependencies {
     // Lifecycle & ViewModel
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.6.2'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.2'
     implementation 'androidx.activity:activity-ktx:1.8.1'
     implementation 'androidx.fragment:fragment-ktx:1.6.2'
 
@@ -120,6 +143,16 @@ dependencies {
     implementation 'com.google.mlkit:object-detection:17.0.2'
     implementation 'com.google.mlkit:image-labeling-custom:17.0.3'
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation 'com.google.mlkit:object-detection-custom:17.0.2'
+
+    // 🔑 Gemini API SDK for Android/Java
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0"){
+        // 🔑 FIX: Exclude the desktop Java version of protobuf
+        exclude group: "com.google.protobuf", module: "protobuf-java"
+        exclude group: "com.google.protobuf", module: "protobuf-java-util" // Also exclude the utility version just in case
+    }
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     // Huawei HMS Maps & Location (These are the correct, kept dependencies)
     implementation 'com.huawei.agconnect:agconnect-core:1.9.1.301'
