@@ -89,6 +89,10 @@
         <activity android:name=".ui.login.LoginActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.login.GoogleUsernameActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ObjectDetectionActivity" android:exported="false" android:screenOrientation="portrait" />
+<<<<<<< HEAD
+        <activity android:name=".AnalysisResultActivity" android:exported="false" android:screenOrientation="portrait" />
+=======
+>>>>>>> parent of c52b3a6 (Gemini workable (at least))
         <activity android:name=".ResultActivity" android:exported="false" android:screenOrientation="portrait" />
 
         <!-- MapActivity: Use the fully qualified name from the Kotlin file package (com.example.ecosort.MapActivity) -->
