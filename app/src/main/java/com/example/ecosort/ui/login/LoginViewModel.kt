@@ -6,6 +6,7 @@ import com.example.ecosort.data.model.Result
 import com.example.ecosort.data.model.UserSession
 import com.example.ecosort.data.model.UserType
 import com.example.ecosort.data.repository.UserRepository
+import com.example.ecosort.data.repository.AdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,7 +39,8 @@ data class RegisterUiState(
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val adminRepository: AdminRepository
 ) : ViewModel() {
 
     private val _loginState = MutableStateFlow(LoginUiState())
@@ -124,7 +126,8 @@ class LoginViewModel @Inject constructor(
         email: String,
         password: String,
         confirmPassword: String,
-        userType: UserType
+        userType: UserType,
+        adminPasskey: String? = null
     ) {
         // Clear previous errors
         _registerState.value = _registerState.value.copy(
@@ -168,7 +171,19 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             _registerState.value = _registerState.value.copy(isLoading = true, errorMessage = null)
 
-            when (val result = userRepository.registerUser(username, email, password, userType)) {
+            val result = if (userType == UserType.ADMIN) {
+                // For admin accounts, use AdminRepository
+                if (adminPasskey == null) {
+                    Result.Error(Exception("Admin passkey is required for admin registration"))
+                } else {
+                    adminRepository.createAdmin(username, email, password, adminPasskey)
+                }
+            } else {
+                // For regular users, use UserRepository
+                userRepository.registerUser(username, email, password, userType)
+            }
+
+            when (result) {
                 is Result.Success -> {
                     _registerState.value = RegisterUiState(
                         isLoading = false,

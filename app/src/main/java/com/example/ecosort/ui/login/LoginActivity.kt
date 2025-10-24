@@ -15,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.ecosort.MainActivity
 import com.example.ecosort.R
 import com.example.ecosort.data.model.UserType
+import com.example.ecosort.ui.admin.AdminRegistrationDialog
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -25,7 +26,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class LoginActivity : AppCompatActivity() {
+class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistrationListener {
 
     private val viewModel: LoginViewModel by viewModels()
 
@@ -237,7 +238,13 @@ class LoginActivity : AppCompatActivity() {
 
                 // Only proceed with registration if all fields are valid
                 if (usernameError == null && emailError == null && passwordError == null && confirmPasswordError == null) {
-                    viewModel.register(username, email, password, confirmPassword, userType)
+                    // If user is trying to register as admin, show admin passkey dialog first
+                    if (userType == UserType.ADMIN) {
+                        dialog.dismiss() // Close the registration dialog first
+                        showAdminRegistrationDialog(username, email, password, confirmPassword)
+                    } else {
+                        viewModel.register(username, email, password, confirmPassword, userType)
+                    }
                 } else {
                     // Show general message about validation errors
                     Toast.makeText(this@LoginActivity, "Please fix the errors above", Toast.LENGTH_SHORT).show()
@@ -479,6 +486,40 @@ class LoginActivity : AppCompatActivity() {
                 Toast.makeText(this, getString(R.string.google_sign_in_error), Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    // ==================== ADMIN REGISTRATION ====================
+
+    private fun showAdminRegistrationDialog(username: String, email: String, password: String, confirmPassword: String) {
+        val dialog = AdminRegistrationDialog.newInstance(this)
+        // Store the registration data for later use
+        dialog.arguments = Bundle().apply {
+            putString("username", username)
+            putString("email", email)
+            putString("password", password)
+            putString("confirmPassword", confirmPassword)
+        }
+        dialog.show(supportFragmentManager, "AdminRegistrationDialog")
+    }
+
+    override fun onAdminPasskeyVerified(passkey: String) {
+        // Get the stored registration data
+        val dialog = supportFragmentManager.findFragmentByTag("AdminRegistrationDialog") as? AdminRegistrationDialog
+        val args = dialog?.arguments
+        if (args != null) {
+            val username = args.getString("username", "")
+            val email = args.getString("email", "")
+            val password = args.getString("password", "")
+            val confirmPassword = args.getString("confirmPassword", "")
+            
+            // Proceed with admin registration, passing the verified passkey
+            viewModel.register(username, email, password, confirmPassword, UserType.ADMIN, passkey)
+        }
+    }
+
+    override fun onAdminRegistrationCancelled() {
+        // User cancelled admin registration, do nothing
+        Toast.makeText(this, "Admin registration cancelled", Toast.LENGTH_SHORT).show()
     }
 
     // ==================== NAVIGATION ====================

@@ -12,6 +12,7 @@ import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.data.firebase.FirestoreService
 import com.example.ecosort.ui.login.LoginActivity
 import com.example.ecosort.utils.DatabaseDebugHelper
+import com.example.ecosort.social.FollowingListActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,11 +29,12 @@ import com.example.ecosort.utils.VideoThumbnailGenerator
 import kotlinx.coroutines.CoroutineScope
 import androidx.cardview.widget.CardView
 import android.widget.LinearLayout
+import com.example.ecosort.ui.admin.AdminPasskeyDialog
 
 
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListener {
 
     @Inject
     lateinit var userPreferencesManager: UserPreferencesManager
@@ -40,11 +42,15 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var firestoreService: FirestoreService
 
+
     @Inject
     lateinit var communityRepository: com.example.ecosort.data.repository.CommunityRepository
 
     @Inject
     lateinit var userRepository: com.example.ecosort.data.repository.UserRepository
+
+    @Inject
+    lateinit var adminRepository: com.example.ecosort.data.repository.AdminRepository
 
     private var currentUserType: UserType = UserType.USER
 
@@ -82,6 +88,7 @@ class MainActivity : AppCompatActivity() {
 
         // Community Feed
         val featuredViewAll = findViewById<TextView>(R.id.featuredViewAll)
+        val btnFollowingList = findViewById<TextView>(R.id.btnFollowingList)
         val featuredContainer = findViewById<android.widget.LinearLayout>(R.id.featuredContainer)
 
         // Bottom navigation buttons
@@ -130,7 +137,8 @@ class MainActivity : AppCompatActivity() {
                 // Handle user type specific functionality
                 if (currentUserType == UserType.ADMIN) {
                     btnProfile.setOnClickListener {
-                        startActivity(Intent(this@MainActivity, AdminActivity::class.java))
+                        // Show admin passkey dialog before accessing admin panel
+                        showAdminPasskeyDialog()
                     }
                 } else {
                     btnProfile.setOnClickListener {
@@ -183,11 +191,40 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, com.example.ecosort.community.CommunityFeedActivity::class.java))
         }
 
+        // Following List -> Following List Activity
+        btnFollowingList.setOnClickListener {
+            startActivity(Intent(this, FollowingListActivity::class.java))
+        }
+
         // Load community posts from local database (with updated profile pictures)
         lifecycleScope.launch {
             try {
                 // Wait a bit for database to initialize
                 kotlinx.coroutines.delay(1000)
+
+                // Sync user profiles from Firebase to local database
+                try {
+                    val syncResult = userRepository.syncAllUsersFromFirebase()
+                    if (syncResult is com.example.ecosort.data.model.Result.Success) {
+                        android.util.Log.d("MainActivity", "Successfully synced ${syncResult.data} users from Firebase")
+                    } else {
+                        android.util.Log.w("MainActivity", "Failed to sync users from Firebase: ${(syncResult as com.example.ecosort.data.model.Result.Error).exception.message}")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("MainActivity", "Error syncing users from Firebase: ${e.message}")
+                }
+
+                // Sync admin profiles from Firebase to local database
+                try {
+                    val adminSyncResult = adminRepository.syncAllAdminsFromFirebase()
+                    if (adminSyncResult is com.example.ecosort.data.model.Result.Success) {
+                        android.util.Log.d("MainActivity", "Successfully synced ${adminSyncResult.data} admins from Firebase")
+                    } else {
+                        android.util.Log.w("MainActivity", "Failed to sync admins from Firebase: ${(adminSyncResult as com.example.ecosort.data.model.Result.Error).exception.message}")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("MainActivity", "Error syncing admins from Firebase: ${e.message}")
+                }
 
                 // Update existing posts with profile pictures (one-time fix for old posts)
                 try {
@@ -197,12 +234,13 @@ class MainActivity : AppCompatActivity() {
                     android.util.Log.w("MainActivity", "Failed to update existing posts with profile pictures: ${e.message}")
                 }
 
-                // Load posts from local database (which has updated profile pictures)
-                communityRepository.getAllCommunityPosts().collect { localPosts ->
+                // Load following posts from local database (which has updated profile pictures)
+                val followingPostsFlow = communityRepository.getFollowingPosts()
+                followingPostsFlow.collect { followingPosts ->
                     withContext(Dispatchers.Main) {
                         // Check if activity is still valid before rendering
                         if (!isFinishing && !isDestroyed) {
-                            renderCommunityPostsFromLocal(localPosts, featuredContainer)
+                            renderCommunityPostsFromLocal(followingPosts, featuredContainer)
                         }
                     }
                 }
@@ -230,6 +268,11 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         // Check if language has changed and apply it
         applySavedLanguage()
+        
+        // Refresh profile picture when returning to MainActivity
+        // This ensures the image is updated if it was changed in other activities
+        val btnProfile = findViewById<android.widget.ImageView>(R.id.btnProfile)
+        loadUserProfilePicture(btnProfile)
     }
 
     override fun onBackPressed() {
@@ -708,12 +751,6 @@ class MainActivity : AppCompatActivity() {
     private fun loadUserProfilePicture(profileImageView: android.widget.ImageView) {
         lifecycleScope.launch {
             try {
-                // Check if activity is still valid before proceeding
-                if (isFinishing || isDestroyed) {
-                    android.util.Log.d("MainActivity", "Activity is finishing or destroyed, skipping profile picture load")
-                    return@launch
-                }
-
                 // Get current user's profile image
                 val currentUser = userRepository.getCurrentUser()
                 val profileImageUrl = if (currentUser is com.example.ecosort.data.model.Result.Success<*>) {
@@ -722,38 +759,68 @@ class MainActivity : AppCompatActivity() {
                     null
                 }
 
-                // Check again before using Glide
-                if (isFinishing || isDestroyed) {
-                    android.util.Log.d("MainActivity", "Activity is finishing or destroyed, skipping Glide load")
-                    return@launch
-                }
+                // Use withContext to ensure we're on the main thread for UI operations
+                withContext(Dispatchers.Main) {
+                    // Check if activity is still valid before UI operations
+                    if (isFinishing || isDestroyed) {
+                        android.util.Log.d("MainActivity", "Activity is finishing or destroyed, skipping profile picture load")
+                        return@withContext
+                    }
 
-                if (!profileImageUrl.isNullOrBlank()) {
-                    Glide.with(this@MainActivity)
-                        .load(profileImageUrl)
-                        .placeholder(R.drawable.ic_person_24)
-                        .error(R.drawable.ic_person_24)
-                        .into(profileImageView)
-                } else {
-                    // Set default placeholder with circular crop
-                    Glide.with(this@MainActivity)
-                        .load(R.drawable.ic_person_24)
-                        .into(profileImageView)
+                    try {
+                        if (!profileImageUrl.isNullOrBlank()) {
+                            android.util.Log.d("MainActivity", "Loading profile image: $profileImageUrl")
+                            Glide.with(this@MainActivity)
+                                .load(profileImageUrl)
+                                .placeholder(R.drawable.ic_person_24)
+                                .error(R.drawable.ic_person_24)
+                                .into(profileImageView)
+                        } else {
+                            android.util.Log.d("MainActivity", "No profile image URL, setting default")
+                            Glide.with(this@MainActivity)
+                                .load(R.drawable.ic_person_24)
+                                .into(profileImageView)
+                        }
+                    } catch (glideException: Exception) {
+                        android.util.Log.e("MainActivity", "Error loading profile image with Glide", glideException)
+                        // Fallback to default image
+                        try {
+                            profileImageView.setImageResource(R.drawable.ic_person_24)
+                        } catch (e: Exception) {
+                            android.util.Log.e("MainActivity", "Error setting fallback image", e)
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Error loading user profile picture", e)
-                // Only set default if activity is still valid
-                if (!isFinishing && !isDestroyed) {
-                    try {
-                        Glide.with(this@MainActivity)
-                            .load(R.drawable.ic_person_24)
-                            .circleCrop()
-                            .into(profileImageView)
-                    } catch (glideException: Exception) {
-                        android.util.Log.e("MainActivity", "Error setting default profile picture", glideException)
+                // Fallback to default image on main thread
+                withContext(Dispatchers.Main) {
+                    if (!isFinishing && !isDestroyed) {
+                        try {
+                            profileImageView.setImageResource(R.drawable.ic_person_24)
+                        } catch (e: Exception) {
+                            android.util.Log.e("MainActivity", "Error setting fallback image", e)
+                        }
                     }
                 }
             }
         }
+    }
+
+    // ==================== ADMIN PASSKEY METHODS ====================
+
+    private fun showAdminPasskeyDialog() {
+        val dialog = AdminPasskeyDialog.newInstance(this)
+        dialog.show(supportFragmentManager, "AdminPasskeyDialog")
+    }
+
+    override fun onPasskeyVerified() {
+        // Passkey verified, proceed to admin activity
+        startActivity(Intent(this, com.example.ecosort.ui.admin.AdminActivity::class.java))
+    }
+
+    override fun onPasskeyCancelled() {
+        // User cancelled passkey entry, do nothing
+        Toast.makeText(this, "Admin access cancelled", Toast.LENGTH_SHORT).show()
     }
 }

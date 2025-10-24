@@ -45,7 +45,6 @@
         app:layout_constraintTop_toTopOf="parent"
         style="@style/Widget.AppCompat.Button.Colored" />
 
-<<<<<<< HEAD
     <Button
         android:id="@+id/btnCapture"
         android:layout_width="120dp"
@@ -58,7 +57,4 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
-
-=======
->>>>>>> parent of c52b3a6 (Gemini workable (at least))
 </androidx.constraintlayout.widget.ConstraintLayout>

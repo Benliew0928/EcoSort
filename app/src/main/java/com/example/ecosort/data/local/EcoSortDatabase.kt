@@ -159,6 +159,9 @@ interface UserDao {
     @Update
     suspend fun updateUser(user: User)
 
+    @Delete
+    suspend fun deleteUser(user: User)
+
     @Query("UPDATE users SET itemsRecycled = itemsRecycled + 1 WHERE id = :userId")
     suspend fun incrementItemsRecycled(userId: Long)
 
@@ -339,6 +342,14 @@ interface CommunityPostDao {
 
     @Query("SELECT * FROM community_posts WHERE tags LIKE '%' || :tag || '%' AND status = 'PUBLISHED' ORDER BY postedAt DESC")
     fun getPostsByTag(tag: String): Flow<List<CommunityPost>>
+
+    @Query("""
+        SELECT cp.* FROM community_posts cp 
+        INNER JOIN user_follows uf ON cp.authorId = uf.followingId 
+        WHERE uf.followerId = :userId AND cp.status = 'PUBLISHED' 
+        ORDER BY cp.postedAt DESC
+    """)
+    fun getFollowingPosts(userId: Long): Flow<List<CommunityPost>>
 
     @Update
     suspend fun updatePost(post: CommunityPost)
@@ -573,9 +584,11 @@ interface BlockedUserDao {
         UserFriend::class,
         FriendRequest::class,
         Friendship::class,
-        BlockedUser::class
+        BlockedUser::class,
+        Admin::class,
+        AdminAction::class
     ],
-    version = 15,
+    version = 16,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -594,6 +607,7 @@ abstract class EcoSortDatabase : RoomDatabase() {
     abstract fun friendRequestDao(): FriendRequestDao
     abstract fun friendshipDao(): FriendshipDao
     abstract fun blockedUserDao(): BlockedUserDao
+    abstract fun adminDao(): AdminDao
 
     companion object {
         @Volatile
@@ -620,7 +634,8 @@ abstract class EcoSortDatabase : RoomDatabase() {
                 MIGRATION_11_12,
                 MIGRATION_12_13,
                 MIGRATION_13_14,
-                MIGRATION_14_15
+                MIGRATION_14_15,
+                MIGRATION_15_16
             )
                     .allowMainThreadQueries() // Temporary for debugging
                     .build()
@@ -989,6 +1004,43 @@ internal val MIGRATION_14_15 = object : androidx.room.migration.Migration(14, 15
 
         } catch (e: Exception) {
             android.util.Log.e("Migration_14_15", "Migration failed: ${e.message}")
+            throw e
+        }
+    }
+}
+
+internal val MIGRATION_15_16 = object : androidx.room.migration.Migration(15, 16) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Create admins table
+            database.execSQL("""
+                CREATE TABLE admins (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    username TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    passwordHash TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    lastLogin INTEGER NOT NULL,
+                    isActive INTEGER NOT NULL DEFAULT 1,
+                    permissions TEXT NOT NULL DEFAULT 'FULL_ACCESS'
+                )
+            """.trimIndent())
+            // Create admin_actions table
+            database.execSQL("""
+                CREATE TABLE admin_actions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    adminId INTEGER NOT NULL,
+                    action TEXT NOT NULL,
+                    targetUserId INTEGER,
+                    details TEXT,
+                    timestamp INTEGER NOT NULL
+                )
+            """.trimIndent())
+
+            android.util.Log.d("Migration_15_16", "Created admin tables successfully")
+
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_15_16", "Migration failed: ${e.message}")
             throw e
         }
     }

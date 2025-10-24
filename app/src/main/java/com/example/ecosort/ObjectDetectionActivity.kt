@@ -28,14 +28,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.google.ai.client.generativeai.type.content
-<<<<<<< HEAD
 import com.example.ecosort.R.id.btnCapture
 import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions // Needed for lower threshold
 import android.content.Intent
 import com.google.mlkit.vision.objects.DetectedObject
-=======
-import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions // Needed for lower threshold
->>>>>>> parent of c52b3a6 (Gemini workable (at least))
 
 // NOTE: You must have a top-level AnalysisResult.kt and OverlayView.kt file in this package.
 
@@ -50,13 +46,9 @@ class ObjectDetectionActivity : AppCompatActivity() {
     private var lastGeminiCallTime = 0L
     private val GEMINI_CALL_INTERVAL_MS = 1500L // Throttle Gemini API calls to 5 seconds
 
-<<<<<<< HEAD
     private var latestDetectedObjects: List<DetectedObject> = emptyList()
 
     private var latestCapturedBitmap: Bitmap? = null
-
-=======
->>>>>>> parent of c52b3a6 (Gemini workable (at least))
     private val cameraExecutor: ExecutorService by lazy {
         Executors.newSingleThreadExecutor()
     }
@@ -81,15 +73,10 @@ class ObjectDetectionActivity : AppCompatActivity() {
 
         btnBackCamera.setOnClickListener { finish() }
 
-<<<<<<< HEAD
         val btnCapture = findViewById<Button>(R.id.btnCapture)
         btnCapture.setOnClickListener {
             handleCapture()
         }
-
-
-=======
->>>>>>> parent of c52b3a6 (Gemini workable (at least))
         // Initialize the Gemini Generative Model
         // NOTE: BuildConfig.GEMINI_API_KEY must be configured in your build.gradle
         this.geminiModel = GenerativeModel(
@@ -102,10 +89,6 @@ class ObjectDetectionActivity : AppCompatActivity() {
         } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, CAMERA_REQUEST_CODE)
         }
-<<<<<<< HEAD
-
-=======
->>>>>>> parent of c52b3a6 (Gemini workable (at least))
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
@@ -152,12 +135,6 @@ class ObjectDetectionActivity : AppCompatActivity() {
         // frameWidth/frameHeight are used for manual scaling calculation
         private var frameWidth: Int = 0
         private var frameHeight: Int = 0
-
-<<<<<<< HEAD
-
-
-=======
->>>>>>> parent of c52b3a6 (Gemini workable (at least))
         @SuppressLint("UnsafeOptInUsageError")
         override fun analyze(imageProxy: ImageProxy) {
             val mediaImage = imageProxy.image
@@ -168,7 +145,6 @@ class ObjectDetectionActivity : AppCompatActivity() {
 
                 val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
 
-<<<<<<< HEAD
                 // 🔑 CRITICAL FIX: Create a stable Bitmap copy for capture
                 this@ObjectDetectionActivity.latestCapturedBitmap = imageProxy.toBitmap()
 
@@ -176,12 +152,6 @@ class ObjectDetectionActivity : AppCompatActivity() {
                     .addOnSuccessListener { results ->
 
                         this@ObjectDetectionActivity.latestDetectedObjects = results
-
-=======
-                objectDetector.process(image)
-                    .addOnSuccessListener { results ->
-
->>>>>>> parent of c52b3a6 (Gemini workable (at least))
                         // 1. FAST DRAWING PATH: Map all results (defaulting to "Unknown")
                         val analyzedResults = results.map { obj ->
                             val boundingBoxRectF = RectF(obj.boundingBox)
@@ -193,26 +163,6 @@ class ObjectDetectionActivity : AppCompatActivity() {
                         // Update OverlayView with fast (but temporary) box drawing
                         overlayView.updateResults(analyzedResults, frameWidth, frameHeight)
 
-<<<<<<< HEAD
-//                        // 2. SMART GEMINI PATH: Process the best object
-//                        val firstObject = results.firstOrNull()
-//
-//                        // 🔑 CRITICAL: Throttling check
-//                        if (firstObject != null && System.currentTimeMillis() > lastGeminiCallTime + GEMINI_CALL_INTERVAL_MS) {
-//                            lastGeminiCallTime = System.currentTimeMillis()
-//
-//                            val croppedBitmap = cropImage(imageProxy, firstObject.boundingBox)
-//                            val modelLabel = firstObject.labels.firstOrNull()?.text ?: "Object"
-//
-//                            // Use the bounding box as the unique key to update the right box later
-//                            val boxKey = RectF(firstObject.boundingBox).toString()
-//
-//                            if (croppedBitmap != null) {
-//                                Log.d("GeminiImageCheck", "Sending image: ${croppedBitmap.width}x${croppedBitmap.height} pixels")
-//                                callGeminiApi(croppedBitmap, modelLabel, boxKey)
-//                            }
-//                        }
-=======
                         // 2. SMART GEMINI PATH: Process the best object
                         val firstObject = results.firstOrNull()
 
@@ -231,17 +181,10 @@ class ObjectDetectionActivity : AppCompatActivity() {
                                 callGeminiApi(croppedBitmap, modelLabel, boxKey)
                             }
                         }
->>>>>>> parent of c52b3a6 (Gemini workable (at least))
                     }
 
                     .addOnFailureListener { e -> Log.e("Detector", "Detection failed", e) }
                     .addOnCompleteListener { imageProxy.close() } // Must close ImageProxy
-
-<<<<<<< HEAD
-=======
-                Thread.sleep(50)
-
->>>>>>> parent of c52b3a6 (Gemini workable (at least))
             } else {
                 imageProxy.close()
             }
@@ -319,13 +262,30 @@ class ObjectDetectionActivity : AppCompatActivity() {
     }
 
     // Function to crop the ImageProxy using the ML Kit bounding box
-<<<<<<< HEAD
-    private fun cropImage(fullBitmap: Bitmap, boundingBox: Rect): Bitmap? {
-=======
     private fun cropImage(imageProxy: ImageProxy, boundingBox: Rect): Bitmap? {
         val fullBitmap = imageProxy.toBitmap() ?: return null
->>>>>>> parent of c52b3a6 (Gemini workable (at least))
 
+        val cropLeft = boundingBox.left.coerceAtLeast(0)
+        val cropTop = boundingBox.top.coerceAtLeast(0)
+        val cropWidth = boundingBox.width().coerceAtMost(fullBitmap.width - cropLeft)
+        val cropHeight = boundingBox.height().coerceAtMost(fullBitmap.height - cropTop)
+
+        return try {
+            Bitmap.createBitmap(
+                fullBitmap,
+                cropLeft,
+                cropTop,
+                cropWidth,
+                cropHeight
+            )
+        } catch (e: Exception) {
+            Log.e("Detector", "Bitmap cropping failed: ${e.message}")
+            null
+        }
+    }
+
+    // Function to crop a Bitmap using the ML Kit bounding box
+    private fun cropImageFromBitmap(fullBitmap: Bitmap, boundingBox: Rect): Bitmap? {
         val cropLeft = boundingBox.left.coerceAtLeast(0)
         val cropTop = boundingBox.top.coerceAtLeast(0)
         val cropWidth = boundingBox.width().coerceAtMost(fullBitmap.width - cropLeft)
@@ -349,14 +309,6 @@ class ObjectDetectionActivity : AppCompatActivity() {
     // private fun convertBitmapToByteArray(bitmap: Bitmap): ByteArray { ... }
 
 
-    companion object {
-        private const val CAMERA_REQUEST_CODE = 10
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
-    }
-<<<<<<< HEAD
-
-
-
     private fun handleCapture() {
         val fullBitmap = latestCapturedBitmap ?: run {
             Toast.makeText(this, "Camera buffer empty. Wait a moment.", Toast.LENGTH_SHORT).show()
@@ -373,7 +325,7 @@ class ObjectDetectionActivity : AppCompatActivity() {
         val modelLabel = targetObject.labels.firstOrNull()?.text ?: "Unclassified Item"
 
         // 2. Perform the cropping
-        val croppedBitmap = cropImage(fullBitmap, boundingBox)
+        val croppedBitmap = cropImageFromBitmap(fullBitmap, boundingBox)
 
         if (croppedBitmap != null) {
             // 🔑 NEW: Start the AnalysisResultActivity and pass the data
@@ -391,7 +343,8 @@ class ObjectDetectionActivity : AppCompatActivity() {
         }
     }
 
-
-=======
->>>>>>> parent of c52b3a6 (Gemini workable (at least))
+    companion object {
+        private const val CAMERA_REQUEST_CODE = 10
+        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+    }
 }

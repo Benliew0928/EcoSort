@@ -21,6 +21,9 @@ class FirestoreService @Inject constructor() {
     private val communityLikesCollection by lazy { firestore.collection("community_likes") }
 
     private val recycleBinsCollection by lazy { firestore.collection("recycleBins") }
+    
+    // User profiles collection
+    private val usersCollection by lazy { firestore.collection("users") }
 
     /**
      * NEW: Save a document to a specific collection. Used for RecycleBins.
@@ -76,6 +79,111 @@ class FirestoreService @Inject constructor() {
             Result.success(post.id)
         } catch (e: Exception) {
             android.util.Log.e("FirestoreService", "Failed to add community post", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Save user profile to Firebase
+     */
+    suspend fun saveUserProfile(userData: HashMap<String, Any>): Result<String> {
+        return try {
+            android.util.Log.d("FirestoreService", "Saving user profile to Firebase")
+            val docRef = usersCollection.add(userData).await()
+            android.util.Log.d("FirestoreService", "User profile saved with ID: ${docRef.id}")
+            Result.success(docRef.id)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to save user profile", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Update user profile in Firebase
+     */
+    suspend fun updateUserProfile(userId: String, userData: HashMap<String, Any>): Result<Unit> {
+        return try {
+            android.util.Log.d("FirestoreService", "Updating user profile in Firebase: $userId")
+            usersCollection.document(userId).set(userData).await()
+            android.util.Log.d("FirestoreService", "User profile updated successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to update user profile", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get user profile from Firebase by username
+     */
+    suspend fun getUserProfileByUsername(username: String): Result<HashMap<String, Any>?> {
+        return try {
+            android.util.Log.d("FirestoreService", "Getting user profile by username: $username")
+            val querySnapshot = usersCollection.whereEqualTo("username", username).get().await()
+            
+            if (querySnapshot.isEmpty) {
+                android.util.Log.d("FirestoreService", "No user found with username: $username")
+                Result.success(null)
+            } else {
+                val userData = querySnapshot.documents.first().data as HashMap<String, Any>
+                android.util.Log.d("FirestoreService", "Found user profile: $username")
+                Result.success(userData)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to get user profile by username", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get user profile from Firebase by ID
+     */
+    suspend fun getUserProfileById(userId: String): Result<HashMap<String, Any>?> {
+        return try {
+            android.util.Log.d("FirestoreService", "Getting user profile by ID: $userId")
+            val document = usersCollection.document(userId).get().await()
+            
+            if (!document.exists()) {
+                android.util.Log.d("FirestoreService", "No user found with ID: $userId")
+                Result.success(null)
+            } else {
+                val userData = document.data as HashMap<String, Any>
+                android.util.Log.d("FirestoreService", "Found user profile with ID: $userId")
+                Result.success(userData)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to get user profile by ID", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get all user profiles from Firebase
+     */
+    suspend fun getAllUserProfiles(): Result<List<HashMap<String, Any>>> {
+        return try {
+            android.util.Log.d("FirestoreService", "Getting all user profiles from Firebase")
+            val querySnapshot = usersCollection.get().await()
+            val userProfiles = querySnapshot.documents.map { it.data as HashMap<String, Any> }
+            android.util.Log.d("FirestoreService", "Retrieved ${userProfiles.size} user profiles")
+            Result.success(userProfiles)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to get all user profiles", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Delete user profile from Firebase
+     */
+    suspend fun deleteUserProfile(userId: String): Result<Unit> {
+        return try {
+            android.util.Log.d("FirestoreService", "Deleting user profile from Firebase: $userId")
+            usersCollection.document(userId).delete().await()
+            android.util.Log.d("FirestoreService", "User profile deleted successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to delete user profile", e)
             Result.failure(e)
         }
     }

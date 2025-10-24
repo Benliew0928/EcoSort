@@ -141,6 +141,97 @@ object SecurityManager {
     fun isValidUsername(username: String): Boolean {
         return username.matches(Regex("^[a-zA-Z0-9_]{3,20}$"))
     }
+
+    // ==================== ADMIN PASSKEY MANAGEMENT ====================
+
+    private const val ADMIN_PASSKEY_PREF = "admin_passkey"
+    private const val DEFAULT_ADMIN_PASSKEY = "8888"
+
+    fun verifyAdminPasskey(inputPasskey: String): Boolean {
+        val storedPasskey = getStoredAdminPasskey()
+        return inputPasskey == storedPasskey
+    }
+
+    private fun getStoredAdminPasskey(): String {
+        return try {
+            val context = getApplicationContext()
+            if (context != null) {
+                val prefs = context.getSharedPreferences("admin_prefs", android.content.Context.MODE_PRIVATE)
+                val encryptedPasskey = prefs.getString(ADMIN_PASSKEY_PREF, null)
+                if (encryptedPasskey != null) {
+                    decryptData(encryptedPasskey) ?: DEFAULT_ADMIN_PASSKEY
+                } else {
+                    DEFAULT_ADMIN_PASSKEY
+                }
+            } else {
+                DEFAULT_ADMIN_PASSKEY
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SecurityManager", "Error getting admin passkey: ${e.message}")
+            DEFAULT_ADMIN_PASSKEY
+        }
+    }
+
+    fun setAdminPasskey(newPasskey: String): Boolean {
+        return try {
+            val context = getApplicationContext()
+            if (context != null) {
+                val encryptedPasskey = encryptData(newPasskey)
+                if (encryptedPasskey.isNotEmpty()) {
+                    val prefs = context.getSharedPreferences("admin_prefs", android.content.Context.MODE_PRIVATE)
+                    prefs.edit().putString(ADMIN_PASSKEY_PREF, encryptedPasskey).apply()
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SecurityManager", "Error setting admin passkey: ${e.message}")
+            false
+        }
+    }
+
+    fun isAdminPasskeyCustomized(): Boolean {
+        return try {
+            val context = getApplicationContext()
+            if (context != null) {
+                val prefs = context.getSharedPreferences("admin_prefs", android.content.Context.MODE_PRIVATE)
+                prefs.contains(ADMIN_PASSKEY_PREF)
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SecurityManager", "Error checking admin passkey: ${e.message}")
+            false
+        }
+    }
+
+    fun resetAdminPasskeyToDefault(): Boolean {
+        return try {
+            val context = getApplicationContext()
+            if (context != null) {
+                val prefs = context.getSharedPreferences("admin_prefs", android.content.Context.MODE_PRIVATE)
+                prefs.edit().remove(ADMIN_PASSKEY_PREF).apply()
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SecurityManager", "Error resetting admin passkey: ${e.message}")
+            false
+        }
+    }
+
+    private fun getApplicationContext(): android.content.Context? {
+        return try {
+            com.example.ecosort.EcoSortApplication.getContext()
+        } catch (e: Exception) {
+            android.util.Log.e("SecurityManager", "Error getting application context: ${e.message}")
+            null
+        }
+    }
 }
 
 // Extension functions for convenience

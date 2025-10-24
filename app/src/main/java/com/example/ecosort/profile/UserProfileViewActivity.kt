@@ -138,7 +138,7 @@ class UserProfileViewActivity : AppCompatActivity() {
                 android.util.Log.d("UserProfileViewActivity", "Current user ID: $currentUserId")
                 
                 // Load target user data
-                val userResult = withContext(Dispatchers.IO) { userRepository.getUserById(targetUserId) }
+                var userResult = withContext(Dispatchers.IO) { userRepository.getUserById(targetUserId) }
                 android.util.Log.d("UserProfileViewActivity", "User result: $userResult")
                 
                 if (userResult is com.example.ecosort.data.model.Result.Success) {
@@ -146,9 +146,31 @@ class UserProfileViewActivity : AppCompatActivity() {
                     android.util.Log.d("UserProfileViewActivity", "Target user loaded: ${targetUser?.username}, profileImageUrl: ${targetUser?.profileImageUrl}")
                     populateUserProfile()
                 } else {
-                    android.util.Log.e("UserProfileViewActivity", "User not found: ${userResult}")
-                    Toast.makeText(this@UserProfileViewActivity, "User not found", Toast.LENGTH_SHORT).show()
-                    finish()
+                    // User not found locally, try to sync from Firebase
+                    android.util.Log.d("UserProfileViewActivity", "User not found locally, trying to sync from Firebase")
+                    
+                    // First, we need to get the username from community posts or other sources
+                    // For now, we'll try to sync all users from Firebase
+                    val syncResult = withContext(Dispatchers.IO) { userRepository.syncAllUsersFromFirebase() }
+                    if (syncResult is com.example.ecosort.data.model.Result.Success) {
+                        android.util.Log.d("UserProfileViewActivity", "Synced ${syncResult.data} users from Firebase")
+                        
+                        // Try to load the user again after sync
+                        userResult = withContext(Dispatchers.IO) { userRepository.getUserById(targetUserId) }
+                        if (userResult is com.example.ecosort.data.model.Result.Success) {
+                            targetUser = userResult.data
+                            android.util.Log.d("UserProfileViewActivity", "Target user loaded after sync: ${targetUser?.username}")
+                            populateUserProfile()
+                        } else {
+                            android.util.Log.e("UserProfileViewActivity", "User still not found after Firebase sync: ${userResult}")
+                            Toast.makeText(this@UserProfileViewActivity, "User not found", Toast.LENGTH_SHORT).show()
+                            finish()
+                        }
+                    } else {
+                        android.util.Log.e("UserProfileViewActivity", "Failed to sync users from Firebase: ${syncResult}")
+                        Toast.makeText(this@UserProfileViewActivity, "User not found", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
                 }
             } catch (e: Exception) {
                 android.util.Log.e("UserProfileViewActivity", "Error loading user data", e)
@@ -305,21 +327,41 @@ class UserProfileViewActivity : AppCompatActivity() {
     private fun loadProfileImage(imageUrl: String?) {
         android.util.Log.d("UserProfileViewActivity", "Loading profile image: $imageUrl")
         
-        if (!imageUrl.isNullOrBlank()) {
-            android.util.Log.d("UserProfileViewActivity", "Loading image with Glide: $imageUrl")
-            Glide.with(this)
-                .load(imageUrl)
-                .circleCrop()
-                .placeholder(R.drawable.ic_person_24)
-                .error(R.drawable.ic_person_24)
-                .into(ivProfileImage)
-            
-            tvProfilePlaceholder.visibility = View.GONE
-            ivProfileImage.visibility = View.VISIBLE
-        } else {
-            android.util.Log.d("UserProfileViewActivity", "No profile image URL, showing placeholder")
-            tvProfilePlaceholder.visibility = View.VISIBLE
-            ivProfileImage.visibility = View.GONE
+        try {
+            if (!imageUrl.isNullOrBlank()) {
+                android.util.Log.d("UserProfileViewActivity", "Loading image with Glide: $imageUrl")
+                Glide.with(this)
+                    .load(imageUrl)
+                    .circleCrop()
+                    .placeholder(R.drawable.ic_person_24)
+                    .error(R.drawable.ic_person_24)
+                    .into(ivProfileImage)
+                
+                tvProfilePlaceholder.visibility = View.GONE
+                ivProfileImage.visibility = View.VISIBLE
+            } else {
+                android.util.Log.d("UserProfileViewActivity", "No profile image URL, showing default image")
+                // Set default image instead of hiding
+                Glide.with(this)
+                    .load(R.drawable.ic_person_24)
+                    .circleCrop()
+                    .into(ivProfileImage)
+                
+                tvProfilePlaceholder.visibility = View.GONE
+                ivProfileImage.visibility = View.VISIBLE
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("UserProfileViewActivity", "Error loading profile image", e)
+            // Fallback to default image
+            try {
+                ivProfileImage.setImageResource(R.drawable.ic_person_24)
+                tvProfilePlaceholder.visibility = View.GONE
+                ivProfileImage.visibility = View.VISIBLE
+            } catch (fallbackException: Exception) {
+                android.util.Log.e("UserProfileViewActivity", "Error setting fallback image", fallbackException)
+                tvProfilePlaceholder.visibility = View.VISIBLE
+                ivProfileImage.visibility = View.GONE
+            }
         }
     }
 

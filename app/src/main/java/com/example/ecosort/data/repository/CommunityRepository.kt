@@ -46,6 +46,20 @@ class CommunityRepository @Inject constructor(
     }
 
     /**
+     * Get posts from users that the current user follows
+     */
+    suspend fun getFollowingPosts(): Flow<List<CommunityPost>> {
+        val session = userPreferencesManager.userSession.first()
+        val userId = session?.userId ?: -1L
+        
+        return if (userId != -1L) {
+            communityPostDao.getFollowingPosts(userId)
+        } else {
+            kotlinx.coroutines.flow.flowOf(emptyList())
+        }
+    }
+
+    /**
      * Add a new community post
      */
     suspend fun addCommunityPost(

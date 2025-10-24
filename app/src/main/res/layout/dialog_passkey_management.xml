@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvPasskeyStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Current passkey status"
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="16dp" />
+
+    <EditText
+        android:id="@+id/etCurrentPasskey"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Current Admin Passkey"
+        android:inputType="numberPassword"
+        android:maxLength="4"
+        android:minEms="4"
+        android:maxLines="1"
+        android:background="@drawable/edit_text_background"
+        android:padding="12dp"
+        android:layout_marginBottom="12dp" />
+
+    <EditText
+        android:id="@+id/etNewPasskey"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="New Admin Passkey"
+        android:inputType="numberPassword"
+        android:maxLength="4"
+        android:minEms="4"
+        android:maxLines="1"
+        android:background="@drawable/edit_text_background"
+        android:padding="12dp"
+        android:layout_marginBottom="12dp" />
+
+    <EditText
+        android:id="@+id/etConfirmPasskey"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Confirm New Passkey"
+        android:inputType="numberPassword"
+        android:maxLength="4"
+        android:minEms="4"
+        android:maxLines="1"
+        android:background="@drawable/edit_text_background"
+        android:padding="12dp" />
+
+</LinearLayout>

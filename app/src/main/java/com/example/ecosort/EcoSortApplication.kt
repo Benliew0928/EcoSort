@@ -27,10 +27,20 @@ class EcoSortApplication : Application() {
         // chatClient declaration remains here
         lateinit var chatClient: ChatClient
             private set
+
+        // Application context for global access
+        private var instance: EcoSortApplication? = null
+
+        fun getContext(): android.content.Context? {
+            return instance?.applicationContext
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
+
+        // Set instance for global context access
+        instance = this
 
         // CRITICAL FIX: Initialize Huawei Maps EARLY and SAFELY.
         // This solves the "MapsInitializer is not initialized" error by running before the Map Fragment starts.

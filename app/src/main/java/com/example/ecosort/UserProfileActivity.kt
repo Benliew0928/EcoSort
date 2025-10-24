@@ -157,6 +157,13 @@ class UserProfileActivity : AppCompatActivity() {
     override fun onBackPressed() {
         finish()
     }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh user profile when returning to UserProfileActivity
+        // This ensures the data is up-to-date if it was changed elsewhere
+        loadUserProfile()
+    }
     
     private fun applySavedLanguage() {
         lifecycleScope.launch {
@@ -247,20 +254,43 @@ class UserProfileActivity : AppCompatActivity() {
         val ivProfileImage = findViewById<ImageView>(R.id.ivProfileImage)
         val tvProfilePlaceholder = findViewById<TextView>(R.id.tvProfilePlaceholder)
         
-        if (!imageUrl.isNullOrBlank()) {
-            // Load image with Glide
-            Glide.with(this)
-                .load(imageUrl)
-                .circleCrop()
-                .into(ivProfileImage)
-            
-            // Hide placeholder
-            tvProfilePlaceholder.visibility = android.view.View.GONE
-            ivProfileImage.visibility = android.view.View.VISIBLE
-        } else {
-            // Show placeholder
-            tvProfilePlaceholder.visibility = android.view.View.VISIBLE
-            ivProfileImage.visibility = android.view.View.GONE
+        try {
+            if (!imageUrl.isNullOrBlank()) {
+                android.util.Log.d("UserProfileActivity", "Loading profile image: $imageUrl")
+                // Load image with Glide
+                Glide.with(this)
+                    .load(imageUrl)
+                    .placeholder(R.drawable.ic_person_24)
+                    .error(R.drawable.ic_person_24)
+                    .circleCrop()
+                    .into(ivProfileImage)
+                
+                // Hide placeholder
+                tvProfilePlaceholder.visibility = android.view.View.GONE
+                ivProfileImage.visibility = android.view.View.VISIBLE
+            } else {
+                android.util.Log.d("UserProfileActivity", "No profile image URL, showing default image")
+                // Set default image instead of showing placeholder
+                Glide.with(this)
+                    .load(R.drawable.ic_person_24)
+                    .circleCrop()
+                    .into(ivProfileImage)
+                
+                tvProfilePlaceholder.visibility = android.view.View.GONE
+                ivProfileImage.visibility = android.view.View.VISIBLE
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("UserProfileActivity", "Error loading profile image", e)
+            // Fallback to default image
+            try {
+                ivProfileImage.setImageResource(R.drawable.ic_person_24)
+                tvProfilePlaceholder.visibility = android.view.View.GONE
+                ivProfileImage.visibility = android.view.View.VISIBLE
+            } catch (fallbackException: Exception) {
+                android.util.Log.e("UserProfileActivity", "Error setting fallback image", fallbackException)
+                tvProfilePlaceholder.visibility = android.view.View.VISIBLE
+                ivProfileImage.visibility = android.view.View.GONE
+            }
         }
     }
 

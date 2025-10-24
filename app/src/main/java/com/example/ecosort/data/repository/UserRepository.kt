@@ -10,6 +10,7 @@ import com.example.ecosort.data.model.Achievement
 import com.example.ecosort.data.model.SocialLinks
 import com.example.ecosort.data.model.UserPreferences
 import com.example.ecosort.data.preferences.UserPreferencesManager
+import com.example.ecosort.data.firebase.FirestoreService
 import com.example.ecosort.utils.SecurityManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -20,7 +21,8 @@ import javax.inject.Singleton
 class UserRepository @Inject constructor(
     private val userDao: UserDao,
     private val preferencesManager: UserPreferencesManager,
-    private val securityManager: SecurityManager
+    private val securityManager: SecurityManager,
+    private val firestoreService: FirestoreService
 ) {
 
     // ==================== USER SESSION ====================
@@ -87,6 +89,15 @@ class UserRepository @Inject constructor(
 
             val userId = userDao.insertUser(user)
             val createdUser = user.copy(id = userId)
+
+            // Sync user profile to Firebase
+            try {
+                syncUserToFirebase(createdUser)
+                android.util.Log.d("UserRepository", "User profile synced to Firebase: ${createdUser.username}")
+            } catch (e: Exception) {
+                android.util.Log.w("UserRepository", "Failed to sync user to Firebase: ${e.message}")
+                // Don't fail registration if Firebase sync fails
+            }
 
             Result.Success(createdUser)
         } catch (e: Exception) {
@@ -264,6 +275,16 @@ class UserRepository @Inject constructor(
     suspend fun updateUser(user: User): Result<Unit> {
         return try {
             userDao.updateUser(user)
+            
+            // Sync user profile to Firebase
+            try {
+                updateUserInFirebase(user)
+                android.util.Log.d("UserRepository", "User profile updated in Firebase: ${user.username}")
+            } catch (e: Exception) {
+                android.util.Log.w("UserRepository", "Failed to update user in Firebase: ${e.message}")
+                // Don't fail update if Firebase sync fails
+            }
+            
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e)
@@ -301,7 +322,22 @@ class UserRepository @Inject constructor(
 
     suspend fun updateProfileImage(userId: Long, imageUrl: String?): Result<Unit> {
         return try {
+            // Update local database
             userDao.updateProfileImage(userId, imageUrl)
+            
+            // Get the updated user to sync to Firebase
+            val user = userDao.getUserById(userId)
+            if (user != null) {
+                // Sync updated user profile to Firebase
+                try {
+                    updateUserInFirebase(user)
+                    android.util.Log.d("UserRepository", "User profile image updated in Firebase: ${user.username}")
+                } catch (e: Exception) {
+                    android.util.Log.w("UserRepository", "Failed to update user profile image in Firebase: ${e.message}")
+                    // Don't fail the operation if Firebase sync fails
+                }
+            }
+            
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e)
@@ -484,6 +520,175 @@ class UserRepository @Inject constructor(
             userDao.updateUser(updatedUser)
 
             Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    // ==================== FIREBASE SYNC ====================
+
+    /**
+     * Sync user profile to Firebase
+     */
+    private suspend fun syncUserToFirebase(user: User) {
+        val userData = hashMapOf<String, Any>(
+            "id" to user.id,
+            "username" to user.username,
+            "email" to user.email,
+            "userType" to user.userType.name,
+            "createdAt" to user.createdAt,
+            "itemsRecycled" to user.itemsRecycled,
+            "totalPoints" to user.totalPoints,
+            "profileImageUrl" to (user.profileImageUrl ?: ""),
+            "bio" to (user.bio ?: ""),
+            "location" to (user.location ?: ""),
+            "joinDate" to user.joinDate,
+            "lastActive" to user.lastActive,
+            "profileCompletion" to user.profileCompletion,
+            "privacySettings" to (user.privacySettings ?: ""),
+            "achievements" to (user.achievements ?: ""),
+            "socialLinks" to (user.socialLinks ?: ""),
+            "preferences" to (user.preferences ?: "")
+        )
+
+        val result = firestoreService.saveUserProfile(userData)
+        if (result.isFailure) {
+            throw result.exceptionOrNull() ?: Exception("Failed to sync user to Firebase")
+        }
+    }
+
+    /**
+     * Update user profile in Firebase
+     */
+    private suspend fun updateUserInFirebase(user: User) {
+        val userData = hashMapOf<String, Any>(
+            "id" to user.id,
+            "username" to user.username,
+            "email" to user.email,
+            "userType" to user.userType.name,
+            "createdAt" to user.createdAt,
+            "itemsRecycled" to user.itemsRecycled,
+            "totalPoints" to user.totalPoints,
+            "profileImageUrl" to (user.profileImageUrl ?: ""),
+            "bio" to (user.bio ?: ""),
+            "location" to (user.location ?: ""),
+            "joinDate" to user.joinDate,
+            "lastActive" to user.lastActive,
+            "profileCompletion" to user.profileCompletion,
+            "privacySettings" to (user.privacySettings ?: ""),
+            "achievements" to (user.achievements ?: ""),
+            "socialLinks" to (user.socialLinks ?: ""),
+            "preferences" to (user.preferences ?: "")
+        )
+
+        val result = firestoreService.updateUserProfile(user.id.toString(), userData)
+        if (result.isFailure) {
+            android.util.Log.w("UserRepository", "Failed to update user in Firebase: ${result.exceptionOrNull()?.message}")
+        }
+    }
+
+    /**
+     * Get user profile from Firebase by username
+     */
+    suspend fun getUserProfileFromFirebase(username: String): Result<User?> {
+        return try {
+            val result = firestoreService.getUserProfileByUsername(username)
+            if (result.isSuccess) {
+                val userData = result.getOrNull()
+                if (userData != null) {
+                    val user = User(
+                        id = (userData["id"] as? Number)?.toLong() ?: 0L,
+                        username = userData["username"] as? String ?: "",
+                        email = userData["email"] as? String ?: "",
+                        passwordHash = "", // Don't sync password hash
+                        userType = UserType.valueOf(userData["userType"] as? String ?: "USER"),
+                        createdAt = (userData["createdAt"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                        itemsRecycled = (userData["itemsRecycled"] as? Number)?.toInt() ?: 0,
+                        totalPoints = (userData["totalPoints"] as? Number)?.toInt() ?: 0,
+                        profileImageUrl = userData["profileImageUrl"] as? String,
+                        bio = userData["bio"] as? String,
+                        location = userData["location"] as? String,
+                        joinDate = (userData["joinDate"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                        lastActive = (userData["lastActive"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                        profileCompletion = (userData["profileCompletion"] as? Number)?.toInt() ?: 0,
+                        privacySettings = userData["privacySettings"] as? String,
+                        achievements = userData["achievements"] as? String,
+                        socialLinks = userData["socialLinks"] as? String,
+                        preferences = userData["preferences"] as? String
+                    )
+                    Result.Success(user)
+                } else {
+                    Result.Success(null)
+                }
+            } else {
+                Result.Error(result.exceptionOrNull() as? Exception ?: Exception("Failed to get user from Firebase"))
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    /**
+     * Sync user profile from Firebase to local database
+     */
+    suspend fun syncUserFromFirebase(username: String): Result<User> {
+        return try {
+            val firebaseResult = getUserProfileFromFirebase(username)
+            if (firebaseResult is Result.Success) {
+                val firebaseUser = firebaseResult.data
+                if (firebaseUser != null) {
+                    // Check if user already exists locally
+                    val localUser = userDao.getUserByUsername(username)
+                    if (localUser == null) {
+                        // Insert new user to local database
+                        val userId = userDao.insertUser(firebaseUser)
+                        val syncedUser = firebaseUser.copy(id = userId)
+                        android.util.Log.d("UserRepository", "Synced user from Firebase to local: $username")
+                        Result.Success(syncedUser)
+                    } else {
+                        // Update existing user
+                        userDao.updateUser(firebaseUser.copy(id = localUser.id))
+                        android.util.Log.d("UserRepository", "Updated local user from Firebase: $username")
+                        Result.Success(firebaseUser.copy(id = localUser.id))
+                    }
+                } else {
+                    Result.Error(Exception("User not found in Firebase"))
+                }
+            } else {
+                Result.Error((firebaseResult as Result.Error).exception)
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    /**
+     * Sync all user profiles from Firebase to local database
+     */
+    suspend fun syncAllUsersFromFirebase(): Result<Int> {
+        return try {
+            val result = firestoreService.getAllUserProfiles()
+            if (result.isSuccess) {
+                val firebaseUsers = result.getOrNull() ?: emptyList()
+                var syncedCount = 0
+                
+                for (userData in firebaseUsers) {
+                    try {
+                        val username = userData["username"] as? String ?: continue
+                        val syncResult = syncUserFromFirebase(username)
+                        if (syncResult is Result.Success) {
+                            syncedCount++
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.w("UserRepository", "Failed to sync user: ${e.message}")
+                    }
+                }
+                
+                android.util.Log.d("UserRepository", "Synced $syncedCount users from Firebase")
+                Result.Success(syncedCount)
+            } else {
+                Result.Error(result.exceptionOrNull() as? Exception ?: Exception("Failed to get users from Firebase"))
+            }
         } catch (e: Exception) {
             Result.Error(e)
         }

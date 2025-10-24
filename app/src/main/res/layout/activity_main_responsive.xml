@@ -42,6 +42,7 @@
             android:layout_height="80dp"
             app:cardCornerRadius="20dp"
             app:cardElevation="0dp"
+            app:cardBackgroundColor="@android:color/transparent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginTop="16dp"
@@ -55,7 +56,6 @@
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_person_24"
                 android:scaleType="centerCrop"
-                android:background="@color/white"
                 android:contentDescription="Profile Image"
                 tools:src="@drawable/ic_image_placeholder"/>
         </androidx.cardview.widget.CardView>
@@ -391,6 +391,19 @@
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/btnFollowingList"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/following_list"
+                        android:textSize="14sp"
+                        android:textColor="@color/primary_green"
+                        android:layout_marginEnd="16dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackground"
+                        android:padding="8dp" />
 
                     <TextView
                         android:id="@+id/featuredViewAll"

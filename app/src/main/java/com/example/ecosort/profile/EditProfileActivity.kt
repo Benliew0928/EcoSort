@@ -84,6 +84,13 @@ class EditProfileActivity : AppCompatActivity() {
         loadUserData()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh user data when returning to EditProfileActivity
+        // This ensures the data is up-to-date if it was changed elsewhere
+        loadUserData()
+    }
+
     private fun initializeViews() {
         ivProfileImage = findViewById(R.id.ivProfileImage)
         tvProfilePlaceholder = findViewById(R.id.tvProfilePlaceholder)
@@ -204,17 +211,41 @@ class EditProfileActivity : AppCompatActivity() {
     }
 
     private fun loadProfileImage(imageUrl: String?) {
-        if (!imageUrl.isNullOrBlank()) {
-            Glide.with(this)
-                .load(imageUrl)
-                .circleCrop()
-                .into(ivProfileImage)
-            
-            tvProfilePlaceholder.visibility = View.GONE
-            ivProfileImage.visibility = View.VISIBLE
-        } else {
-            tvProfilePlaceholder.visibility = View.VISIBLE
-            ivProfileImage.visibility = View.GONE
+        try {
+            if (!imageUrl.isNullOrBlank()) {
+                android.util.Log.d("EditProfileActivity", "Loading profile image: $imageUrl")
+                Glide.with(this)
+                    .load(imageUrl)
+                    .placeholder(R.drawable.ic_person_24)
+                    .error(R.drawable.ic_person_24)
+                    .circleCrop()
+                    .into(ivProfileImage)
+                
+                tvProfilePlaceholder.visibility = View.GONE
+                ivProfileImage.visibility = View.VISIBLE
+            } else {
+                android.util.Log.d("EditProfileActivity", "No profile image URL, showing placeholder")
+                // Set default image
+                Glide.with(this)
+                    .load(R.drawable.ic_person_24)
+                    .circleCrop()
+                    .into(ivProfileImage)
+                
+                tvProfilePlaceholder.visibility = View.GONE
+                ivProfileImage.visibility = View.VISIBLE
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("EditProfileActivity", "Error loading profile image", e)
+            // Fallback to default image
+            try {
+                ivProfileImage.setImageResource(R.drawable.ic_person_24)
+                tvProfilePlaceholder.visibility = View.GONE
+                ivProfileImage.visibility = View.VISIBLE
+            } catch (fallbackException: Exception) {
+                android.util.Log.e("EditProfileActivity", "Error setting fallback image", fallbackException)
+                tvProfilePlaceholder.visibility = View.VISIBLE
+                ivProfileImage.visibility = View.GONE
+            }
         }
     }
 
