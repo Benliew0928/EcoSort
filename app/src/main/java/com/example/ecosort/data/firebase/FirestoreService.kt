@@ -422,4 +422,53 @@ class FirestoreService @Inject constructor() {
         }
     }
 
+    // FirestoreService.kt (Add this block inside the FirestoreService class)
+
+// ==================== RECYCLE BIN ADMIN OPERATIONS ====================
+
+    /**
+     * Admin: Updates the verification status of a recycling bin.
+     */
+    suspend fun updateBinVerification(documentId: String, isVerified: Boolean): Boolean {
+        return try {
+            android.util.Log.d("FirestoreService", "Updating verification for bin $documentId to $isVerified")
+
+            // NOTE: The getRecycleBins function uses the collection name "recycleBins"
+            // Ensure this is the correct collection name for writing/deleting.
+
+            recycleBinsCollection.document(documentId)
+                .update("isVerified", isVerified)
+                .await() // Waits for the Firestore operation to complete
+
+            android.util.Log.d("FirestoreService", "Bin verification updated successfully.")
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error updating verification for $documentId", e)
+            false
+        }
+    }
+
+    /**
+     * Admin: Deletes a specific recycling bin document.
+     */
+    suspend fun deleteBin(documentId: String): Boolean {
+        return try {
+            android.util.Log.d("FirestoreService", "Deleting bin document: $documentId")
+
+            // NOTE: Ensure 'recycleBinsCollection' is the correct collection name.
+
+            recycleBinsCollection.document(documentId)
+                .delete()
+                .await() // Waits for the Firestore operation to complete
+
+            android.util.Log.d("FirestoreService", "Bin document deleted successfully.")
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error deleting bin $documentId", e)
+            false
+        }
+    }
+
+// ====================================================================
+
 }

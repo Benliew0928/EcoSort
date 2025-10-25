@@ -44,6 +44,7 @@ class UserProfileActivity : AppCompatActivity() {
     private var currentUserId: Long = 0L
     private var currentImageUrl: String? = null
 
+
     // Image picker launcher
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()

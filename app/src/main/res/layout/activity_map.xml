@@ -41,7 +41,8 @@
         android:orientation="vertical"
         android:background="@color/darker_olive"
         android:elevation="8dp"
-        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+        app:behavior_halfExpandedRatio="0.5">
 
         <View
             android:layout_width="40dp"
@@ -62,13 +63,29 @@
             android:background="@color/darker_olive">
 
             <TextView
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="Nearby Stations"
                 android:textStyle="bold"
                 android:textSize="18sp"
                 android:textColor="@color/light_bg"/>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <Button
+                android:id="@+id/btnRefreshLocation"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text=""
+                android:padding="0dp"
+                android:backgroundTint="@color/stream_ui_literal_transparent"
+                android:drawableLeft="@drawable/ic_refresh"
+                android:drawablePadding="0dp"
+                android:gravity="center"
+                android:layout_marginStart="8dp" />
 
             <Button
                 android:id="@+id/btnAddStationPlaceholder"

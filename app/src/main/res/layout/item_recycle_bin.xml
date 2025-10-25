@@ -7,7 +7,8 @@
     android:background="@drawable/card_modern"
     android:padding="16dp"
     android:layout_marginBottom="12dp"
-    android:elevation="2dp">
+    android:elevation="2dp"
+    android:id="@+id/bin_item_container">
 
     <ImageView
         android:id="@+id/imgBinPhotoList"
@@ -51,5 +52,33 @@
             android:textStyle="bold"
             android:layout_marginTop="4dp"
             tools:text="✅ Verified" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="16dp"
+        android:gravity="center_vertical">
+
+        <Button
+            android:id="@+id/btnVerifyStation"
+            android:layout_width="80dp"
+            android:layout_height="36dp"
+            android:text="Verify"
+            android:textSize="10sp"
+            android:padding="0dp"
+            android:visibility="gone"  android:backgroundTint="@color/success_green" />
+
+        <Button
+            android:id="@+id/btnDeleteStation"
+            android:layout_width="80dp"
+            android:layout_height="36dp"
+            android:layout_marginTop="4dp"
+            android:text="Delete"
+            android:textSize="10sp"
+            android:padding="0dp"
+            android:visibility="gone"  android:backgroundTint="@color/error_red" />
+
     </LinearLayout>
 </LinearLayout>

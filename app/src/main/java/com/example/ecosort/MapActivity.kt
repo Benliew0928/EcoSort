@@ -28,6 +28,11 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import android.widget.LinearLayout
 
+import com.example.ecosort.hms.RecycleBinAdapter
+import com.example.ecosort.hms.OnBinItemClickListener
+
+import android.view.View
+
 // MAP LISTENER IMPORTS
 import com.huawei.hms.maps.HuaweiMap.OnMarkerClickListener
 import com.huawei.hms.maps.model.Marker
@@ -36,12 +41,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.location.Location
 
+private var isAdmin: Boolean = false
+
 /**
  * An Activity using Huawei Map Kit and Location Kit via the recommended SupportMapFragment approach.
  * This activity fetches bin locations from Firestore and displays them on the map.
  */
 @AndroidEntryPoint
-class MapActivity : AppCompatActivity() , OnMarkerClickListener {
+class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickListener {
 
     private val TAG = "MapActivity"
     private val LOCATION_PERMISSION_REQUEST_CODE = 1001
@@ -57,6 +64,11 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener {
 
     // NEW: Property to hold the user's location for distance calculation
     private var currentUserLatLng: LatLng? = null
+    private lateinit var behavior: BottomSheetBehavior<LinearLayout>
+
+    private var recycleBinAdapter: RecycleBinAdapter? = null
+    private var currentBinList: List<BinListItem> = emptyList()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,7 +78,7 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener {
 
 
         val bottomSheet = findViewById<LinearLayout>(R.id.bottom_sheet)
-        val behavior = BottomSheetBehavior.from(bottomSheet)
+        behavior = BottomSheetBehavior.from(bottomSheet) // ⭐ REMOVE 'val' here to initialize the class property ⭐
         behavior.isFitToContents = false
 
 
@@ -76,8 +88,32 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener {
         val peekHeightInPixels = resources.getDimensionPixelSize(R.dimen.bottom_sheet_peek_height)
         behavior.peekHeight = peekHeightInPixels
 
+
+        behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
+                    // When the sheet is fully collapsed (only peek is visible), reset the padding.
+                    huaweiMap?.setPadding(0, 0, 0, 0)
+                }
+            }
+
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                // Not used for this feature, but required by the interface
+            }
+        })
+
         // 3. Set the state to hide if swiped down far enough
         behavior.isHideable = false
+
+        val btnRefreshLocation = findViewById<Button>(R.id.btnRefreshLocation)
+
+        btnRefreshLocation.setOnClickListener {
+            // 1. Get a fresh location (This updates currentUserLatLng)
+            getLastLocation()
+
+            // 2. getLastLocation() will call fetchRecycleBins(), which re-sorts and reloads the map.
+            Toast.makeText(this, "Refreshing location and list...", Toast.LENGTH_SHORT).show()
+        }
 
         val btnAddStationPlaceholder = findViewById<Button>(R.id.btnAddStationPlaceholder)
 
@@ -168,23 +204,62 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener {
     }
 
 
+    private fun getScreenHeight(): Int {
+        return resources.displayMetrics.heightPixels
+    }
+
+
+
+    // --- Marker Click Listener Implementation ---
+    // MapActivity.kt
 
     // --- Marker Click Listener Implementation ---
     override fun onMarkerClick(marker: Marker): Boolean {
-        // Retrieve the photo URL using the marker's ID
-        val photoUrl = markerDataMap[marker.id]
+        huaweiMap?.let { map ->
 
-        if (!photoUrl.isNullOrEmpty()) {
-            // Launch the detail activity, passing the URL
-            val intent = Intent(this, BinDetailActivity::class.java).apply {
-                putExtra("EXTRA_PHOTO_URL", photoUrl)
+            // 1. Map Centering and UI Setup
+            val markerLatLng = marker.position
+            val screenHeight = getScreenHeight()
+            val paddingBottom = (screenHeight * 0.50).toInt()
+
+            map.setPadding(0, 0, 0, paddingBottom)
+            val zoomLevel = map.cameraPosition?.zoom ?: 15f
+            val cameraUpdate = com.huawei.hms.maps.CameraUpdateFactory.newLatLngZoom(markerLatLng, zoomLevel)
+
+            map.animateCamera(cameraUpdate, 500, null)
+            behavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
+
+            // 2. Synchronization and Sorting Logic
+            val photoUrl = markerDataMap[marker.id]
+
+            // Find the actual BinListItem object that corresponds to the clicked marker
+            val clickedBin = currentBinList.find {
+                it.name == marker.title && it.photoUrl == photoUrl
             }
-            startActivity(intent)
-        } else {
-            Toast.makeText(this, "Photo URL not found for this bin.", Toast.LENGTH_SHORT).show()
+
+            if (clickedBin != null) {
+
+                // a. Create a new list structure by moving the clicked item to index 0
+                val mutableList = currentBinList.toMutableList()
+                mutableList.remove(clickedBin)
+                mutableList.add(0, clickedBin) // Insert at the top
+
+                // b. Update the global list state
+                currentBinList = mutableList.toList()
+                val newSelectedIndex = 0 // The clicked item is now at index 0
+
+                // c. Update the adapter with the new, sorted list and set the selection
+                recycleBinAdapter?.setSelected(RecyclerView.NO_POSITION) // Clear old highlight first
+                recycleBinAdapter?.updateList(currentBinList, newSelectedIndex) // **Requires the updateList function**
+
+                // d. SCROLL the top item (the one we just moved) into view
+                rvNearbyStations.scrollToPosition(0)
+            }
+
+            Toast.makeText(this, "Focusing and sorting on: ${marker.title}", Toast.LENGTH_SHORT).show()
         }
 
-        // Return true to indicate that we have consumed the event (no default info window opens)
+        // Return true to indicate that we have consumed the event
         return true
     }
 
@@ -195,6 +270,9 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener {
 
         val listItems = mutableListOf<BinListItem>()
         val userLocation = currentUserLatLng // Access location property here
+
+
+
 
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
@@ -212,32 +290,49 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener {
                             val photoUrl = document["photoUrl"] as? String ?: ""
 
                             if (lat != 0.0 && lng != 0.0) {
-                                val binLatLng = LatLng(lat, lng)
+                                // Apply small random offset for visualization (to prevent stacking)
+                                val offsetLat = lat + Math.random() * 0.0001
+                                val offsetLng = lng + Math.random() * 0.0001
+                                val displayLatLng = LatLng(offsetLat, offsetLng)
+                                val actualLatLng = LatLng(lat, lng)
+
                                 val statusText = if (isVerified) "Status: Verified" else "Status: Pending Verification"
+                                map.addMarker(
+                                    MarkerOptions().position(displayLatLng).title(name).snippet(statusText)
+                                )?.let { markerDataMap[it.id] = photoUrl }
 
-                                val marker = map.addMarker(
-                                    MarkerOptions().position(binLatLng).title(name).snippet(statusText)
-                                )
-                                marker?.let { markerDataMap[it.id] = photoUrl }
-
-                                // Calculate real distance or use placeholder
+                                // Calculate real distance
                                 val distance = if (userLocation != null) {
-                                    calculateDistance(userLocation, binLatLng)
+                                    calculateDistance(userLocation, actualLatLng)
                                 } else {
                                     "📍 Location Unknown"
                                 }
 
                                 // Update the List Data Model
-                                listItems.add(BinListItem(name, distance, isVerified, photoUrl))
+                                listItems.add(BinListItem(
+                                    name, distance, isVerified, photoUrl, lat, lng
+                                ))
                             }
                         } catch (e: Exception) {
                             Log.e(TAG, "Error processing bin document: ${e.message}")
                         }
                     }
-
-                    // Update the RecyclerView
-                    rvNearbyStations.adapter = RecycleBinAdapter(listItems)
                 }
+
+                // ⭐ CRITICAL STEP 1: Sort the listItems by distance ⭐
+                val sortedList = listItems.sortedWith(compareBy {
+                    // Extract the numerical distance from the string for reliable comparison
+                    // e.g., converts "📍 2.5 km away" into the number 2.5
+                    it.distance.split(" ")[1].toDoubleOrNull() ?: Double.MAX_VALUE
+                })
+
+                // 2. Store the sorted list
+                currentBinList = sortedList.toList()
+
+                // 3. Initialize and save the adapter reference
+                recycleBinAdapter = RecycleBinAdapter(currentBinList, this@MapActivity, isAdmin) // ⭐ PASS isAdmin ⭐
+                rvNearbyStations.adapter = recycleBinAdapter
+
             }.onFailure { exception ->
                 Log.e(TAG, "Failed to fetch bins from Firestore: ", exception)
                 Toast.makeText(this@MapActivity, "Failed to load bin locations.", Toast.LENGTH_SHORT).show()
@@ -316,6 +411,51 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener {
         } else {
             // Show in meters (e.g., 850 m)
             "📍 %d m away".format(distanceInMeters.toInt())
+        }
+    }
+
+
+    // MapActivity.kt
+
+    override fun onBinItemClick(latitude: Double, longitude: Double, photoUrl: String, clickedIndex: Int) {
+        huaweiMap?.let { map ->
+            val markerLatLng = LatLng(latitude, longitude)
+
+            // 1. Map Centering and UI Setup (reusing the same logic as onMarkerClick)
+            val screenHeight = getScreenHeight()
+            val paddingBottom = (screenHeight * 0.50).toInt()
+            map.setPadding(0, 0, 0, paddingBottom)
+            val zoomLevel = map.cameraPosition?.zoom ?: 15f
+            val cameraUpdate = com.huawei.hms.maps.CameraUpdateFactory.newLatLngZoom(markerLatLng, zoomLevel)
+
+            map.animateCamera(cameraUpdate, 500, null)
+            behavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
+
+            // 2. Synchronization and Sorting Logic
+
+            // Find the actual BinListItem object at the clicked index
+            val clickedBin = currentBinList.getOrNull(clickedIndex)
+
+            if (clickedBin != null) {
+
+                // a. Create a new list structure by moving the clicked item to index 0
+                val mutableList = currentBinList.toMutableList()
+                mutableList.remove(clickedBin)
+                mutableList.add(0, clickedBin) // Insert at the top
+
+                // b. Update the global list state
+                currentBinList = mutableList.toList()
+                val newSelectedIndex = 0 // The clicked item is now at index 0
+
+                // c. Update the adapter with the new, sorted list and set the selection
+                recycleBinAdapter?.setSelected(RecyclerView.NO_POSITION) // Clear old highlight
+                recycleBinAdapter?.updateList(currentBinList, newSelectedIndex)
+
+                // d. SCROLL the top item (the one we just moved) into view
+                rvNearbyStations.scrollToPosition(0)
+            }
+
+            Toast.makeText(this, "Focusing and sorting list.", Toast.LENGTH_SHORT).show()
         }
     }
 }
