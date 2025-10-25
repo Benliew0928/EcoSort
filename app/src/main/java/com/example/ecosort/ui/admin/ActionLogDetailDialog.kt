@@ -62,6 +62,8 @@ class ActionLogDetailDialog : DialogFragment() {
             "UNSUSPEND_USER" -> "▶️ Unsuspend User"
             "CHANGE_PASSKEY" -> "🔐 Change Passkey"
             "CREATE_ADMIN" -> "👨‍💼 Create Admin"
+            "DELETE_COMMUNITY_POST" -> "🗑️ Delete Community Post"
+            "DELETE_COMMUNITY_COMMENT" -> "🗑️ Delete Community Comment"
             else -> "📝 ${action.action}"
         }
         tvActionType.text = actionText

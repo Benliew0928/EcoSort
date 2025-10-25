@@ -231,4 +231,19 @@ class ProfileImageManager @Inject constructor(
             Log.e("ProfileImageManager", "Error cleaning up temp files", e)
         }
     }
+    
+    /**
+     * Add cache-busting parameter to profile image URL to prevent caching issues
+     */
+    fun addCacheBustingToUrl(imageUrl: String?): String? {
+        if (imageUrl.isNullOrBlank()) return null
+        
+        return try {
+            val separator = if (imageUrl.contains("?")) "&" else "?"
+            "$imageUrl${separator}v=${System.currentTimeMillis()}"
+        } catch (e: Exception) {
+            Log.e("ProfileImageManager", "Error adding cache-busting to URL", e)
+            imageUrl
+        }
+    }
 }

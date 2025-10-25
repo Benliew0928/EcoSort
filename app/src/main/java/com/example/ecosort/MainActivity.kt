@@ -51,6 +51,9 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
 
     @Inject
     lateinit var adminRepository: com.example.ecosort.data.repository.AdminRepository
+    
+    @Inject
+    lateinit var profileImageManager: com.example.ecosort.utils.ProfileImageManager
 
     private var currentUserType: UserType = UserType.USER
 
@@ -770,10 +773,15 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
                     try {
                         if (!profileImageUrl.isNullOrBlank()) {
                             android.util.Log.d("MainActivity", "Loading profile image: $profileImageUrl")
+                            // Add cache-busting to prevent image sharing between users
+                            val cacheBustedUrl = profileImageManager.addCacheBustingToUrl(profileImageUrl)
+                            android.util.Log.d("MainActivity", "Cache-busted URL: $cacheBustedUrl")
                             Glide.with(this@MainActivity)
-                                .load(profileImageUrl)
+                                .load(cacheBustedUrl as String)
                                 .placeholder(R.drawable.ic_person_24)
                                 .error(R.drawable.ic_person_24)
+                                .skipMemoryCache(false)
+                                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
                                 .into(profileImageView)
                         } else {
                             android.util.Log.d("MainActivity", "No profile image URL, setting default")

@@ -36,4 +36,4 @@ data class AdminAction(
     val targetUserId: Long? = null, // If action affects a specific user
     val details: String? = null, // Additional details about the action
     val timestamp: Long = System.currentTimeMillis()
-)
+) : java.io.Serializable

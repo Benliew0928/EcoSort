@@ -257,12 +257,17 @@ class UserProfileActivity : AppCompatActivity() {
         try {
             if (!imageUrl.isNullOrBlank()) {
                 android.util.Log.d("UserProfileActivity", "Loading profile image: $imageUrl")
+                // Add cache-busting to prevent image sharing between users
+                val cacheBustedUrl = profileImageManager.addCacheBustingToUrl(imageUrl)
+                android.util.Log.d("UserProfileActivity", "Cache-busted URL: $cacheBustedUrl")
                 // Load image with Glide
                 Glide.with(this)
-                    .load(imageUrl)
+                    .load(cacheBustedUrl as String)
                     .placeholder(R.drawable.ic_person_24)
                     .error(R.drawable.ic_person_24)
                     .circleCrop()
+                    .skipMemoryCache(false)
+                    .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
                     .into(ivProfileImage)
                 
                 // Hide placeholder

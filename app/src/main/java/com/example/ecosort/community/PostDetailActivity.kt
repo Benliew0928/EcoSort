@@ -42,6 +42,9 @@ class PostDetailActivity : AppCompatActivity() {
     @Inject
     lateinit var userPreferencesManager: UserPreferencesManager
     
+    @Inject
+    lateinit var profileImageManager: com.example.ecosort.utils.ProfileImageManager
+    
     private lateinit var toolbar: Toolbar
     private lateinit var btnDeletePost: ImageButton
     private lateinit var authorProfileImage: ImageView
@@ -483,11 +486,16 @@ class PostDetailActivity : AppCompatActivity() {
         
         if (!profileImageUrl.isNullOrBlank()) {
             android.util.Log.d("PostDetailActivity", "Loading profile image with Glide: $profileImageUrl")
+            // Add cache-busting to prevent image sharing between users
+            val cacheBustedUrl = profileImageManager.addCacheBustingToUrl(profileImageUrl)
+            android.util.Log.d("PostDetailActivity", "Cache-busted URL: $cacheBustedUrl")
             Glide.with(this)
-                .load(profileImageUrl)
+                .load(cacheBustedUrl as String)
                 .circleCrop()
                 .placeholder(R.drawable.ic_person_24)
                 .error(R.drawable.ic_person_24)
+                .skipMemoryCache(false)
+                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
                 .into(authorProfileImage)
         } else {
             android.util.Log.d("PostDetailActivity", "No profile image URL, showing default placeholder")

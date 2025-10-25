@@ -211,6 +211,56 @@ class AdminRepository @Inject constructor(
         }
     }
 
+    // ==================== COMMUNITY MANAGEMENT ====================
+
+    suspend fun deleteCommunityPost(adminId: Long, postId: String): Result<Unit> {
+        return try {
+            withContext(Dispatchers.IO) {
+                // First, log the action
+                logAdminAction(adminId, "DELETE_COMMUNITY_POST", null, "Deleted community post: $postId")
+                
+                // Then delete the post from the database
+                val communityPostDao = database.communityPostDao()
+                val communityCommentDao = database.communityCommentDao()
+                val postIdLong = postId.toLongOrNull() ?: 0L
+                val post = communityPostDao.getPostById(postIdLong)
+                if (post != null) {
+                    // Delete all comments for this post first
+                    communityCommentDao.deleteCommentsForPost(postIdLong)
+                    // Then delete the post
+                    communityPostDao.deletePost(postIdLong)
+                    Result.Success(Unit)
+                } else {
+                    Result.Error(Exception("Community post not found"))
+                }
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    suspend fun deleteCommunityComment(adminId: Long, commentId: String): Result<Unit> {
+        return try {
+            withContext(Dispatchers.IO) {
+                // First, log the action
+                logAdminAction(adminId, "DELETE_COMMUNITY_COMMENT", null, "Deleted community comment: $commentId")
+                
+                // Then delete the comment from the database
+                val communityCommentDao = database.communityCommentDao()
+                val commentIdLong = commentId.toLongOrNull() ?: 0L
+                val comment = communityCommentDao.getCommentById(commentIdLong)
+                if (comment != null) {
+                    communityCommentDao.deleteComment(commentIdLong)
+                    Result.Success(Unit)
+                } else {
+                    Result.Error(Exception("Community comment not found"))
+                }
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
     // ==================== USER & ADMIN DELETION ====================
 
     suspend fun deleteUser(adminId: Long, userId: Long): Result<Unit> {

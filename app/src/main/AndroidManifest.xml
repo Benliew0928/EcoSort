@@ -96,6 +96,8 @@
         <activity android:name=".ui.admin.AdminActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.admin.UserManagementActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.admin.AdminManagementActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".ui.admin.CommunityManagementActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".ui.admin.CommunityCommentsManagementActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.admin.AdminActionLogsActivity" android:exported="false" android:screenOrientation="portrait" />
 
         <!-- MapActivity: Use the fully qualified name from the Kotlin file package (com.example.ecosort.MapActivity) -->

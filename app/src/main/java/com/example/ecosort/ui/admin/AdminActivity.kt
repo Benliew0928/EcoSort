@@ -25,6 +25,7 @@ class AdminActivity : AppCompatActivity() {
     private lateinit var btnPasskeySettings: Button
     private lateinit var btnUserManagement: Button
     private lateinit var btnAdminManagement: Button
+    private lateinit var btnCommunityManagement: Button
     private lateinit var btnActionLogs: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +40,7 @@ class AdminActivity : AppCompatActivity() {
         btnPasskeySettings = findViewById(R.id.btnPasskeySettings)
         btnUserManagement = findViewById(R.id.btnUserManagement)
         btnAdminManagement = findViewById(R.id.btnAdminManagement)
+        btnCommunityManagement = findViewById(R.id.btnCommunityManagement)
         btnActionLogs = findViewById(R.id.btnActionLogs)
     }
 
@@ -53,6 +55,10 @@ class AdminActivity : AppCompatActivity() {
 
         btnAdminManagement.setOnClickListener {
             startActivity(Intent(this, AdminManagementActivity::class.java))
+        }
+
+        btnCommunityManagement.setOnClickListener {
+            startActivity(Intent(this, CommunityManagementActivity::class.java))
         }
 
         btnActionLogs.setOnClickListener {

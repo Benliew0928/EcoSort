@@ -414,6 +414,93 @@ class CommunityRepository @Inject constructor(
     }
 
     /**
+     * ADMIN: Delete any post (bypasses author check)
+     */
+    suspend fun adminDeletePost(postId: Long): Result<Unit> {
+        return try {
+            // Get the post first to access image URLs
+            val post = communityPostDao.getPostById(postId)
+            
+            if (post == null) {
+                android.util.Log.w("CommunityRepository", "Post with ID $postId not found")
+                return Result.Error(Exception("Post not found"))
+            }
+            
+            android.util.Log.d("CommunityRepository", "Admin deleting post: ${post.title} (ID: $postId, Firebase ID: ${post.firebaseId})")
+            
+            // Delete images from Firebase Storage
+            post.imageUrls.forEach { imageUrl ->
+                if (imageUrl.startsWith("https://firebasestorage.googleapis.com/")) {
+                    try {
+                        deleteImageFromFirebase(imageUrl)
+                        android.util.Log.d("CommunityRepository", "Deleted image: $imageUrl")
+                    } catch (e: Exception) {
+                        android.util.Log.e("CommunityRepository", "Error deleting image: $imageUrl", e)
+                    }
+                }
+            }
+            
+            // Delete from local database
+            communityPostDao.deletePost(postId)
+            communityCommentDao.deleteCommentsForPost(postId)
+            communityLikeDao.deleteLikesForPost(postId)
+            android.util.Log.d("CommunityRepository", "Post deleted from local database successfully")
+
+            // Delete from Firebase
+            try {
+                if (post.firebaseId.isNotEmpty()) {
+                    firestoreService.deleteCommunityPost(post.firebaseId)
+                    android.util.Log.d("CommunityRepository", "Post deleted from Firebase successfully")
+                } else {
+                    android.util.Log.w("CommunityRepository", "Post has no Firebase ID, skipping Firebase deletion")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("CommunityRepository", "Error deleting post from Firebase", e)
+                // Continue with local success even if Firebase fails
+            }
+
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("CommunityRepository", "Error admin deleting post", e)
+            Result.Error(e)
+        }
+    }
+
+    /**
+     * ADMIN: Delete any comment (bypasses author check)
+     */
+    suspend fun adminDeleteComment(commentId: Long): Result<Unit> {
+        return try {
+            // Get the comment to find the post ID
+            val comment = communityCommentDao.getCommentById(commentId)
+            if (comment != null) {
+                // Delete the comment
+                communityCommentDao.deleteComment(commentId)
+                // Decrement post comment count
+                communityPostDao.decrementComments(comment.postId)
+
+                // Sync to Firebase for real-time updates
+                try {
+                    if (comment.firebaseId.isNotEmpty()) {
+                        firestoreService.deleteCommunityComment(comment.firebaseId)
+                        android.util.Log.d("CommunityRepository", "Comment deletion synced to Firebase successfully")
+                    } else {
+                        android.util.Log.w("CommunityRepository", "Comment has no Firebase ID, skipping Firebase deletion")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("CommunityRepository", "Error syncing comment deletion to Firebase", e)
+                    // Continue with local success even if Firebase fails
+                }
+            }
+
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("CommunityRepository", "Error admin deleting comment", e)
+            Result.Error(e)
+        }
+    }
+
+    /**
      * Update existing posts with current user's profile picture
      * This fixes old posts that were created before profile pictures were implemented
      */

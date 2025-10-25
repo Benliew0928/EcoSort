@@ -27,6 +27,9 @@ class UserProfileViewActivity : AppCompatActivity() {
     lateinit var userRepository: UserRepository
     
     @Inject
+    lateinit var profileImageManager: com.example.ecosort.utils.ProfileImageManager
+    
+    @Inject
     lateinit var socialRepository: com.example.ecosort.data.repository.SocialRepository
     
     @Inject
@@ -330,11 +333,16 @@ class UserProfileViewActivity : AppCompatActivity() {
         try {
             if (!imageUrl.isNullOrBlank()) {
                 android.util.Log.d("UserProfileViewActivity", "Loading image with Glide: $imageUrl")
+                // Add cache-busting to prevent image sharing between users
+                val cacheBustedUrl = profileImageManager.addCacheBustingToUrl(imageUrl)
+                android.util.Log.d("UserProfileViewActivity", "Cache-busted URL: $cacheBustedUrl")
                 Glide.with(this)
-                    .load(imageUrl)
+                    .load(cacheBustedUrl as String)
                     .circleCrop()
                     .placeholder(R.drawable.ic_person_24)
                     .error(R.drawable.ic_person_24)
+                    .skipMemoryCache(false)
+                    .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
                     .into(ivProfileImage)
                 
                 tvProfilePlaceholder.visibility = View.GONE
