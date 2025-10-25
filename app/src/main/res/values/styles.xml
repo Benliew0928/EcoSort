@@ -45,6 +45,9 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">@string/font_family_heading</item>
+        <item name="android:shadowColor">@android:color/transparent</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">0</item>
     </style>
 
     <style name="TextHeading2">
@@ -52,6 +55,9 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">@string/font_family_heading</item>
+        <item name="android:shadowColor">@android:color/transparent</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">0</item>
     </style>
 
     <style name="TextHeading3">
@@ -59,6 +65,9 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">@string/font_family_primary</item>
+        <item name="android:shadowColor">@android:color/transparent</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">0</item>
     </style>
 
     <style name="TextSubheading">
@@ -66,30 +75,47 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">@string/font_family_primary</item>
+
+        <item name="android:shadowColor">@android:color/transparent</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">0</item>
     </style>
 
     <style name="TextBody">
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">@string/font_family_body</item>
+
+        <item name="android:shadowColor">@android:color/transparent</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">0</item>
     </style>
 
     <style name="TextBodySmall">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">@string/font_family_body</item>
+        <item name="android:shadowColor">@android:color/transparent</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">0</item>
     </style>
 
     <style name="TextCaption">
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/text_secondary</item>
         <item name="android:fontFamily">@string/font_family_caption</item>
+        <item name="android:shadowColor">@android:color/transparent</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">0</item>
     </style>
 
     <style name="TextHint">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/text_hint</item>
         <item name="android:fontFamily">@string/font_family_caption</item>
+        <item name="android:shadowColor">@android:color/transparent</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">0</item>
     </style>
 
     <!-- Card Styles -->
@@ -177,6 +203,11 @@
         <item name="android:textColor">@color/text_secondary</item>
         <item name="android:fontFamily">@string/font_family_caption</item>
     </style>
+
+    <style name="ToolbarTitleSizeOverride" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textSize">15dp</item>
+    </style>
+
 
     <!-- ==================== RESPONSIVE CARD STYLES ==================== -->
     <style name="CardResponsive">

@@ -17,7 +17,7 @@ import com.huawei.hms.location.FusedLocationProviderClient
 import com.huawei.hms.location.LocationServices
 import com.example.ecosort.R
 import android.content.Intent
-
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 // HILT AND COROUTINE IMPORTS
 import com.example.ecosort.data.firebase.FirestoreService
 import dagger.hilt.android.AndroidEntryPoint
@@ -26,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import android.widget.LinearLayout
 
 // MAP LISTENER IMPORTS
 import com.huawei.hms.maps.HuaweiMap.OnMarkerClickListener
@@ -61,8 +62,40 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map)
 
-        val btnBackMap = findViewById<Button>(R.id.btnBackMap)
-        val btnAddBin = findViewById<Button>(R.id.btnAddBin)
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbarMap)
+
+
+        val bottomSheet = findViewById<LinearLayout>(R.id.bottom_sheet)
+        val behavior = BottomSheetBehavior.from(bottomSheet)
+        behavior.isFitToContents = false
+
+
+        behavior.state = BottomSheetBehavior.STATE_COLLAPSED
+
+
+        val peekHeightInPixels = resources.getDimensionPixelSize(R.dimen.bottom_sheet_peek_height)
+        behavior.peekHeight = peekHeightInPixels
+
+        // 3. Set the state to hide if swiped down far enough
+        behavior.isHideable = false
+
+        val btnAddStationPlaceholder = findViewById<Button>(R.id.btnAddStationPlaceholder)
+
+        // Assign the original "Add Bin" functionality to the new "Add Station" button
+        btnAddStationPlaceholder.setOnClickListener {
+            // 1. Get the current center of the map view
+            val centerLatLng = huaweiMap?.cameraPosition?.target
+
+            // 2. Launch AddBinActivity (or AddStationActivity)
+            val intent = Intent(this, AddBinActivity::class.java).apply {
+                if (centerLatLng != null) {
+                    // Pass the current map center location to the new activity
+                    putExtra("EXTRA_LATITUDE", centerLatLng.latitude)
+                    putExtra("EXTRA_LONGITUDE", centerLatLng.longitude)
+                }
+            }
+            startActivity(intent)
+        }
 
         rvNearbyStations = findViewById(R.id.rvNearbyStations)
         rvNearbyStations.layoutManager = LinearLayoutManager(this)
@@ -95,20 +128,9 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener {
 
 
         // Button functionality
-        btnBackMap.setOnClickListener { finish() }
-        btnAddBin.setOnClickListener {
-            val centerLatLng = huaweiMap?.cameraPosition?.target
+        toolbar.setNavigationOnClickListener {
+            finish() }
 
-            // 2. Launch AddBinActivity
-            val intent = Intent(this, AddBinActivity::class.java).apply {
-                if (centerLatLng != null) {
-                    // Pass the current map center location to the new activity
-                    putExtra("EXTRA_LATITUDE", centerLatLng.latitude)
-                    putExtra("EXTRA_LONGITUDE", centerLatLng.longitude)
-                }
-            }
-            startActivity(intent)
-        }
     }
 
     // FETCH DATA EVERY TIME THE SCREEN IS RESUMED

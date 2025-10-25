@@ -64,5 +64,8 @@
     <dimen name="featured_card_gap">12dp</dimen>
     <dimen name="featured_item_card_width">180dp</dimen>
     <dimen name="featured_item_card_height">12dp</dimen>
+
+
+    <dimen name="bottom_sheet_peek_height">200dp</dimen>
 </resources>
 

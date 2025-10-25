@@ -2,12 +2,13 @@
 <resources>
 
     <!-- CSY Color Palette -->
+    <color name="darker_olive">#43624d</color>
     <color name="dark_olive">#4e735b</color>
     <color name="olive">#70997e</color>
     <color name="light_olive">#aec0b5</color>
     <color name="light_bg">#e6e6e6</color>
     <color name="gray_bg">#b4b4b4</color>
-
+    <color name="color_pending">#FFC107</color>
 
 
     <!-- Modern Eco-Friendly Color Palette -->
