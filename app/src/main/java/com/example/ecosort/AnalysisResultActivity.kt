@@ -1,7 +1,8 @@
-// AnalysisResultActivity.kt
 package com.example.ecosort
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri // NEW Import for file handling
 import android.os.Bundle
 import android.util.Log
 import android.widget.ImageView
@@ -13,17 +14,21 @@ import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File // NEW Import for file handling
 
 class AnalysisResultActivity : AppCompatActivity() {
 
     companion object {
-        const val EXTRA_BITMAP = "extra_bitmap"
+        // ⭐ CRITICAL CHANGE: Use path instead of Parcelable Bitmap ⭐
+        const val EXTRA_BITMAP_PATH = "com.example.ecosort.EXTRA_BITMAP_PATH"
         const val EXTRA_LABEL = "extra_label"
     }
 
     private lateinit var ivCapturedObject: ImageView
     private lateinit var tvGeminiOutput: TextView
     private lateinit var geminiModel: GenerativeModel
+
+    private var tempImagePath: String? = null // To hold the path for cleanup
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,31 +37,65 @@ class AnalysisResultActivity : AppCompatActivity() {
         ivCapturedObject = findViewById(R.id.ivCapturedObject)
         tvGeminiOutput = findViewById(R.id.tvGeminiOutput)
 
-        // 1. Get data passed from the previous Activity
-        val capturedBitmap = intent.getParcelableExtra<Bitmap>(EXTRA_BITMAP)
+        // 1. Get file path and model label
+        val imagePath = intent.getStringExtra(EXTRA_BITMAP_PATH) // ⭐ GET STRING PATH ⭐
         val modelLabel = intent.getStringExtra(EXTRA_LABEL) ?: "Unknown Object"
 
-        if (capturedBitmap != null) {
+        var loadedBitmap: Bitmap? = null
+
+        if (imagePath != null) {
+            tempImagePath = imagePath // Store for later cleanup
+
+            // ⭐ 2. Load Bitmap Safely from the File Path ⭐
+            val imageFile = File(imagePath)
+            if (imageFile.exists()) {
+                loadedBitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
+            } else {
+                Log.e("AnalysisResult", "Image file not found at path: $imagePath")
+            }
+        }
+
+        if (loadedBitmap != null) {
             // Ensure proper image display
-            ivCapturedObject.setImageBitmap(capturedBitmap)
-            ivCapturedObject.scaleType = ImageView.ScaleType.CENTER_INSIDE
+            ivCapturedObject.setImageBitmap(loadedBitmap)
+            ivCapturedObject.scaleType = ImageView.ScaleType.FIT_CENTER // Changed scale type for clarity
             ivCapturedObject.adjustViewBounds = true
-            
-            Log.d("ImageDisplay", "Displaying image: ${capturedBitmap.width}x${capturedBitmap.height}")
+
+            Log.d("ImageDisplay", "Displaying image: ${loadedBitmap.width}x${loadedBitmap.height}")
             tvGeminiOutput.text = "Detecting $modelLabel..."
 
-            // 2. Initialize Gemini Model (Must be repeated here if not using Hilt)
-            geminiModel = GenerativeModel(
-                modelName = "gemini-2.5-flash",
-                apiKey = BuildConfig.GEMINI_API_KEY
-            )
+            // 3. Initialize Gemini Model
+            try {
+                geminiModel = GenerativeModel(
+                    modelName = "gemini-2.5-flash",
+                    apiKey = BuildConfig.GEMINI_API_KEY
+                )
+                // 4. Start the Gemini Classification
+                callGeminiApi(loadedBitmap, modelLabel)
+            } catch (e: Exception) {
+                Log.e("Gemini", "Failed to initialize Gemini model: ${e.message}", e)
+                tvGeminiOutput.text = "AI analysis unavailable. Check API Key."
+            }
 
-            // 3. Start the Gemini Classification
-            callGeminiApi(capturedBitmap, modelLabel)
         } else {
             tvGeminiOutput.text = "Error: Failed to load captured image."
         }
     }
+
+    // --- Lifecycle Cleanup ---
+    override fun onDestroy() {
+        super.onDestroy()
+        // Delete the temporary file when the activity is finished
+        if (tempImagePath != null) {
+            val fileToDelete = File(tempImagePath!!)
+            if (fileToDelete.exists()) {
+                fileToDelete.delete()
+                Log.d("FileCleanup", "Deleted temporary file: $tempImagePath")
+            }
+        }
+    }
+
+    // --- Gemini API Call and Parsing Functions (Unchanged) ---
 
     private fun callGeminiApi(image: Bitmap, modelLabel: String) {
         lifecycleScope.launch(Dispatchers.IO) {
@@ -111,15 +150,13 @@ class AnalysisResultActivity : AppCompatActivity() {
 
     private fun parseAndDisplayResult(responseText: String, fallbackLabel: String) {
         try {
-            // Clean the response text (remove any markdown formatting)
             val cleanResponse = responseText.trim()
                 .removePrefix("```json")
                 .removeSuffix("```")
                 .trim()
 
-            // Parse JSON response
             val jsonObject = org.json.JSONObject(cleanResponse)
-            
+
             val itemName = jsonObject.optString("itemName", fallbackLabel)
             val category = jsonObject.optString("category", "OTHER")
             val binColor = jsonObject.optString("binColor", "Black")
@@ -163,7 +200,7 @@ class AnalysisResultActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e("JSONParseError", "Failed to parse Gemini response: ${e.message}")
             Log.e("JSONParseError", "Raw response: $responseText")
-            
+
             // Fallback to simple display if JSON parsing fails
             tvGeminiOutput.text = buildString {
                 appendLine("🗑️ **$fallbackLabel**")

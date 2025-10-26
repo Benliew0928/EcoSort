@@ -32,6 +32,7 @@ import com.example.ecosort.R.id.btnCapture
 import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions // Needed for lower threshold
 import android.content.Intent
 import com.google.mlkit.vision.objects.DetectedObject
+import java.io.File
 
 // NOTE: You must have a top-level AnalysisResult.kt and OverlayView.kt file in this package.
 
@@ -636,33 +637,46 @@ class ObjectDetectionActivity : AppCompatActivity() {
 
         if (croppedBitmap != null) {
             Log.d("Capture", "Successfully cropped image: ${croppedBitmap.width}x${croppedBitmap.height}")
-            
-            // Compress the image to prevent crashes from large images
-            val compressedBitmap = compressImage(croppedBitmap)
-            Log.d("Capture", "Compressed image: ${compressedBitmap.width}x${compressedBitmap.height}")
-            
-            // 🔑 NEW: Start the AnalysisResultActivity and pass the data
-            val intent = Intent(this, AnalysisResultActivity::class.java).apply {
-                putExtra(AnalysisResultActivity.EXTRA_BITMAP, compressedBitmap)
-                putExtra(AnalysisResultActivity.EXTRA_LABEL, modelLabel)
-            }
-            startActivity(intent)
 
-            // Optional: Close the camera screen
-            // finish()
+            val compressedBitmap = compressImage(croppedBitmap)
+
+            // ⭐ 1. SAVE THE BITMAP TO A TEMPORARY FILE ⭐
+            val filePath = saveBitmapToTempFile(this, compressedBitmap)
+
+            if (filePath != null) {
+                // 2. Pass ONLY THE FILE PATH (String) in the Intent
+                val intent = Intent(this, AnalysisResultActivity::class.java).apply {
+                    // Use the new constant EXTRA_BITMAP_PATH
+                    putExtra(AnalysisResultActivity.EXTRA_BITMAP_PATH, filePath)
+                    putExtra(AnalysisResultActivity.EXTRA_LABEL, modelLabel)
+                }
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Failed to save image locally. Cannot analyze.", Toast.LENGTH_LONG).show()
+            }
+
+            // Clean up resources
+            compressedBitmap.recycle()
+            croppedBitmap.recycle()
 
         } else {
-            Log.w("Capture", "Cropping failed, using compressed full bitmap as fallback")
-            
             // Fallback: Use compressed full bitmap if cropping fails
+            Log.w("Capture", "Cropping failed, using compressed full bitmap as fallback")
             val compressedBitmap = compressImage(fullBitmap)
-            Log.d("Capture", "Compressed fallback image: ${compressedBitmap.width}x${compressedBitmap.height}")
-            
-            val intent = Intent(this, AnalysisResultActivity::class.java).apply {
-                putExtra(AnalysisResultActivity.EXTRA_BITMAP, compressedBitmap)
-                putExtra(AnalysisResultActivity.EXTRA_LABEL, modelLabel)
+
+            // ⭐ FALLBACK: SAVE FULL COMPRESSED BITMAP TO FILE ⭐
+            val filePath = saveBitmapToTempFile(this, compressedBitmap)
+
+            if (filePath != null) {
+                val intent = Intent(this, AnalysisResultActivity::class.java).apply {
+                    putExtra(AnalysisResultActivity.EXTRA_BITMAP_PATH, filePath)
+                    putExtra(AnalysisResultActivity.EXTRA_LABEL, modelLabel)
+                }
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Fallback failed. Cannot analyze.", Toast.LENGTH_LONG).show()
             }
-            startActivity(intent)
+            compressedBitmap.recycle()
         }
     }
 
@@ -688,6 +702,28 @@ class ObjectDetectionActivity : AppCompatActivity() {
         bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream) // Reduced quality to 80 for safety
         return outputStream.toByteArray()
     }
+
+
+    private fun saveBitmapToTempFile(context: Context, bitmap: Bitmap): String? {
+        // 1. Create a file in the app's cache directory
+        val filename = "cropped_item_${System.currentTimeMillis()}.jpg"
+        val file = java.io.File(context.cacheDir, filename)
+
+        try {
+            // 2. Open an output stream and compress the bitmap
+            val outputStream = java.io.FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+            outputStream.flush()
+            outputStream.close()
+
+            // 3. Return the absolute path
+            return file.absolutePath
+        } catch (e: Exception) {
+            Log.e("FileSaveError", "Failed to save bitmap to file: ${e.message}")
+            return null
+        }
+    }
+
 
 
 }
