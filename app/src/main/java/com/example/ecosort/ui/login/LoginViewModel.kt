@@ -42,7 +42,8 @@ data class RegisterUiState(
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val adminRepository: AdminRepository
+    private val adminRepository: AdminRepository,
+    private val userPreferencesManager: com.example.ecosort.data.preferences.UserPreferencesManager
 ) : ViewModel() {
 
     private val _loginState = MutableStateFlow(LoginUiState())
@@ -79,9 +80,19 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+    fun resetLoginState() {
+        _loginState.value = LoginUiState()
+        android.util.Log.d("LoginViewModel", "Login state reset")
+    }
+
+    fun resetRegisterState() {
+        _registerState.value = RegisterUiState()
+        android.util.Log.d("LoginViewModel", "Register state reset")
+    }
+
     // ==================== LOGIN ====================
 
-    fun login(username: String, password: String, context: Context) {
+    fun login(username: String, password: String, userType: UserType, context: Context) {
         // Clear previous errors
         _loginState.value = _loginState.value.copy(
             usernameError = null,
@@ -104,27 +115,72 @@ class LoginViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            android.util.Log.d("LoginViewModel", "Starting login process for user: $username as ${userType.name}")
             _loginState.value = _loginState.value.copy(isLoading = true, errorMessage = null)
 
-            when (val result = userRepository.loginUser(username, password, context)) {
-                is Result.Success -> {
-                    _loginState.value = LoginUiState(
-                        isLoading = false,
-                        isLoginSuccessful = true,
-                        userSession = result.data
-                    )
+            when (userType) {
+                UserType.USER -> {
+                    // Try regular user login
+                    when (val result = userRepository.loginUser(username, password, context)) {
+                        is Result.Success -> {
+                            android.util.Log.d("LoginViewModel", "User login successful for: ${result.data.username}")
+                            _loginState.value = LoginUiState(
+                                isLoading = false,
+                                isLoginSuccessful = true,
+                                userSession = result.data
+                            )
+                        }
+                        is Result.Error -> {
+                            android.util.Log.w("LoginViewModel", "User login failed for: $username, error: ${result.exception.message}")
+                            _loginState.value = _loginState.value.copy(
+                                isLoading = false,
+                                errorMessage = result.exception.message ?: "Login failed"
+                            )
+                        }
+                        else -> {
+                            _loginState.value = _loginState.value.copy(
+                                isLoading = false,
+                                errorMessage = "Unexpected error occurred"
+                            )
+                        }
+                    }
                 }
-                is Result.Error -> {
-                    _loginState.value = _loginState.value.copy(
-                        isLoading = false,
-                        errorMessage = result.exception.message ?: "Login failed"
-                    )
-                }
-                else -> {
-                    _loginState.value = _loginState.value.copy(
-                        isLoading = false,
-                        errorMessage = "Unexpected error occurred"
-                    )
+                UserType.ADMIN -> {
+                    // Try admin login
+                    when (val adminResult = adminRepository.authenticateAdmin(username, password, context)) {
+                        is Result.Success -> {
+                            android.util.Log.d("LoginViewModel", "Admin login successful for: ${adminResult.data.username}")
+                            // Convert AdminSession to UserSession for consistency
+                            val userSession = UserSession(
+                                userId = adminResult.data.adminId,
+                                username = adminResult.data.username,
+                                userType = UserType.ADMIN,
+                                token = "admin_${adminResult.data.adminId}",
+                                isLoggedIn = true
+                            )
+                            
+                            // Save admin session to preferences
+                            userPreferencesManager.saveUserSession(userSession)
+                            _loginState.value = LoginUiState(
+                                isLoading = false,
+                                isLoginSuccessful = true,
+                                userSession = userSession
+                            )
+                        }
+                        is Result.Error -> {
+                            android.util.Log.w("LoginViewModel", "Admin login failed for: $username, error: ${adminResult.exception.message}")
+                            _loginState.value = _loginState.value.copy(
+                                isLoading = false,
+                                errorMessage = adminResult.exception.message ?: "Admin login failed"
+                            )
+                        }
+                        else -> {
+                            _loginState.value = _loginState.value.copy(
+                                isLoading = false,
+                                errorMessage = "Unexpected error occurred during admin login"
+                            )
+                        }
+                    }
                 }
             }
         }

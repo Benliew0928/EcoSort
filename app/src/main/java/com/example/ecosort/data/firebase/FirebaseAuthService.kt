@@ -86,9 +86,36 @@ class FirebaseAuthService @Inject constructor() {
      */
     suspend fun authenticateUser(usernameOrEmail: String, password: String, context: Context): Result<UserSession> {
         return try {
-            // 1. Authenticate with Firebase Authentication
-            val authResult = firebaseAuth.signInWithEmailAndPassword(usernameOrEmail, password).await()
-            val firebaseUid = authResult.user?.uid ?: throw Exception("Firebase UID not found")
+            // 1. First, try to authenticate with Firebase Authentication using the input as email
+            var authResult: com.google.firebase.auth.AuthResult? = null
+            var firebaseUid: String? = null
+            
+            try {
+                // Try as email first
+                authResult = firebaseAuth.signInWithEmailAndPassword(usernameOrEmail, password).await()
+                firebaseUid = authResult.user?.uid
+            } catch (e: Exception) {
+                // If that fails, try to find user by username in Firestore first
+                android.util.Log.d("FirebaseAuthService", "Email authentication failed, trying username lookup: ${e.message}")
+                
+                // Search for user by username in Firestore
+                val querySnapshot = usersCollection.whereEqualTo("username", usernameOrEmail).get().await()
+                if (!querySnapshot.isEmpty) {
+                    val userDoc = querySnapshot.documents.first()
+                    val userData = userDoc.data
+                    val email = userData?.get("email") as? String
+                    
+                    if (email != null) {
+                        // Try authentication with the found email
+                        authResult = firebaseAuth.signInWithEmailAndPassword(email, password).await()
+                        firebaseUid = authResult.user?.uid
+                    }
+                }
+            }
+            
+            if (firebaseUid == null) {
+                throw Exception("Firebase authentication failed - user not found or invalid credentials")
+            }
 
             // 2. Get user profile from Firestore
             val userDoc = usersCollection.document(firebaseUid).get().await()
@@ -100,11 +127,18 @@ class FirebaseAuthService @Inject constructor() {
             val encryptedPasswordHash = userData["passwordHash"] as? String ?: ""
 
             // 3. Decrypt password hash and verify (optional, for extra layer of security/migration check)
-            val decryptedPasswordHash = SecurityManager.decryptFromFirebase(encryptedPasswordHash, context)
-            if (!SecurityManager.verifyPassword(password, decryptedPasswordHash)) {
-                // This should ideally not happen if Firebase Auth succeeded, but good for integrity check
-                android.util.Log.w("FirebaseAuthService", "Password hash mismatch after Firebase Auth for $username")
-                // Optionally, re-encrypt and update if the hash format changed
+            if (encryptedPasswordHash.isNotEmpty()) {
+                try {
+                    val decryptedPasswordHash = SecurityManager.decryptFromFirebase(encryptedPasswordHash, context)
+                    if (!SecurityManager.verifyPassword(password, decryptedPasswordHash)) {
+                        // This should ideally not happen if Firebase Auth succeeded, but good for integrity check
+                        android.util.Log.w("FirebaseAuthService", "Password hash mismatch after Firebase Auth for $username")
+                        // Optionally, re-encrypt and update if the hash format changed
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("FirebaseAuthService", "Failed to verify password hash for $username: ${e.message}")
+                    // Continue with authentication even if hash verification fails
+                }
             }
 
             // 4. Create UserSession
@@ -180,18 +214,36 @@ class FirebaseAuthService @Inject constructor() {
     }
 
     /**
-     * Get user data from Firebase Firestore
+     * Get user data from Firebase Firestore by username or email
      */
-    suspend fun getUserFromFirebase(username: String, context: Context): Result<User?> {
+    suspend fun getUserFromFirebase(usernameOrEmail: String, context: Context): Result<User?> {
         return try {
-            val querySnapshot = usersCollection.whereEqualTo("username", username).get().await()
-            val userDoc = querySnapshot.documents.firstOrNull()
+            // First try to find by username
+            var querySnapshot = usersCollection.whereEqualTo("username", usernameOrEmail).get().await()
+            var userDoc = querySnapshot.documents.firstOrNull()
+            
+            // If not found by username, try by email
+            if (userDoc == null) {
+                querySnapshot = usersCollection.whereEqualTo("email", usernameOrEmail).get().await()
+                userDoc = querySnapshot.documents.firstOrNull()
+            }
 
             if (userDoc != null) {
                 val userData = userDoc.data ?: return Result.Success(null)
                 val firebaseUid = userData.get("firebaseUid") as? String ?: userDoc.id
                 val encryptedPasswordHash = userData.get("passwordHash") as? String ?: ""
-                val decryptedPasswordHash = SecurityManager.decryptFromFirebase(encryptedPasswordHash, context)
+                
+                // Try to decrypt password hash, but don't fail if it doesn't work
+                val decryptedPasswordHash = try {
+                    if (encryptedPasswordHash.isNotEmpty()) {
+                        SecurityManager.decryptFromFirebase(encryptedPasswordHash, context)
+                    } else {
+                        ""
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("FirebaseAuthService", "Failed to decrypt password hash for ${usernameOrEmail}: ${e.message}")
+                    ""
+                }
 
                 val user = User(
                     id = 0, // Local ID will be set by Room
@@ -232,6 +284,20 @@ class FirebaseAuthService @Inject constructor() {
     }
 
     /**
+     * Clear Firebase authentication state (useful for app startup)
+     */
+    suspend fun clearAuthenticationState() {
+        try {
+            if (firebaseAuth.currentUser != null) {
+                firebaseAuth.signOut()
+                android.util.Log.d("FirebaseAuthService", "Cleared Firebase authentication state")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseAuthService", "Failed to clear Firebase authentication state: ${e.message}", e)
+        }
+    }
+
+    /**
      * Get current Firebase user
      */
     fun getCurrentFirebaseUser() = firebaseAuth.currentUser
@@ -241,8 +307,13 @@ class FirebaseAuthService @Inject constructor() {
      */
     suspend fun signOut() {
         try {
-            firebaseAuth.signOut()
-            android.util.Log.d("FirebaseAuthService", "User signed out from Firebase")
+            // Clear any existing authentication state
+            if (firebaseAuth.currentUser != null) {
+                firebaseAuth.signOut()
+                android.util.Log.d("FirebaseAuthService", "User signed out from Firebase")
+            } else {
+                android.util.Log.d("FirebaseAuthService", "No user to sign out from Firebase")
+            }
         } catch (e: Exception) {
             android.util.Log.e("FirebaseAuthService", "Failed to sign out from Firebase: ${e.message}", e)
         }

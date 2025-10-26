@@ -65,6 +65,10 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        // Reset login and register states to ensure clean state
+        viewModel.resetLoginState()
+        viewModel.resetRegisterState()
+
         // Check if user is already logged in
         checkExistingSession()
 
@@ -148,8 +152,15 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         btnLogin.setOnClickListener {
             val username = etUsername.text.toString().trim()
             val password = etPassword.text.toString().trim()
+            
+            // Get selected user type
+            val selectedUserType = when (rgUserType.checkedRadioButtonId) {
+                R.id.rbUser -> com.example.ecosort.data.model.UserType.USER
+                R.id.rbAdmin -> com.example.ecosort.data.model.UserType.ADMIN
+                else -> com.example.ecosort.data.model.UserType.USER // Default to USER
+            }
 
-            viewModel.login(username, password, this@LoginActivity)
+            viewModel.login(username, password, selectedUserType, this@LoginActivity)
         }
 
         // Register button
@@ -172,6 +183,9 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
                 // Show/hide loading
                 btnLogin.isEnabled = !state.isLoading
                 btnRegister.isEnabled = !state.isLoading
+                
+                // Log button state changes for debugging
+                android.util.Log.d("LoginActivity", "Login button enabled: ${!state.isLoading}, isLoading: ${state.isLoading}")
 
                 // Show field errors
                 showFieldError(tvUsernameError, state.usernameError)

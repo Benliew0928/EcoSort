@@ -145,7 +145,8 @@ class UserRepository @Inject constructor(
                     val userResult = firebaseAuthService.getUserFromFirebase(username, context)
                     if (userResult is Result.Success && userResult.data != null) {
                         val firebaseUser = userResult.data
-                        userDao.insertUser(firebaseUser)
+                        val insertedId = userDao.insertUser(firebaseUser)
+                        insertedId
                     } else {
                         // Fallback: create minimal user
                         val fallbackUser = User(
@@ -175,15 +176,20 @@ class UserRepository @Inject constructor(
                 // Try both new and legacy password verification
                 val passwordValid = if (user.passwordHash.contains(":")) {
                     // New PBKDF2 hash format
+                    android.util.Log.d("UserRepository", "Verifying password with PBKDF2 for user: $username")
                     securityManager.verifyPassword(password, user.passwordHash)
                 } else {
                     // Legacy SHA-256 hash format
+                    android.util.Log.d("UserRepository", "Verifying password with legacy SHA-256 for user: $username")
                     securityManager.verifyPasswordLegacy(password, user.passwordHash)
                 }
 
                 if (!passwordValid) {
+                    android.util.Log.w("UserRepository", "Password verification failed for user: $username")
                     return Result.Error(Exception("Invalid password"))
                 }
+                
+                android.util.Log.d("UserRepository", "Password verification successful for user: $username")
 
                 // Generate session token
                 val token = securityManager.generateSessionToken()
@@ -321,9 +327,16 @@ class UserRepository @Inject constructor(
 
     suspend fun logoutUser(): Result<Unit> {
         return try {
+            // Clear local session
             preferencesManager.clearUserSession()
+            
+            // Sign out from Firebase
+            firebaseAuthService.signOut()
+            
+            android.util.Log.d("UserRepository", "User logged out successfully from both local and Firebase")
             Result.Success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "Error during logout", e)
             Result.Error(e)
         }
     }

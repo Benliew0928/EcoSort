@@ -40,6 +40,9 @@ class UserProfileActivity : AppCompatActivity() {
     
     @Inject
     lateinit var profileImageManager: ProfileImageManager
+    
+    @Inject
+    lateinit var firebaseAuthService: com.example.ecosort.data.firebase.FirebaseAuthService
 
     private var currentUserId: Long = 0L
     private var currentImageUrl: String? = null
@@ -74,6 +77,9 @@ class UserProfileActivity : AppCompatActivity() {
         applySavedLanguage()
         
         setContentView(R.layout.activity_user_profile)
+        
+        // Setup back button handler
+        setupBackPressedHandler()
 
         val tvUsername = findViewById<TextView>(R.id.tvUsername)
         val tvUserType = findViewById<TextView>(R.id.tvUserType)
@@ -145,8 +151,13 @@ class UserProfileActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 try {
                     withContext(Dispatchers.IO) { 
+                        // Clear local session
                         userPreferencesManager.clearUserSession()
-                        android.util.Log.d("UserProfileActivity", "User session cleared successfully")
+                        
+                        // Sign out from Firebase
+                        firebaseAuthService.signOut()
+                        
+                        android.util.Log.d("UserProfileActivity", "User session cleared and Firebase sign out completed")
                     }
                     Toast.makeText(this@UserProfileActivity, "Logged out successfully", Toast.LENGTH_SHORT).show()
                     
@@ -167,8 +178,13 @@ class UserProfileActivity : AppCompatActivity() {
         }
     }
 
-    override fun onBackPressed() {
-        finish()
+    // Handle back button press using modern OnBackPressedDispatcher
+    private fun setupBackPressedHandler() {
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                finish()
+            }
+        })
     }
 
     override fun onResume() {

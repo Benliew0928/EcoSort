@@ -154,6 +154,12 @@ object FirebaseModule {
     fun provideProfileImageStorageService(): ProfileImageStorageService {
         return ProfileImageStorageService()
     }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAuthService(): com.example.ecosort.data.firebase.FirebaseAuthService {
+        return com.example.ecosort.data.firebase.FirebaseAuthService()
+    }
 }
 
 @Module
