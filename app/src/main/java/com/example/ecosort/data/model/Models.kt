@@ -9,6 +9,7 @@ import java.io.Serializable
 data class User(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val firebaseUid: String? = null, // Firebase Authentication UID
     val username: String,
     val email: String,
     val passwordHash: String,
@@ -75,26 +76,13 @@ data class UserPreferences(
     // ==================== NOTIFICATION SETTINGS ====================
     val notifications: NotificationPreferences = NotificationPreferences(),
 
-    // ==================== ACCESSIBILITY SETTINGS ====================
-    val accessibility: AccessibilitySettings = AccessibilitySettings(),
-
     // ==================== PRIVACY SETTINGS ====================
-    val privacy: PrivacyPreferences = PrivacyPreferences(),
-
-    // ==================== RECYCLING SETTINGS ====================
-    val recycling: RecyclingPreferences = RecyclingPreferences(),
-
-    // ==================== UNITS SETTINGS ====================
-    val units: MeasurementUnits = MeasurementUnits.METRIC
+    val privacy: PrivacyPreferences = PrivacyPreferences()
 ) : Serializable
 
 data class NotificationPreferences(
     val pushNotifications: Boolean = true,
-    val emailNotifications: Boolean = true,
     val communityUpdates: Boolean = true,
-    val achievementAlerts: Boolean = true,
-    val weeklyReports: Boolean = true,
-    val recyclingReminders: Boolean = true,
     val friendRequests: Boolean = true,
     val messageNotifications: Boolean = true
 ) : Serializable
@@ -131,7 +119,7 @@ enum class AppTheme {
 }
 
 enum class FontSize {
-    SMALL, MEDIUM, LARGE, EXTRA_LARGE
+    SMALL, MEDIUM, LARGE
 }
 
 enum class ReminderFrequency {

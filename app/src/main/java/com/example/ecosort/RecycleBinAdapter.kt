@@ -62,7 +62,7 @@ class RecycleBinAdapter(
             Glide.with(context)
                 .load(bin.photoUrl)
                 .placeholder(R.drawable.ic_placeholder)
-                .error(R.drawable.ic_launcher_foreground)
+                .error(R.drawable.app_logo)
                 .into(holder.imgPhoto)
         } else {
             holder.imgPhoto.setImageResource(R.drawable.ic_placeholder)

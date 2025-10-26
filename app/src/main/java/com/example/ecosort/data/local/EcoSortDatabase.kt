@@ -588,7 +588,7 @@ interface BlockedUserDao {
         Admin::class,
         AdminAction::class
     ],
-    version = 16,
+    version = 17,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -635,7 +635,8 @@ abstract class EcoSortDatabase : RoomDatabase() {
                 MIGRATION_12_13,
                 MIGRATION_13_14,
                 MIGRATION_14_15,
-                MIGRATION_15_16
+                MIGRATION_15_16,
+                MIGRATION_16_17
             )
                     .allowMainThreadQueries() // Temporary for debugging
                     .build()
@@ -1041,6 +1042,19 @@ internal val MIGRATION_15_16 = object : androidx.room.migration.Migration(15, 16
 
         } catch (e: Exception) {
             android.util.Log.e("Migration_15_16", "Migration failed: ${e.message}")
+            throw e
+        }
+    }
+}
+
+internal val MIGRATION_16_17 = object : androidx.room.migration.Migration(16, 17) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add firebaseUid column to users table
+            database.execSQL("ALTER TABLE users ADD COLUMN firebaseUid TEXT")
+            android.util.Log.d("Migration_16_17", "Added firebaseUid column to users table successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_16_17", "Migration failed: ${e.message}")
             throw e
         }
     }

@@ -72,12 +72,18 @@ class UserPreferencesManager(private val context: Context) {
     }
 
     suspend fun clearUserSession() {
-        context.dataStore.edit { preferences ->
-            preferences.remove(PreferencesKeys.USER_ID)
-            preferences.remove(PreferencesKeys.USERNAME)
-            preferences.remove(PreferencesKeys.USER_TYPE)
-            preferences.remove(PreferencesKeys.SESSION_TOKEN)
-            preferences[PreferencesKeys.IS_LOGGED_IN] = false
+        try {
+            context.dataStore.edit { preferences ->
+                preferences.remove(PreferencesKeys.USER_ID)
+                preferences.remove(PreferencesKeys.USERNAME)
+                preferences.remove(PreferencesKeys.USER_TYPE)
+                preferences.remove(PreferencesKeys.SESSION_TOKEN)
+                preferences[PreferencesKeys.IS_LOGGED_IN] = false
+            }
+            android.util.Log.d("UserPreferencesManager", "User session cleared successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("UserPreferencesManager", "Error clearing user session", e)
+            throw e
         }
     }
 

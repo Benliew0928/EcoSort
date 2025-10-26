@@ -24,6 +24,8 @@ import com.google.android.gms.common.api.ApiException
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 
 @AndroidEntryPoint
 class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistrationListener {
@@ -63,6 +65,9 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        // Check if user is already logged in
+        checkExistingSession()
+
         configureGoogleSignIn()
         initViews()
         setupListeners()
@@ -70,6 +75,24 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
     }
 
     // ==================== INITIALIZATION ====================
+
+    private fun checkExistingSession() {
+        lifecycleScope.launch {
+            try {
+                val session = withContext(Dispatchers.IO) { 
+                    viewModel.getCurrentUserSession() 
+                }
+                if (session != null && session.isLoggedIn) {
+                    android.util.Log.d("LoginActivity", "User already logged in: ${session.username}")
+                    navigateToMain()
+                } else {
+                    android.util.Log.d("LoginActivity", "No existing session found")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("LoginActivity", "Error checking existing session", e)
+            }
+        }
+    }
 
     private fun configureGoogleSignIn() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -126,7 +149,7 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
             val username = etUsername.text.toString().trim()
             val password = etPassword.text.toString().trim()
 
-            viewModel.login(username, password)
+            viewModel.login(username, password, this@LoginActivity)
         }
 
         // Register button
@@ -243,7 +266,7 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
                         dialog.dismiss() // Close the registration dialog first
                         showAdminRegistrationDialog(username, email, password, confirmPassword)
                     } else {
-                        viewModel.register(username, email, password, confirmPassword, userType)
+                        viewModel.register(username, email, password, confirmPassword, userType, this@LoginActivity)
                     }
                 } else {
                     // Show general message about validation errors
@@ -513,7 +536,7 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
             val confirmPassword = args.getString("confirmPassword", "")
             
             // Proceed with admin registration, passing the verified passkey
-            viewModel.register(username, email, password, confirmPassword, UserType.ADMIN, passkey)
+            viewModel.register(username, email, password, confirmPassword, UserType.ADMIN, this@LoginActivity, passkey)
         }
     }
 

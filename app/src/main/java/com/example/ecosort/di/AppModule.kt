@@ -103,6 +103,12 @@ object DatabaseModule {
         return database.blockedUserDao()
     }
 
+    @Provides
+    @Singleton
+    fun provideAdminDao(database: EcoSortDatabase): AdminDao {
+        return database.adminDao()
+    }
+
 }
 
 @Module
@@ -158,5 +164,59 @@ object RepositoryModule {
     @Singleton
     fun provideSocialRepository(database: EcoSortDatabase): com.example.ecosort.data.repository.SocialRepository {
         return com.example.ecosort.data.repository.SocialRepository(database)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserRepository(
+        userDao: UserDao,
+        preferencesManager: UserPreferencesManager,
+        securityManager: SecurityManager,
+        firestoreService: FirestoreService,
+        firebaseAuthService: com.example.ecosort.data.firebase.FirebaseAuthService
+    ): com.example.ecosort.data.repository.UserRepository {
+        return com.example.ecosort.data.repository.UserRepository(
+            userDao, preferencesManager, securityManager, firestoreService, firebaseAuthService
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideCommunityRepository(
+        communityPostDao: CommunityPostDao,
+        communityCommentDao: CommunityCommentDao,
+        communityLikeDao: CommunityLikeDao,
+        firestoreService: FirestoreService,
+        firebaseStorageService: FirebaseStorageService,
+        userPreferencesManager: UserPreferencesManager,
+        userRepository: com.example.ecosort.data.repository.UserRepository
+    ): com.example.ecosort.data.repository.CommunityRepository {
+        return com.example.ecosort.data.repository.CommunityRepository(
+            communityPostDao, communityCommentDao, communityLikeDao,
+            firestoreService, firebaseStorageService, userPreferencesManager, userRepository
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideAdminRepository(
+        database: EcoSortDatabase,
+        firestoreService: FirestoreService,
+        firebaseAuthService: com.example.ecosort.data.firebase.FirebaseAuthService
+    ): com.example.ecosort.data.repository.AdminRepository {
+        return com.example.ecosort.data.repository.AdminRepository(
+            database, firestoreService, firebaseAuthService
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideProfileImageManager(
+        profileImageStorageService: ProfileImageStorageService,
+        userRepository: com.example.ecosort.data.repository.UserRepository
+    ): com.example.ecosort.utils.ProfileImageManager {
+        return com.example.ecosort.utils.ProfileImageManager(
+            profileImageStorageService, userRepository
+        )
     }
 }

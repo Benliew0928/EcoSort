@@ -1,6 +1,9 @@
 package com.example.ecosort
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
@@ -56,6 +59,18 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
     lateinit var profileImageManager: com.example.ecosort.utils.ProfileImageManager
 
     private var currentUserType: UserType = UserType.USER
+    
+    private val fontSizeChangeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == "com.example.ecosort.REFRESH_UI") {
+                val action = intent.getStringExtra("action")
+                if (action == "font_size_changed") {
+                    // Recreate activity to apply font size changes
+                    recreate()
+                }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +79,18 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
         applySavedLanguageSync()
 
         setContentView(R.layout.activity_main_responsive)
+        
+        // Register broadcast receiver for font size changes
+        val filter = IntentFilter("com.example.ecosort.REFRESH_UI")
+        registerReceiver(fontSizeChangeReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+
+        // Handle back button press using modern OnBackPressedDispatcher
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // Prevent going back to login screen
+                moveTaskToBack(true)
+            }
+        })
 
         // userPreferencesManager is now injected via Hilt
 
@@ -104,15 +131,19 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
         lifecycleScope.launch {
             try {
                 val session = withContext(Dispatchers.IO) { userPreferencesManager.getCurrentUser() }
+                android.util.Log.d("MainActivity", "Session check result: ${if (session != null) "Found session for ${session.username}" else "No session found"}")
+                
                 if (session == null || !session.isLoggedIn) {
                     // Quick database check - log how many users exist
                     val userCount = withContext(Dispatchers.IO) {
                         try {
                             val database = com.example.ecosort.data.local.EcoSortDatabase.getDatabase(this@MainActivity)
                             val userDao = database.userDao()
-                            userDao.getAllUsers().size
+                            val count = userDao.getAllUsers().size
+                            android.util.Log.d("MainActivity", "Database accessible, user count: $count")
+                            count
                         } catch (e: Exception) {
-                            android.util.Log.e("MainActivity", "Database error: ${e.message}")
+                            android.util.Log.e("MainActivity", "Database error: ${e.message}", e)
                             0
                         }
                     }
@@ -276,11 +307,6 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
         // This ensures the image is updated if it was changed in other activities
         val btnProfile = findViewById<android.widget.ImageView>(R.id.btnProfile)
         loadUserProfilePicture(btnProfile)
-    }
-
-    override fun onBackPressed() {
-        // Prevent going back to login screen
-        moveTaskToBack(true)
     }
 
     private fun applySavedLanguageSync() {
@@ -812,6 +838,16 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
                     }
                 }
             }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Unregister broadcast receiver
+        try {
+            unregisterReceiver(fontSizeChangeReceiver)
+        } catch (e: Exception) {
+            // Receiver was not registered
         }
     }
 

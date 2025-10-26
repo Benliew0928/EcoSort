@@ -143,10 +143,22 @@ class UserProfileActivity : AppCompatActivity() {
 
         btnLogout.setOnClickListener {
             lifecycleScope.launch {
-                withContext(Dispatchers.IO) { userPreferencesManager.clearUserSession() }
-                Toast.makeText(this@UserProfileActivity, "Logged out successfully", Toast.LENGTH_SHORT).show()
-                startActivity(Intent(this@UserProfileActivity, LoginActivity::class.java))
-                finish()
+                try {
+                    withContext(Dispatchers.IO) { 
+                        userPreferencesManager.clearUserSession()
+                        android.util.Log.d("UserProfileActivity", "User session cleared successfully")
+                    }
+                    Toast.makeText(this@UserProfileActivity, "Logged out successfully", Toast.LENGTH_SHORT).show()
+                    
+                    // Clear activity stack and navigate to login
+                    val intent = Intent(this@UserProfileActivity, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                } catch (e: Exception) {
+                    android.util.Log.e("UserProfileActivity", "Error during logout", e)
+                    Toast.makeText(this@UserProfileActivity, "Logout failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 

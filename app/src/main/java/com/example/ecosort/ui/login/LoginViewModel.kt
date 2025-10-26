@@ -1,5 +1,6 @@
 package com.example.ecosort.ui.login
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ecosort.data.model.Result
@@ -11,6 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -68,9 +70,18 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+    suspend fun getCurrentUserSession(): UserSession? {
+        return try {
+            userRepository.userSession.first()
+        } catch (e: Exception) {
+            android.util.Log.e("LoginViewModel", "Error getting current user session", e)
+            null
+        }
+    }
+
     // ==================== LOGIN ====================
 
-    fun login(username: String, password: String) {
+    fun login(username: String, password: String, context: Context) {
         // Clear previous errors
         _loginState.value = _loginState.value.copy(
             usernameError = null,
@@ -95,7 +106,7 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             _loginState.value = _loginState.value.copy(isLoading = true, errorMessage = null)
 
-            when (val result = userRepository.loginUser(username, password)) {
+            when (val result = userRepository.loginUser(username, password, context)) {
                 is Result.Success -> {
                     _loginState.value = LoginUiState(
                         isLoading = false,
@@ -127,6 +138,7 @@ class LoginViewModel @Inject constructor(
         password: String,
         confirmPassword: String,
         userType: UserType,
+        context: Context,
         adminPasskey: String? = null
     ) {
         // Clear previous errors
@@ -176,11 +188,11 @@ class LoginViewModel @Inject constructor(
                 if (adminPasskey == null) {
                     Result.Error(Exception("Admin passkey is required for admin registration"))
                 } else {
-                    adminRepository.createAdmin(username, email, password, adminPasskey)
+                    adminRepository.createAdmin(username, email, password, adminPasskey, context)
                 }
             } else {
                 // For regular users, use UserRepository
-                userRepository.registerUser(username, email, password, userType)
+                userRepository.registerUser(username, email, password, userType, context)
             }
 
             when (result) {

@@ -7,45 +7,117 @@ import com.example.ecosort.data.model.AdminAction
 import com.example.ecosort.data.model.AdminSession
 import com.example.ecosort.data.model.Result
 import com.example.ecosort.data.firebase.FirestoreService
+import com.example.ecosort.data.firebase.FirebaseAuthService
 import com.example.ecosort.utils.SecurityManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import android.content.Context
 
 @Singleton
 class AdminRepository @Inject constructor(
     private val database: EcoSortDatabase,
-    private val firestoreService: FirestoreService
+    private val firestoreService: FirestoreService,
+    private val firebaseAuthService: FirebaseAuthService
 ) {
     private val adminDao: AdminDao = database.adminDao()
 
     // ==================== ADMIN AUTHENTICATION ====================
     
-    suspend fun authenticateAdmin(username: String, password: String): Result<AdminSession> {
+    suspend fun authenticateAdmin(username: String, password: String, context: Context): Result<AdminSession> {
         return try {
             withContext(Dispatchers.IO) {
-                val admin = adminDao.getAdminByUsername(username)
-                if (admin != null && admin.isActive && SecurityManager.verifyPassword(password, admin.passwordHash)) {
-                    // Update last login
-                    adminDao.updateLastLogin(admin.id, System.currentTimeMillis())
+                // First, try Firebase authentication (primary method)
+                val firebaseResult = firebaseAuthService.authenticateUser(username, password, context)
+                
+                if (firebaseResult is com.example.ecosort.data.model.Result.Success) {
+                    val firebaseSession = firebaseResult.data
+                    
+                    // Check if this is an admin user
+                    if (firebaseSession.userType != com.example.ecosort.data.model.UserType.ADMIN) {
+                        return@withContext Result.Error(Exception("User is not an admin"))
+                    }
+                    
+                    // Get or create local admin
+                    val localAdmin = adminDao.getAdminByUsername(username)
+                    val adminId = if (localAdmin != null) {
+                        // Update existing local admin
+                        adminDao.updateLastLogin(localAdmin.id, System.currentTimeMillis())
+                        localAdmin.id
+                    } else {
+                        // Get user data from Firebase and create locally
+                        val userResult = firebaseAuthService.getUserFromFirebase(username, context)
+                        if (userResult is com.example.ecosort.data.model.Result.Success && userResult.data != null) {
+                            val firebaseUser = userResult.data
+                            val admin = Admin(
+                                username = firebaseUser.username,
+                                email = firebaseUser.email,
+                                passwordHash = firebaseUser.passwordHash
+                            )
+                            adminDao.insertAdmin(admin)
+                        } else {
+                            // Fallback: create minimal admin
+                            val fallbackAdmin = Admin(
+                                username = username,
+                                email = "",
+                                passwordHash = ""
+                            )
+                            adminDao.insertAdmin(fallbackAdmin)
+                        }
+                    }
                     
                     val session = AdminSession(
-                        adminId = admin.id,
-                        username = admin.username,
-                        email = admin.email
+                        adminId = adminId,
+                        username = username,
+                        email = firebaseSession.username // Use username as email fallback
                     )
-                    Result.Success(session)
+                    
+                    android.util.Log.d("AdminRepository", "Admin authenticated successfully via Firebase: $username")
+                    return@withContext Result.Success(session)
                 } else {
-                    Result.Error(Exception("Invalid admin credentials"))
+                    // Firebase authentication failed, try local fallback
+                    android.util.Log.w("AdminRepository", "Firebase authentication failed, trying local fallback: ${(firebaseResult as com.example.ecosort.data.model.Result.Error).exception.message}")
+                    
+                    val admin = adminDao.getAdminByUsername(username)
+                    if (admin != null && admin.isActive && SecurityManager.verifyPassword(password, admin.passwordHash)) {
+                        // Update last login
+                        adminDao.updateLastLogin(admin.id, System.currentTimeMillis())
+                        
+                        val session = AdminSession(
+                            adminId = admin.id,
+                            username = admin.username,
+                            email = admin.email
+                        )
+                        
+                        // Try to migrate admin to Firebase in background
+                        try {
+                            val user = com.example.ecosort.data.model.User(
+                                username = admin.username,
+                                email = admin.email,
+                                passwordHash = admin.passwordHash,
+                                userType = com.example.ecosort.data.model.UserType.ADMIN
+                            )
+                            firebaseAuthService.migrateUserToFirebase(user, context)
+                            android.util.Log.d("AdminRepository", "Admin migrated to Firebase: $username")
+                        } catch (e: Exception) {
+                            android.util.Log.w("AdminRepository", "Failed to migrate admin to Firebase: ${e.message}")
+                        }
+                        
+                        android.util.Log.d("AdminRepository", "Admin authenticated via local fallback: $username")
+                        return@withContext Result.Success(session)
+                    } else {
+                        return@withContext Result.Error(Exception("Invalid admin credentials"))
+                    }
                 }
             }
         } catch (e: Exception) {
+            android.util.Log.e("AdminRepository", "Failed to authenticate admin", e)
             Result.Error(e)
         }
     }
 
-    suspend fun createAdmin(username: String, email: String, password: String, adminPasskey: String): Result<AdminSession> {
+    suspend fun createAdmin(username: String, email: String, password: String, adminPasskey: String, context: Context): Result<AdminSession> {
         return try {
             withContext(Dispatchers.IO) {
                 // Verify admin passkey first
@@ -75,13 +147,17 @@ class AdminRepository @Inject constructor(
                 val adminId = adminDao.insertAdmin(admin)
                 val createdAdmin = admin.copy(id = adminId)
                 
-                // Sync admin profile to Firebase
+                // Register admin with Firebase authentication (same as regular users)
                 try {
-                    syncAdminToFirebase(createdAdmin)
-                    android.util.Log.d("AdminRepository", "Admin profile synced to Firebase: ${createdAdmin.username}")
+                    val firebaseResult = firebaseAuthService.registerUser(username, email, password, com.example.ecosort.data.model.UserType.ADMIN, context)
+                    if (firebaseResult is com.example.ecosort.data.model.Result.Success) {
+                        android.util.Log.d("AdminRepository", "Admin registered with Firebase authentication: ${createdAdmin.username}")
+                    } else {
+                        android.util.Log.w("AdminRepository", "Failed to register admin with Firebase: ${(firebaseResult as com.example.ecosort.data.model.Result.Error).exception.message}")
+                    }
                 } catch (e: Exception) {
-                    android.util.Log.w("AdminRepository", "Failed to sync admin to Firebase: ${e.message}")
-                    // Don't fail admin creation if Firebase sync fails
+                    android.util.Log.w("AdminRepository", "Failed to register admin with Firebase: ${e.message}")
+                    // Don't fail admin creation if Firebase registration fails
                 }
                 
                 // Log admin creation

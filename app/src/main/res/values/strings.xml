@@ -23,10 +23,9 @@
     
     <!-- Font Size Options -->
     <string-array name="font_size_options">
-        <item>Small</item>
-        <item>Medium</item>
-        <item>Large</item>
-        <item>Extra Large</item>
+        <item>@string/font_size_small</item>
+        <item>@string/font_size_medium</item>
+        <item>@string/font_size_large</item>
     </string-array>
     
     <!-- Units Options -->
@@ -54,6 +53,9 @@
     <string name="theme_label">Theme</string>
     <string name="language_label">Language</string>
     <string name="font_size_label">Font Size</string>
+    <string name="font_size_small">Small (70%)</string>
+    <string name="font_size_medium">Medium (100%)</string>
+    <string name="font_size_large">Large (130%)</string>
     <string name="units_label">Units</string>
     
     <string name="push_notifications">Push Notifications</string>

@@ -27,6 +27,7 @@
 
     <!-- Primary color for consistency -->
     <color name="primary">@color/primary_green</color>
+    <color name="primary_color">@color/primary_green</color>
 
     <color name="text_primary">#212121</color>
     <color name="text_secondary">#757575</color>

@@ -27,7 +27,7 @@ class BinDetailActivity : AppCompatActivity() {
         Glide.with(this)
             .load(imageUrl)
             .placeholder(R.drawable.ic_placeholder) // Use a placeholder drawable if you have one
-            .error(R.drawable.ic_launcher_foreground)
+            .error(R.drawable.app_logo)
             .into(imageView)
     }
 }

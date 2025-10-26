@@ -1,5 +1,6 @@
 package com.example.ecosort.utils
 
+import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -10,6 +11,10 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
+import java.security.spec.KeySpec
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.PBEKeySpec
 
 object SecurityManager {
 
@@ -22,7 +27,7 @@ object SecurityManager {
 
     fun hashPassword(password: String): String {
         val salt = generateSalt()
-        val hash = hashWithSalt(password, salt)
+        val hash = hashWithPBKDF2(password, salt)
         return "${Base64.encodeToString(salt, Base64.NO_WRAP)}:${Base64.encodeToString(hash, Base64.NO_WRAP)}"
     }
 
@@ -33,7 +38,7 @@ object SecurityManager {
 
             val salt = Base64.decode(parts[0], Base64.NO_WRAP)
             val hash = Base64.decode(parts[1], Base64.NO_WRAP)
-            val testHash = hashWithSalt(password, salt)
+            val testHash = hashWithPBKDF2(password, salt)
 
             MessageDigest.isEqual(hash, testHash)
         } catch (e: Exception) {
@@ -48,6 +53,34 @@ object SecurityManager {
         return salt
     }
 
+    private fun hashWithPBKDF2(password: String, salt: ByteArray): ByteArray {
+        val spec: KeySpec = PBEKeySpec(password.toCharArray(), salt, 100000, 256) // 100k iterations
+        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+        return factory.generateSecret(spec).encoded
+    }
+
+    // Legacy SHA-256 support for existing users
+    fun hashPasswordLegacy(password: String): String {
+        val salt = generateSalt()
+        val hash = hashWithSalt(password, salt)
+        return "${Base64.encodeToString(salt, Base64.NO_WRAP)}:${Base64.encodeToString(hash, Base64.NO_WRAP)}"
+    }
+
+    fun verifyPasswordLegacy(password: String, storedHash: String): Boolean {
+        return try {
+            val parts = storedHash.split(":")
+            if (parts.size != 2) return false
+
+            val salt = Base64.decode(parts[0], Base64.NO_WRAP)
+            val hash = Base64.decode(parts[1], Base64.NO_WRAP)
+            val testHash = hashWithSalt(password, salt)
+
+            MessageDigest.isEqual(hash, testHash)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     private fun hashWithSalt(password: String, salt: ByteArray): ByteArray {
         val digest = MessageDigest.getInstance("SHA-256")
         digest.update(salt)
@@ -55,6 +88,66 @@ object SecurityManager {
     }
 
     // ==================== ENCRYPTION ====================
+
+    // Client-side encryption for Firebase storage
+    fun encryptForFirebase(data: String, context: Context): String {
+        return try {
+            val key = generateFirebaseEncryptionKey(context)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            val iv = ByteArray(12)
+            SecureRandom().nextBytes(iv)
+            
+            cipher.init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(128, iv))
+            val encryptedData = cipher.doFinal(data.toByteArray(Charsets.UTF_8))
+            
+            val result = ByteArray(iv.size + encryptedData.size)
+            System.arraycopy(iv, 0, result, 0, iv.size)
+            System.arraycopy(encryptedData, 0, result, iv.size, encryptedData.size)
+            
+            Base64.encodeToString(result, Base64.NO_WRAP)
+        } catch (e: Exception) {
+            android.util.Log.e("SecurityManager", "Failed to encrypt data for Firebase", e)
+            data // Fallback to unencrypted
+        }
+    }
+
+    fun decryptFromFirebase(encryptedData: String, context: Context): String {
+        return try {
+            val key = generateFirebaseEncryptionKey(context)
+            val data = Base64.decode(encryptedData, Base64.NO_WRAP)
+            
+            val iv = ByteArray(12)
+            val encrypted = ByteArray(data.size - 12)
+            System.arraycopy(data, 0, iv, 0, 12)
+            System.arraycopy(data, 12, encrypted, 0, encrypted.size)
+            
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, iv))
+            
+            String(cipher.doFinal(encrypted), Charsets.UTF_8)
+        } catch (e: Exception) {
+            android.util.Log.e("SecurityManager", "Failed to decrypt data from Firebase", e)
+            encryptedData // Fallback to original data
+        }
+    }
+
+    private fun generateFirebaseEncryptionKey(context: Context): SecretKey {
+        // Use device-specific key derived from Android ID
+        val androidId = android.provider.Settings.Secure.getString(
+            context.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID
+        )
+        
+        val keySpec = PBEKeySpec(
+            androidId.toCharArray(),
+            "EcoSortFirebaseKey".toByteArray(),
+            10000,
+            256
+        )
+        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+        val keyBytes = factory.generateSecret(keySpec).encoded
+        return SecretKeySpec(keyBytes, "AES")
+    }
 
     fun encryptData(data: String): String {
         val cipher = Cipher.getInstance(TRANSFORMATION)

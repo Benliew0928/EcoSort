@@ -2,6 +2,7 @@ package com.example.ecosort.preferences
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.widget.*
@@ -28,26 +29,12 @@ class UserPreferencesActivity : AppCompatActivity() {
     private lateinit var spinnerTheme: Spinner
     private lateinit var spinnerLanguage: Spinner
     private lateinit var spinnerFontSize: Spinner
-    private lateinit var spinnerUnits: Spinner
-    private lateinit var spinnerReminderFrequency: Spinner
     
     // Notification Switches
     private lateinit var switchPushNotifications: Switch
-    private lateinit var switchEmailNotifications: Switch
     private lateinit var switchCommunityUpdates: Switch
-    private lateinit var switchAchievementAlerts: Switch
-    private lateinit var switchWeeklyReports: Switch
-    private lateinit var switchRecyclingReminders: Switch
     private lateinit var switchFriendRequests: Switch
     private lateinit var switchMessageNotifications: Switch
-    
-    // Accessibility Switches
-    private lateinit var switchHighContrast: Switch
-    private lateinit var switchReduceMotion: Switch
-    private lateinit var switchScreenReader: Switch
-    private lateinit var switchLargeText: Switch
-    private lateinit var switchBoldText: Switch
-    private lateinit var switchColorBlindSupport: Switch
     
     // Privacy Switches
     private lateinit var switchShowOnlineStatus: Switch
@@ -56,12 +43,6 @@ class UserPreferencesActivity : AppCompatActivity() {
     private lateinit var switchAllowProfileViews: Switch
     private lateinit var switchShareRecyclingStats: Switch
     private lateinit var switchAllowDataCollection: Switch
-    
-    // Recycling Switches
-    private lateinit var switchAutoCategorize: Switch
-    private lateinit var switchShareStats: Switch
-    private lateinit var switchShowTips: Switch
-    private lateinit var switchEnableGamification: Switch
     
     // Buttons
     private lateinit var btnSave: Button
@@ -85,26 +66,12 @@ class UserPreferencesActivity : AppCompatActivity() {
         spinnerTheme = findViewById(R.id.spinnerTheme)
         spinnerLanguage = findViewById(R.id.spinnerLanguage)
         spinnerFontSize = findViewById(R.id.spinnerFontSize)
-        spinnerUnits = findViewById(R.id.spinnerUnits)
-        spinnerReminderFrequency = findViewById(R.id.spinnerReminderFrequency)
         
         // Notification Switches
         switchPushNotifications = findViewById(R.id.switchPushNotifications)
-        switchEmailNotifications = findViewById(R.id.switchEmailNotifications)
         switchCommunityUpdates = findViewById(R.id.switchCommunityUpdates)
-        switchAchievementAlerts = findViewById(R.id.switchAchievementAlerts)
-        switchWeeklyReports = findViewById(R.id.switchWeeklyReports)
-        switchRecyclingReminders = findViewById(R.id.switchRecyclingReminders)
         switchFriendRequests = findViewById(R.id.switchFriendRequests)
         switchMessageNotifications = findViewById(R.id.switchMessageNotifications)
-        
-        // Accessibility Switches
-        switchHighContrast = findViewById(R.id.switchHighContrast)
-        switchReduceMotion = findViewById(R.id.switchReduceMotion)
-        switchScreenReader = findViewById(R.id.switchScreenReader)
-        switchLargeText = findViewById(R.id.switchLargeText)
-        switchBoldText = findViewById(R.id.switchBoldText)
-        switchColorBlindSupport = findViewById(R.id.switchColorBlindSupport)
         
         // Privacy Switches
         switchShowOnlineStatus = findViewById(R.id.switchShowOnlineStatus)
@@ -113,12 +80,6 @@ class UserPreferencesActivity : AppCompatActivity() {
         switchAllowProfileViews = findViewById(R.id.switchAllowProfileViews)
         switchShareRecyclingStats = findViewById(R.id.switchShareRecyclingStats)
         switchAllowDataCollection = findViewById(R.id.switchAllowDataCollection)
-        
-        // Recycling Switches
-        switchAutoCategorize = findViewById(R.id.switchAutoCategorize)
-        switchShareStats = findViewById(R.id.switchShareStats)
-        switchShowTips = findViewById(R.id.switchShowTips)
-        switchEnableGamification = findViewById(R.id.switchEnableGamification)
         
         // Buttons
         btnSave = findViewById(R.id.btnSave)
@@ -148,19 +109,6 @@ class UserPreferencesActivity : AppCompatActivity() {
         fontSizeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerFontSize.adapter = fontSizeAdapter
         
-        // Units Spinner
-        val unitsAdapter = ArrayAdapter.createFromResource(
-            this, R.array.units_options, android.R.layout.simple_spinner_item
-        )
-        unitsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerUnits.adapter = unitsAdapter
-        
-        // Reminder Frequency Spinner
-        val reminderAdapter = ArrayAdapter.createFromResource(
-            this, R.array.reminder_frequency_options, android.R.layout.simple_spinner_item
-        )
-        reminderAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerReminderFrequency.adapter = reminderAdapter
     }
     
     private fun loadPreferences() {
@@ -175,26 +123,11 @@ class UserPreferencesActivity : AppCompatActivity() {
                     spinnerTheme.setSelection(prefs.theme.ordinal)
                     spinnerLanguage.setSelection(getLanguageIndex(prefs.language))
                     spinnerFontSize.setSelection(prefs.fontSize.ordinal)
-                    spinnerUnits.setSelection(prefs.units.ordinal)
-                    spinnerReminderFrequency.setSelection(prefs.recycling.reminderFrequency.ordinal)
-                    
                     // Set notification switches
                     switchPushNotifications.isChecked = prefs.notifications.pushNotifications
-                    switchEmailNotifications.isChecked = prefs.notifications.emailNotifications
                     switchCommunityUpdates.isChecked = prefs.notifications.communityUpdates
-                    switchAchievementAlerts.isChecked = prefs.notifications.achievementAlerts
-                    switchWeeklyReports.isChecked = prefs.notifications.weeklyReports
-                    switchRecyclingReminders.isChecked = prefs.notifications.recyclingReminders
                     switchFriendRequests.isChecked = prefs.notifications.friendRequests
                     switchMessageNotifications.isChecked = prefs.notifications.messageNotifications
-                    
-                    // Set accessibility switches
-                    switchHighContrast.isChecked = prefs.accessibility.highContrast
-                    switchReduceMotion.isChecked = prefs.accessibility.reduceMotion
-                    switchScreenReader.isChecked = prefs.accessibility.screenReader
-                    switchLargeText.isChecked = prefs.accessibility.largeText
-                    switchBoldText.isChecked = prefs.accessibility.boldText
-                    switchColorBlindSupport.isChecked = prefs.accessibility.colorBlindSupport
                     
                     // Set privacy switches
                     switchShowOnlineStatus.isChecked = prefs.privacy.showOnlineStatus
@@ -204,11 +137,6 @@ class UserPreferencesActivity : AppCompatActivity() {
                     switchShareRecyclingStats.isChecked = prefs.privacy.shareRecyclingStats
                     switchAllowDataCollection.isChecked = prefs.privacy.allowDataCollection
                     
-                    // Set recycling switches
-                    switchAutoCategorize.isChecked = prefs.recycling.autoCategorize
-                    switchShareStats.isChecked = prefs.recycling.shareStats
-                    switchShowTips.isChecked = prefs.recycling.showTips
-                    switchEnableGamification.isChecked = prefs.recycling.enableGamification
                 }
             } catch (e: Exception) {
                 android.util.Log.e("UserPreferencesActivity", "Error loading preferences", e)
@@ -244,59 +172,12 @@ class UserPreferencesActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
         
-        // Units change listener - no immediate saving
-        spinnerUnits.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
-                android.util.Log.d("UserPreferencesActivity", "Units preference selected: ${MeasurementUnits.values()[position]}")
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-        
-        // Reminder frequency change listener - no immediate saving
-        spinnerReminderFrequency.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
-                android.util.Log.d("UserPreferencesActivity", "Reminder frequency selected: ${ReminderFrequency.values()[position]}")
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-        
-        // All switches - no immediate saving, just logging
-        switchHighContrast.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "High contrast: $isChecked")
-        }
-        switchLargeText.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Large text: $isChecked")
-        }
-        switchReduceMotion.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Reduce motion: $isChecked")
-        }
-        switchScreenReader.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Screen reader: $isChecked")
-        }
-        switchBoldText.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Bold text: $isChecked")
-        }
-        switchColorBlindSupport.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Color blind support: $isChecked")
-        }
         
         switchPushNotifications.setOnCheckedChangeListener { _, isChecked ->
             android.util.Log.d("UserPreferencesActivity", "Push notifications: $isChecked")
         }
-        switchEmailNotifications.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Email notifications: $isChecked")
-        }
         switchCommunityUpdates.setOnCheckedChangeListener { _, isChecked ->
             android.util.Log.d("UserPreferencesActivity", "Community updates: $isChecked")
-        }
-        switchAchievementAlerts.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Achievement alerts: $isChecked")
-        }
-        switchWeeklyReports.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Weekly reports: $isChecked")
-        }
-        switchRecyclingReminders.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Recycling reminders: $isChecked")
         }
         switchFriendRequests.setOnCheckedChangeListener { _, isChecked ->
             android.util.Log.d("UserPreferencesActivity", "Friend requests: $isChecked")
@@ -324,18 +205,6 @@ class UserPreferencesActivity : AppCompatActivity() {
             android.util.Log.d("UserPreferencesActivity", "Allow data collection: $isChecked")
         }
         
-        switchAutoCategorize.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Auto categorize: $isChecked")
-        }
-        switchShareStats.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Share stats: $isChecked")
-        }
-        switchShowTips.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Show tips: $isChecked")
-        }
-        switchEnableGamification.setOnCheckedChangeListener { _, isChecked ->
-            android.util.Log.d("UserPreferencesActivity", "Enable gamification: $isChecked")
-        }
         
         // Save button
         btnSave.setOnClickListener {
@@ -360,9 +229,9 @@ class UserPreferencesActivity : AppCompatActivity() {
     }
     
     private fun applyFontSize(fontSize: FontSize) {
-        // Don't apply font size immediately - just save the preference
-        // Font size will be applied when user saves all preferences
-        android.util.Log.d("UserPreferencesActivity", "Font size preference selected: $fontSize")
+        // Apply font size immediately for instant feedback
+        applyFontSizeGlobally(fontSize)
+        android.util.Log.d("UserPreferencesActivity", "Font size applied immediately: $fontSize")
     }
     
     
@@ -375,21 +244,9 @@ class UserPreferencesActivity : AppCompatActivity() {
                     fontSize = FontSize.values()[spinnerFontSize.selectedItemPosition],
                     notifications = NotificationPreferences(
                         pushNotifications = switchPushNotifications.isChecked,
-                        emailNotifications = switchEmailNotifications.isChecked,
                         communityUpdates = switchCommunityUpdates.isChecked,
-                        achievementAlerts = switchAchievementAlerts.isChecked,
-                        weeklyReports = switchWeeklyReports.isChecked,
-                        recyclingReminders = switchRecyclingReminders.isChecked,
                         friendRequests = switchFriendRequests.isChecked,
                         messageNotifications = switchMessageNotifications.isChecked
-                    ),
-                    accessibility = AccessibilitySettings(
-                        highContrast = switchHighContrast.isChecked,
-                        reduceMotion = switchReduceMotion.isChecked,
-                        screenReader = switchScreenReader.isChecked,
-                        largeText = switchLargeText.isChecked,
-                        boldText = switchBoldText.isChecked,
-                        colorBlindSupport = switchColorBlindSupport.isChecked
                     ),
                     privacy = PrivacyPreferences(
                         showOnlineStatus = switchShowOnlineStatus.isChecked,
@@ -399,14 +256,6 @@ class UserPreferencesActivity : AppCompatActivity() {
                         shareRecyclingStats = switchShareRecyclingStats.isChecked,
                         allowDataCollection = switchAllowDataCollection.isChecked
                     ),
-                    recycling = RecyclingPreferences(
-                        reminderFrequency = ReminderFrequency.values()[spinnerReminderFrequency.selectedItemPosition],
-                        autoCategorize = switchAutoCategorize.isChecked,
-                        shareStats = switchShareStats.isChecked,
-                        showTips = switchShowTips.isChecked,
-                        enableGamification = switchEnableGamification.isChecked
-                    ),
-                    units = MeasurementUnits.values()[spinnerUnits.selectedItemPosition]
                 )
                 
                 // Save preferences to DataStore
@@ -426,8 +275,8 @@ class UserPreferencesActivity : AppCompatActivity() {
                 currentPreferences = newPreferences
                 Toast.makeText(this@UserPreferencesActivity, getString(R.string.preferences_saved), Toast.LENGTH_SHORT).show()
                 
-                // Refresh the UI to show the new language immediately
-                // The recreate() call in applyLanguageGlobally will handle the refresh
+                // Force refresh all activities to apply font size changes immediately
+                refreshAllActivities()
                 
             } catch (e: Exception) {
                 android.util.Log.e("UserPreferencesActivity", "Error saving preferences", e)
@@ -455,10 +304,9 @@ class UserPreferencesActivity : AppCompatActivity() {
     
     private fun applyFontSizeGlobally(fontSize: FontSize) {
         val scale = when (fontSize) {
-            FontSize.SMALL -> 0.85f
-            FontSize.MEDIUM -> 1.0f
-            FontSize.LARGE -> 1.15f
-            FontSize.EXTRA_LARGE -> 1.3f
+            FontSize.SMALL -> 0.7f      // 30% reduction (1.0 - 0.3 = 0.7)
+            FontSize.MEDIUM -> 1.0f     // Default size
+            FontSize.LARGE -> 1.3f      // 30% increase (1.0 + 0.3 = 1.3)
         }
         
         // Apply font scale globally to the entire app
@@ -470,6 +318,15 @@ class UserPreferencesActivity : AppCompatActivity() {
         applicationContext.resources.updateConfiguration(configuration, applicationContext.resources.displayMetrics)
         
         android.util.Log.d("UserPreferencesActivity", "Applied font size globally: $fontSize (scale: $scale)")
+    }
+    
+    private fun refreshAllActivities() {
+        // Send broadcast to all activities to refresh their UI
+        val intent = Intent("com.example.ecosort.REFRESH_UI")
+        intent.putExtra("action", "font_size_changed")
+        sendBroadcast(intent)
+        
+        android.util.Log.d("UserPreferencesActivity", "Sent broadcast to refresh all activities")
     }
     
     private fun applyLanguageGlobally(language: String) {
@@ -505,25 +362,11 @@ class UserPreferencesActivity : AppCompatActivity() {
         spinnerTheme.setSelection(defaultPreferences.theme.ordinal)
         spinnerLanguage.setSelection(getLanguageIndex(defaultPreferences.language))
         spinnerFontSize.setSelection(defaultPreferences.fontSize.ordinal)
-        spinnerUnits.setSelection(defaultPreferences.units.ordinal)
-        spinnerReminderFrequency.setSelection(defaultPreferences.recycling.reminderFrequency.ordinal)
-        
         // Reset switches
         switchPushNotifications.isChecked = defaultPreferences.notifications.pushNotifications
-        switchEmailNotifications.isChecked = defaultPreferences.notifications.emailNotifications
         switchCommunityUpdates.isChecked = defaultPreferences.notifications.communityUpdates
-        switchAchievementAlerts.isChecked = defaultPreferences.notifications.achievementAlerts
-        switchWeeklyReports.isChecked = defaultPreferences.notifications.weeklyReports
-        switchRecyclingReminders.isChecked = defaultPreferences.notifications.recyclingReminders
         switchFriendRequests.isChecked = defaultPreferences.notifications.friendRequests
         switchMessageNotifications.isChecked = defaultPreferences.notifications.messageNotifications
-        
-        switchHighContrast.isChecked = defaultPreferences.accessibility.highContrast
-        switchReduceMotion.isChecked = defaultPreferences.accessibility.reduceMotion
-        switchScreenReader.isChecked = defaultPreferences.accessibility.screenReader
-        switchLargeText.isChecked = defaultPreferences.accessibility.largeText
-        switchBoldText.isChecked = defaultPreferences.accessibility.boldText
-        switchColorBlindSupport.isChecked = defaultPreferences.accessibility.colorBlindSupport
         
         switchShowOnlineStatus.isChecked = defaultPreferences.privacy.showOnlineStatus
         switchAllowFriendRequests.isChecked = defaultPreferences.privacy.allowFriendRequests
@@ -532,10 +375,6 @@ class UserPreferencesActivity : AppCompatActivity() {
         switchShareRecyclingStats.isChecked = defaultPreferences.privacy.shareRecyclingStats
         switchAllowDataCollection.isChecked = defaultPreferences.privacy.allowDataCollection
         
-        switchAutoCategorize.isChecked = defaultPreferences.recycling.autoCategorize
-        switchShareStats.isChecked = defaultPreferences.recycling.shareStats
-        switchShowTips.isChecked = defaultPreferences.recycling.showTips
-        switchEnableGamification.isChecked = defaultPreferences.recycling.enableGamification
         
         // Apply default theme, font size, and language globally
         applyThemeGlobally(defaultPreferences.theme)

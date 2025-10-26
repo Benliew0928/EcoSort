@@ -1,35 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:fillViewport="true">
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Classification Result"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp" />
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <ImageView
-        android:id="@+id/ivCapturedObject"
-        android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:scaleType="fitCenter"
-        android:layout_marginBottom="16dp"
-        android:background="#EEE"
-        android:contentDescription="Captured object for analysis" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔍 Waste Analysis Result"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary_color"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
 
-    <TextView
-        android:id="@+id/tvGeminiOutput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:textStyle="italic"
-        android:textColor="@color/black"
-        android:text="Analyzing..." />
+        <ImageView
+            android:id="@+id/ivCapturedObject"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:scaleType="centerInside"
+            android:adjustViewBounds="true"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/rounded_corner_background"
+            android:contentDescription="Captured object for analysis" />
 
-</LinearLayout>
+        <TextView
+            android:id="@+id/tvGeminiOutput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:lineSpacingExtra="4dp"
+            android:fontFamily="monospace"
+            android:background="@drawable/rounded_corner_background"
+            android:padding="16dp"
+            android:text="🔄 Analyzing item... Please wait" />
+
+    </LinearLayout>
+
+</ScrollView>
