@@ -60,6 +60,13 @@ class UserRepository @Inject constructor(
         context: Context
     ): Result<User> {
         return try {
+            // Additional safety check: verify username doesn't exist locally
+            val existingLocalUser = userDao.getUserByUsername(username)
+            if (existingLocalUser != null) {
+                android.util.Log.w("UserRepository", "Username '$username' already exists in local database")
+                return Result.Error(Exception("Username already taken. Please choose a different username."))
+            }
+            
             // First, try to register with Firebase (primary authentication)
             val firebaseResult = firebaseAuthService.registerUser(username, email, password, userType, context)
             
@@ -82,41 +89,25 @@ class UserRepository @Inject constructor(
                     return Result.Success(firebaseUser.copy(id = existingLocalUser.id))
                 }
             } else {
-                // Firebase registration failed, try local fallback
-                android.util.Log.w("UserRepository", "Firebase registration failed, trying local fallback: ${(firebaseResult as Result.Error).exception.message}")
+                // Firebase registration failed - no local fallback for security
+                val error = firebaseResult as Result.Error
+                android.util.Log.w("UserRepository", "Firebase registration failed: ${error.exception.message}")
                 
-                // Check if user already exists locally
-                if (userDao.getUserByUsername(username) != null) {
-                    return Result.Error(Exception("Username already exists"))
+                // Provide more specific error messages based on the Firebase error
+                val errorMessage = when {
+                    error.exception.message?.contains("network", ignoreCase = true) == true -> 
+                        "Network error. Please check your internet connection and try again."
+                    error.exception.message?.contains("email", ignoreCase = true) == true -> 
+                        "Email address is already in use. Please use a different email."
+                    error.exception.message?.contains("password", ignoreCase = true) == true -> 
+                        "Password is too weak. Please choose a stronger password."
+                    error.exception.message?.contains("invalid", ignoreCase = true) == true -> 
+                        "Invalid email format. Please enter a valid email address."
+                    else -> 
+                        "Registration failed: ${error.exception.message ?: "Unknown error occurred"}"
                 }
-
-                if (userDao.getUserByEmail(email) != null) {
-                    return Result.Error(Exception("Email already registered"))
-                }
-
-                // Hash password and create user locally
-                val passwordHash = securityManager.hashPassword(password)
-                val user = User(
-                    username = username,
-                    email = email,
-                    passwordHash = passwordHash,
-                    userType = userType
-                )
-
-                val userId = userDao.insertUser(user)
-                val createdUser = user.copy(id = userId)
-
-                // Try to sync to Firebase later (background task)
-                try {
-                    syncUserToFirebase(createdUser)
-                    android.util.Log.d("UserRepository", "User profile synced to Firebase: ${createdUser.username}")
-                } catch (e: Exception) {
-                    android.util.Log.w("UserRepository", "Failed to sync user to Firebase: ${e.message}")
-                    // Don't fail registration if Firebase sync fails
-                }
-
-                android.util.Log.d("UserRepository", "User registered locally (Firebase unavailable): $username")
-                Result.Success(createdUser)
+                
+                Result.Error(Exception(errorMessage))
             }
         } catch (e: Exception) {
             android.util.Log.e("UserRepository", "Failed to register user", e)
@@ -126,7 +117,8 @@ class UserRepository @Inject constructor(
 
     suspend fun loginUser(username: String, password: String, context: Context): Result<UserSession> {
         return try {
-            // First, try Firebase authentication (primary method)
+            android.util.Log.d("UserRepository", "Attempting login for username: $username")
+            // Use Firebase authentication as the primary and only method
             val firebaseResult = firebaseAuthService.authenticateUser(username, password, context)
             
             if (firebaseResult is Result.Success) {
@@ -148,11 +140,11 @@ class UserRepository @Inject constructor(
                         val insertedId = userDao.insertUser(firebaseUser)
                         insertedId
                     } else {
-                        // Fallback: create minimal user
+                        // Fallback: create minimal user with the session data
                         val fallbackUser = User(
                             username = username,
-                            email = "",
-                            passwordHash = "",
+                            email = firebaseSession.username, // Use username as email fallback
+                            passwordHash = "", // No password hash needed
                             userType = firebaseSession.userType
                         )
                         userDao.insertUser(fallbackUser)
@@ -166,56 +158,9 @@ class UserRepository @Inject constructor(
                 android.util.Log.d("UserRepository", "User logged in successfully via Firebase: $username")
                 return Result.Success(session)
             } else {
-                // Firebase authentication failed, try local fallback
-                android.util.Log.w("UserRepository", "Firebase authentication failed, trying local fallback: ${(firebaseResult as Result.Error).exception.message}")
-                
-                // Get user from local database
-                val user = userDao.getUserByUsername(username)
-                    ?: return Result.Error(Exception("User not found"))
-
-                // Try both new and legacy password verification
-                val passwordValid = if (user.passwordHash.contains(":")) {
-                    // New PBKDF2 hash format
-                    android.util.Log.d("UserRepository", "Verifying password with PBKDF2 for user: $username")
-                    securityManager.verifyPassword(password, user.passwordHash)
-                } else {
-                    // Legacy SHA-256 hash format
-                    android.util.Log.d("UserRepository", "Verifying password with legacy SHA-256 for user: $username")
-                    securityManager.verifyPasswordLegacy(password, user.passwordHash)
-                }
-
-                if (!passwordValid) {
-                    android.util.Log.w("UserRepository", "Password verification failed for user: $username")
-                    return Result.Error(Exception("Invalid password"))
-                }
-                
-                android.util.Log.d("UserRepository", "Password verification successful for user: $username")
-
-                // Generate session token
-                val token = securityManager.generateSessionToken()
-
-                // Create session
-                val session = UserSession(
-                    userId = user.id,
-                    username = user.username,
-                    userType = user.userType,
-                    token = token,
-                    isLoggedIn = true
-                )
-
-                // Save session
-                preferencesManager.saveUserSession(session)
-                
-                // Try to migrate user to Firebase in background
-                try {
-                    firebaseAuthService.migrateUserToFirebase(user, context)
-                    android.util.Log.d("UserRepository", "User migrated to Firebase: $username")
-                } catch (e: Exception) {
-                    android.util.Log.w("UserRepository", "Failed to migrate user to Firebase: ${e.message}")
-                }
-
-                android.util.Log.d("UserRepository", "User logged in via local fallback: $username")
-                Result.Success(session)
+                // Firebase authentication failed - no fallback for security
+                android.util.Log.w("UserRepository", "Firebase authentication failed: ${(firebaseResult as Result.Error).exception.message}")
+                Result.Error(Exception("Authentication failed. Please check your credentials."))
             }
         } catch (e: Exception) {
             android.util.Log.e("UserRepository", "Failed to login user", e)
@@ -327,16 +272,9 @@ class UserRepository @Inject constructor(
 
     suspend fun logoutUser(): Result<Unit> {
         return try {
-            // Clear local session
             preferencesManager.clearUserSession()
-            
-            // Sign out from Firebase
-            firebaseAuthService.signOut()
-            
-            android.util.Log.d("UserRepository", "User logged out successfully from both local and Firebase")
             Result.Success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("UserRepository", "Error during logout", e)
             Result.Error(e)
         }
     }

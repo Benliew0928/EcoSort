@@ -8,6 +8,7 @@ import com.example.ecosort.data.model.UserSession
 import com.example.ecosort.data.model.UserType
 import com.example.ecosort.data.repository.UserRepository
 import com.example.ecosort.data.repository.AdminRepository
+import com.example.ecosort.utils.AuthMigrationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +25,9 @@ data class LoginUiState(
     val isLoginSuccessful: Boolean = false,
     val userSession: UserSession? = null,
     val usernameError: String? = null,
-    val passwordError: String? = null
+    val passwordError: String? = null,
+    val needsMigration: Boolean = false,
+    val migrationMessage: String? = null
 )
 
 data class RegisterUiState(
@@ -62,10 +65,9 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             userRepository.userSession.collect { session ->
                 if (session != null && session.isLoggedIn) {
-                    _loginState.value = _loginState.value.copy(
-                        isLoginSuccessful = true,
-                        userSession = session
-                    )
+                    // Don't automatically set login success - let the login process handle validation
+                    // This prevents bypassing user type validation
+                    android.util.Log.d("LoginViewModel", "Existing session found: ${session.username} (${session.userType})")
                 }
             }
         }
@@ -73,7 +75,11 @@ class LoginViewModel @Inject constructor(
 
     suspend fun getCurrentUserSession(): UserSession? {
         return try {
-            userRepository.userSession.first()
+            val session = userRepository.userSession.first()
+            if (session != null && session.isLoggedIn) {
+                android.util.Log.d("LoginViewModel", "Found existing session: ${session.username} (${session.userType})")
+            }
+            session
         } catch (e: Exception) {
             android.util.Log.e("LoginViewModel", "Error getting current user session", e)
             null
@@ -123,12 +129,24 @@ class LoginViewModel @Inject constructor(
                     // Try regular user login
                     when (val result = userRepository.loginUser(username, password, context)) {
                         is Result.Success -> {
-                            android.util.Log.d("LoginViewModel", "User login successful for: ${result.data.username}")
-                            _loginState.value = LoginUiState(
-                                isLoading = false,
-                                isLoginSuccessful = true,
-                                userSession = result.data
-                            )
+                            // Validate that the authenticated user is actually a USER, not ADMIN
+                            if (result.data.userType == UserType.USER) {
+                                android.util.Log.d("LoginViewModel", "User login successful for: ${result.data.username}")
+                                _loginState.value = LoginUiState(
+                                    isLoading = false,
+                                    isLoginSuccessful = true,
+                                    userSession = result.data
+                                )
+                            } else {
+                                android.util.Log.w("LoginViewModel", "User type mismatch: expected USER, got ${result.data.userType}")
+                                _loginState.value = _loginState.value.copy(
+                                    isLoading = false,
+                                    isLoginSuccessful = false,
+                                    errorMessage = "User not found, Check Account Type?"
+                                )
+                                // Don't proceed with login - treat as failed authentication
+                                return@launch
+                            }
                         }
                         is Result.Error -> {
                             android.util.Log.w("LoginViewModel", "User login failed for: $username, error: ${result.exception.message}")
@@ -169,10 +187,22 @@ class LoginViewModel @Inject constructor(
                         }
                         is Result.Error -> {
                             android.util.Log.w("LoginViewModel", "Admin login failed for: $username, error: ${adminResult.exception.message}")
-                            _loginState.value = _loginState.value.copy(
-                                isLoading = false,
-                                errorMessage = adminResult.exception.message ?: "Admin login failed"
-                            )
+                            // Check if this is a regular user trying to login as admin
+                            val userResult = userRepository.loginUser(username, password, context)
+                            if (userResult is Result.Success && userResult.data.userType == UserType.USER) {
+                                _loginState.value = _loginState.value.copy(
+                                    isLoading = false,
+                                    isLoginSuccessful = false,
+                                    errorMessage = "User not found, Check Account Type?"
+                                )
+                                // Don't proceed with login - treat as failed authentication
+                                return@launch
+                            } else {
+                                _loginState.value = _loginState.value.copy(
+                                    isLoading = false,
+                                    errorMessage = adminResult.exception.message ?: "Admin login failed"
+                                )
+                            }
                         }
                         else -> {
                             _loginState.value = _loginState.value.copy(
@@ -342,5 +372,80 @@ class LoginViewModel @Inject constructor(
 
     suspend fun loginGoogleUser(email: String, googleId: String): Result<com.example.ecosort.data.model.UserSession> {
         return userRepository.loginGoogleUser(email, googleId)
+    }
+    
+    // ==================== MIGRATION ====================
+    
+    /**
+     * Migrate an existing user to Firebase Authentication
+     */
+    fun migrateUser(username: String, password: String, context: Context) {
+        viewModelScope.launch {
+            _loginState.value = _loginState.value.copy(isLoading = true, errorMessage = null)
+            
+            try {
+                // Get the user from local database
+                val userResult = userRepository.getCurrentUser()
+                if (userResult is Result.Success) {
+                    val user = userResult.data
+                    if (AuthMigrationHelper.needsMigration(user)) {
+                        // Perform migration
+                        val migrationResult = AuthMigrationHelper.migrateUserToFirebase(
+                            user, password, userRepository
+                        )
+                        
+                        when (migrationResult) {
+                            is Result.Success -> {
+                                // Migration successful, now try to login
+                                login(username, password, user.userType, context)
+                            }
+                            is Result.Error -> {
+                                _loginState.value = _loginState.value.copy(
+                                    isLoading = false,
+                                    errorMessage = "Migration failed: ${migrationResult.exception.message}"
+                                )
+                            }
+                            else -> {
+                                _loginState.value = _loginState.value.copy(
+                                    isLoading = false,
+                                    errorMessage = "Migration failed: Unexpected error"
+                                )
+                            }
+                        }
+                    } else {
+                        _loginState.value = _loginState.value.copy(
+                            isLoading = false,
+                            errorMessage = "User does not need migration"
+                        )
+                    }
+                } else {
+                    _loginState.value = _loginState.value.copy(
+                        isLoading = false,
+                        errorMessage = "User not found"
+                    )
+                }
+            } catch (e: Exception) {
+                _loginState.value = _loginState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Migration failed: ${e.message}"
+                )
+            }
+        }
+    }
+    
+    /**
+     * Check if current user needs migration
+     */
+    suspend fun checkMigrationNeeded(): Boolean {
+        return try {
+            val userResult = userRepository.getCurrentUser()
+            if (userResult is Result.Success) {
+                AuthMigrationHelper.needsMigration(userResult.data)
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            false
+        }
     }
 }

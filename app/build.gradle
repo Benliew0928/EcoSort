@@ -25,6 +25,13 @@ android {
         def properties = new Properties()
         properties.load(project.rootProject.file("local.properties").newDataInputStream())
         buildConfigField "String", "GEMINI_API_KEY", "\"${properties.getProperty("GEMINI_API_KEY")}\""
+        
+        // Room schema export
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments += ["room.schemaLocation": "$projectDir/schemas".toString()]
+            }
+        }
     }
 
     buildTypes {
@@ -34,6 +41,8 @@ android {
         }
         debug {
             minifyEnabled false
+            // Enable database inspector
+            debuggable true
         }
     }
 
@@ -106,6 +115,9 @@ dependencies {
     implementation 'androidx.room:room-runtime:2.6.0'
     implementation 'androidx.room:room-ktx:2.6.0'
     kapt 'androidx.room:room-compiler:2.6.0'
+    
+    // Database Inspector (for debugging)
+    debugImplementation 'androidx.room:room-testing:2.6.0'
 
     // Hilt Dependency Injection
     implementation 'com.google.dagger:hilt-android:2.48'

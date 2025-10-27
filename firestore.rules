@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection rules
+    match /users/{userId} {
+      // Allow read access to authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow write access only for the authenticated user's own document
+      // and ensure username uniqueness
+      allow create: if request.auth != null 
+        && request.auth.uid == userId
+        && !exists(/databases/$(database)/documents/users)
+        || !exists(/databases/$(database)/documents/users) 
+        || !exists(/databases/$(database)/documents/users, where('username', '==', request.resource.data.username));
+      
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && resource.data.username == request.resource.data.username;
+      
+      allow delete: if request.auth != null 
+        && request.auth.uid == userId;
+    }
+    
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -89,65 +89,8 @@ object SecurityManager {
 
     // ==================== ENCRYPTION ====================
 
-    // Client-side encryption for Firebase storage
-    fun encryptForFirebase(data: String, context: Context): String {
-        return try {
-            val key = generateFirebaseEncryptionKey(context)
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            val iv = ByteArray(12)
-            SecureRandom().nextBytes(iv)
-            
-            cipher.init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(128, iv))
-            val encryptedData = cipher.doFinal(data.toByteArray(Charsets.UTF_8))
-            
-            val result = ByteArray(iv.size + encryptedData.size)
-            System.arraycopy(iv, 0, result, 0, iv.size)
-            System.arraycopy(encryptedData, 0, result, iv.size, encryptedData.size)
-            
-            Base64.encodeToString(result, Base64.NO_WRAP)
-        } catch (e: Exception) {
-            android.util.Log.e("SecurityManager", "Failed to encrypt data for Firebase", e)
-            data // Fallback to unencrypted
-        }
-    }
-
-    fun decryptFromFirebase(encryptedData: String, context: Context): String {
-        return try {
-            val key = generateFirebaseEncryptionKey(context)
-            val data = Base64.decode(encryptedData, Base64.NO_WRAP)
-            
-            val iv = ByteArray(12)
-            val encrypted = ByteArray(data.size - 12)
-            System.arraycopy(data, 0, iv, 0, 12)
-            System.arraycopy(data, 12, encrypted, 0, encrypted.size)
-            
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, iv))
-            
-            String(cipher.doFinal(encrypted), Charsets.UTF_8)
-        } catch (e: Exception) {
-            android.util.Log.e("SecurityManager", "Failed to decrypt data from Firebase", e)
-            encryptedData // Fallback to original data
-        }
-    }
-
-    private fun generateFirebaseEncryptionKey(context: Context): SecretKey {
-        // Use device-specific key derived from Android ID
-        val androidId = android.provider.Settings.Secure.getString(
-            context.contentResolver,
-            android.provider.Settings.Secure.ANDROID_ID
-        )
-        
-        val keySpec = PBEKeySpec(
-            androidId.toCharArray(),
-            "EcoSortFirebaseKey".toByteArray(),
-            10000,
-            256
-        )
-        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-        val keyBytes = factory.generateSecret(keySpec).encoded
-        return SecretKeySpec(keyBytes, "AES")
-    }
+    // Note: Firebase encryption methods removed - Firebase Auth handles password security
+    // No device-specific encryption needed for cross-device compatibility
 
     fun encryptData(data: String): String {
         val cipher = Cipher.getInstance(TRANSFORMATION)

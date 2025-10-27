@@ -80,43 +80,33 @@ class AdminRepository @Inject constructor(
                     android.util.Log.w("AdminRepository", "Firebase authentication failed, trying local fallback: ${(firebaseResult as com.example.ecosort.data.model.Result.Error).exception.message}")
                     
                     val admin = adminDao.getAdminByUsername(username)
-                    android.util.Log.d("AdminRepository", "Admin lookup result: ${if (admin != null) "Found admin ${admin.username} (active: ${admin.isActive})" else "Admin not found"}")
-                    if (admin != null && admin.isActive) {
-                        android.util.Log.d("AdminRepository", "Found admin: $username, verifying password")
-                        val passwordValid = SecurityManager.verifyPassword(password, admin.passwordHash)
-                        if (passwordValid) {
-                            android.util.Log.d("AdminRepository", "Password verification successful for admin: $username")
-                            // Update last login
-                            adminDao.updateLastLogin(admin.id, System.currentTimeMillis())
-                            
-                            val session = AdminSession(
-                                adminId = admin.id,
+                    if (admin != null && admin.isActive && SecurityManager.verifyPassword(password, admin.passwordHash)) {
+                        // Update last login
+                        adminDao.updateLastLogin(admin.id, System.currentTimeMillis())
+                        
+                        val session = AdminSession(
+                            adminId = admin.id,
+                            username = admin.username,
+                            email = admin.email
+                        )
+                        
+                        // Try to migrate admin to Firebase in background
+                        try {
+                            val user = com.example.ecosort.data.model.User(
                                 username = admin.username,
-                                email = admin.email
+                                email = admin.email,
+                                passwordHash = admin.passwordHash,
+                                userType = com.example.ecosort.data.model.UserType.ADMIN
                             )
-                            
-                            // Try to migrate admin to Firebase in background
-                            try {
-                                val user = com.example.ecosort.data.model.User(
-                                    username = admin.username,
-                                    email = admin.email,
-                                    passwordHash = admin.passwordHash,
-                                    userType = com.example.ecosort.data.model.UserType.ADMIN
-                                )
-                                firebaseAuthService.migrateUserToFirebase(user, context)
-                                android.util.Log.d("AdminRepository", "Admin migrated to Firebase: $username")
-                            } catch (e: Exception) {
-                                android.util.Log.w("AdminRepository", "Failed to migrate admin to Firebase: ${e.message}")
-                            }
-                            
-                            android.util.Log.d("AdminRepository", "Admin authenticated via local fallback: $username")
-                            return@withContext Result.Success(session)
-                        } else {
-                            android.util.Log.w("AdminRepository", "Password verification failed for admin: $username")
-                            return@withContext Result.Error(Exception("Invalid admin credentials"))
+                            firebaseAuthService.migrateUserToFirebase(user, context)
+                            android.util.Log.d("AdminRepository", "Admin migrated to Firebase: $username")
+                        } catch (e: Exception) {
+                            android.util.Log.w("AdminRepository", "Failed to migrate admin to Firebase: ${e.message}")
                         }
+                        
+                        android.util.Log.d("AdminRepository", "Admin authenticated via local fallback: $username")
+                        return@withContext Result.Success(session)
                     } else {
-                        android.util.Log.w("AdminRepository", "Admin not found or inactive: $username")
                         return@withContext Result.Error(Exception("Invalid admin credentials"))
                     }
                 }
@@ -185,19 +175,6 @@ class AdminRepository @Inject constructor(
                 Result.Success(session)
             }
         } catch (e: Exception) {
-            Result.Error(e)
-        }
-    }
-
-    suspend fun logoutAdmin(): Result<Unit> {
-        return try {
-            // Sign out from Firebase
-            firebaseAuthService.signOut()
-            
-            android.util.Log.d("AdminRepository", "Admin logged out successfully from Firebase")
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            android.util.Log.e("AdminRepository", "Error during admin logout", e)
             Result.Error(e)
         }
     }

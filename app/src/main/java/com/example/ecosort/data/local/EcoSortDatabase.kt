@@ -588,8 +588,8 @@ interface BlockedUserDao {
         Admin::class,
         AdminAction::class
     ],
-    version = 17,
-    exportSchema = false
+    version = 18,
+    exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class EcoSortDatabase : RoomDatabase() {
@@ -636,9 +636,11 @@ abstract class EcoSortDatabase : RoomDatabase() {
                 MIGRATION_13_14,
                 MIGRATION_14_15,
                 MIGRATION_15_16,
-                MIGRATION_16_17
+                MIGRATION_16_17,
+                MIGRATION_17_18
             )
                     .allowMainThreadQueries() // Temporary for debugging
+                    .fallbackToDestructiveMigration() // For development only
                     .build()
                 INSTANCE = instance
                 
@@ -1055,6 +1057,20 @@ internal val MIGRATION_16_17 = object : androidx.room.migration.Migration(16, 17
             android.util.Log.d("Migration_16_17", "Added firebaseUid column to users table successfully")
         } catch (e: Exception) {
             android.util.Log.e("Migration_16_17", "Migration failed: ${e.message}")
+            throw e
+        }
+    }
+}
+
+internal val MIGRATION_17_18 = object : androidx.room.migration.Migration(17, 18) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add unique constraints for username and email
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_users_username ON users (username)")
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_users_email ON users (email)")
+            android.util.Log.d("Migration_17_18", "Added unique constraints for username and email successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_17_18", "Migration failed: ${e.message}")
             throw e
         }
     }

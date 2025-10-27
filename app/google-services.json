@@ -12,7 +12,20 @@
           "package_name": "com.example.ecosort"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "956500889325-grqbhga7cpfvp92q0sit9mi8ksqtf45v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ecosort",
+            "certificate_hash": "ea0be126d7a5ffeb511813e1cd6d0ce798da92ae"
+          }
+        },
+        {
+          "client_id": "956500889325-9tasrvi2e5u7maqsevit13s4t1ahneac.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAplEgOOI8QZmRJbtZ769onyo_TryFQrqY"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "956500889325-9tasrvi2e5u7maqsevit13s4t1ahneac.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

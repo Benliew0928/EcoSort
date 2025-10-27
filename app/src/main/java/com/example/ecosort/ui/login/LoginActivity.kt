@@ -87,8 +87,9 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
                     viewModel.getCurrentUserSession() 
                 }
                 if (session != null && session.isLoggedIn) {
-                    android.util.Log.d("LoginActivity", "User already logged in: ${session.username}")
-                    navigateToMain()
+                    android.util.Log.d("LoginActivity", "User already logged in: ${session.username} (${session.userType})")
+                    // Don't automatically navigate - let user choose their login type
+                    // This prevents bypassing user type validation
                 } else {
                     android.util.Log.d("LoginActivity", "No existing session found")
                 }
