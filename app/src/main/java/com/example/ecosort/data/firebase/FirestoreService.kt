@@ -895,6 +895,321 @@ class FirestoreService @Inject constructor() {
         }
     }
 
+// ==================== CHAT OPERATIONS ====================
+    
+    private val chatMessagesCollection by lazy { firestore.collection("chat_messages") }
+    private val conversationsCollection by lazy { firestore.collection("conversations") }
+    
+    /**
+     * Send a chat message to Firebase
+     */
+    suspend fun sendChatMessage(message: FirebaseChatMessage): com.example.ecosort.data.model.Result<String> {
+        return try {
+            val docRef = chatMessagesCollection.add(message).await()
+            android.util.Log.d("FirestoreService", "Chat message sent with ID: ${docRef.id}")
+            com.example.ecosort.data.model.Result.Success(docRef.id)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error sending chat message", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Get messages for a channel from Firebase in real-time
+     */
+    fun getChannelMessages(channelId: String): Flow<List<FirebaseChatMessage>> = callbackFlow {
+        val subscription = chatMessagesCollection
+            .whereEqualTo("channelId", channelId)
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to messages", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+                
+                val messages = snapshot?.documents?.mapNotNull { it.toObject<FirebaseChatMessage>() } ?: emptyList()
+                android.util.Log.d("FirestoreService", "Received ${messages.size} messages for channel: $channelId")
+                trySend(messages)
+            }
+        
+        awaitClose { subscription.remove() }
+    }
+    
+    /**
+     * Mark message as read by adding user UID to readBy list
+     */
+    suspend fun markMessageAsRead(messageId: String, userUid: String): com.example.ecosort.data.model.Result<Unit> {
+        return try {
+            chatMessagesCollection.document(messageId)
+                .update("readBy", com.google.firebase.firestore.FieldValue.arrayUnion(userUid))
+                .await()
+            com.example.ecosort.data.model.Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error marking message as read", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Create or update conversation in Firebase
+     */
+    suspend fun saveConversation(conversation: FirebaseConversation): com.example.ecosort.data.model.Result<Unit> {
+        return try {
+            conversationsCollection.document(conversation.channelId).set(conversation).await()
+            android.util.Log.d("FirestoreService", "Conversation saved: ${conversation.channelId}")
+            com.example.ecosort.data.model.Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error saving conversation", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Get user conversations from Firebase in real-time
+     */
+    fun getUserConversations(userUid: String): Flow<List<FirebaseConversation>> = callbackFlow {
+        val subscription = conversationsCollection
+            .whereIn("participant1Id", listOf(userUid))
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to conversations", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+                
+                val conversations = snapshot?.documents?.mapNotNull { it.toObject<FirebaseConversation>() } ?: emptyList()
+                android.util.Log.d("FirestoreService", "Received ${conversations.size} conversations for user: $userUid")
+                trySend(conversations)
+            }
+        
+        awaitClose { subscription.remove() }
+    }
+    
+    // ==================== FRIEND OPERATIONS ====================
+    
+    private val friendRequestsCollection by lazy { firestore.collection("friend_requests") }
+    private val friendshipsCollection by lazy { firestore.collection("friendships") }
+    
+    /**
+     * Send friend request to Firebase
+     */
+    suspend fun sendFriendRequest(request: FirebaseFriendRequest): com.example.ecosort.data.model.Result<String> {
+        return try {
+            val docRef = friendRequestsCollection.add(request).await()
+            android.util.Log.d("FirestoreService", "Friend request sent with ID: ${docRef.id}")
+            com.example.ecosort.data.model.Result.Success(docRef.id)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error sending friend request", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Get pending friend requests for user from Firebase in real-time
+     */
+    fun getPendingFriendRequests(userUid: String): Flow<List<FirebaseFriendRequest>> = callbackFlow {
+        val subscription = friendRequestsCollection
+            .whereEqualTo("receiverId", userUid)
+            .whereEqualTo("status", "PENDING")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to friend requests", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+                
+                val requests = snapshot?.documents?.mapNotNull { it.toObject<FirebaseFriendRequest>() } ?: emptyList()
+                android.util.Log.d("FirestoreService", "Received ${requests.size} friend requests for user: $userUid")
+                trySend(requests)
+            }
+        
+        awaitClose { subscription.remove() }
+    }
+    
+    /**
+     * Update friend request status
+     */
+    suspend fun updateFriendRequestStatus(requestId: String, status: String): com.example.ecosort.data.model.Result<Unit> {
+        return try {
+            friendRequestsCollection.document(requestId)
+                .update(mapOf(
+                    "status" to status,
+                    "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                ))
+                .await()
+            android.util.Log.d("FirestoreService", "Friend request status updated: $requestId -> $status")
+            com.example.ecosort.data.model.Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error updating friend request status", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Create friendship in Firebase
+     */
+    suspend fun createFriendship(friendship: FirebaseFriendship): com.example.ecosort.data.model.Result<String> {
+        return try {
+            val docRef = friendshipsCollection.add(friendship).await()
+            android.util.Log.d("FirestoreService", "Friendship created with ID: ${docRef.id}")
+            com.example.ecosort.data.model.Result.Success(docRef.id)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error creating friendship", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Get user friendships from Firebase in real-time
+     */
+    fun getUserFriendships(userUid: String): Flow<List<FirebaseFriendship>> = callbackFlow {
+        // Query for friendships where user is either participant1 or participant2
+        val subscription1 = friendshipsCollection
+            .whereEqualTo("userId1", userUid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to friendships", error)
+                    return@addSnapshotListener
+                }
+                
+                val friendships1 = snapshot?.documents?.mapNotNull { it.toObject<FirebaseFriendship>() } ?: emptyList()
+                
+                // Also query where user is userId2
+                friendshipsCollection
+                    .whereEqualTo("userId2", userUid)
+                    .get()
+                    .addOnSuccessListener { snapshot2 ->
+                        val friendships2 = snapshot2.documents.mapNotNull { it.toObject<FirebaseFriendship>() }
+                        val allFriendships = friendships1 + friendships2
+                        android.util.Log.d("FirestoreService", "Received ${allFriendships.size} friendships for user: $userUid")
+                        trySend(allFriendships)
+                    }
+            }
+        
+        awaitClose { subscription1.remove() }
+    }
+    
+    /**
+     * Remove friendship from Firebase
+     */
+    suspend fun removeFriendship(userUid1: String, userUid2: String): com.example.ecosort.data.model.Result<Unit> {
+        return try {
+            // Query for friendship between two users
+            val querySnapshot = friendshipsCollection
+                .whereIn("userId1", listOf(userUid1, userUid2))
+                .whereIn("userId2", listOf(userUid1, userUid2))
+                .get()
+                .await()
+            
+            querySnapshot.documents.forEach { it.reference.delete().await() }
+            android.util.Log.d("FirestoreService", "Friendship removed between $userUid1 and $userUid2")
+            com.example.ecosort.data.model.Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error removing friendship", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    // ==================== FOLLOW OPERATIONS ====================
+    
+    private val userFollowsCollection by lazy { firestore.collection("user_follows") }
+    
+    /**
+     * Follow a user in Firebase
+     */
+    suspend fun followUser(follow: FirebaseUserFollow): com.example.ecosort.data.model.Result<String> {
+        return try {
+            val docRef = userFollowsCollection.add(follow).await()
+            android.util.Log.d("FirestoreService", "User followed with ID: ${docRef.id}")
+            com.example.ecosort.data.model.Result.Success(docRef.id)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error following user", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Unfollow a user in Firebase
+     */
+    suspend fun unfollowUser(followerUid: String, followingUid: String): com.example.ecosort.data.model.Result<Unit> {
+        return try {
+            val querySnapshot = userFollowsCollection
+                .whereEqualTo("followerId", followerUid)
+                .whereEqualTo("followingId", followingUid)
+                .get()
+                .await()
+            
+            querySnapshot.documents.forEach { it.reference.delete().await() }
+            android.util.Log.d("FirestoreService", "User unfollowed: $followerUid -> $followingUid")
+            com.example.ecosort.data.model.Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error unfollowing user", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Get users that a user is following from Firebase in real-time
+     */
+    fun getUserFollowing(userUid: String): Flow<List<FirebaseUserFollow>> = callbackFlow {
+        val subscription = userFollowsCollection
+            .whereEqualTo("followerId", userUid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to following", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+                
+                val following = snapshot?.documents?.mapNotNull { it.toObject<FirebaseUserFollow>() } ?: emptyList()
+                android.util.Log.d("FirestoreService", "User $userUid is following ${following.size} users")
+                trySend(following)
+            }
+        
+        awaitClose { subscription.remove() }
+    }
+    
+    /**
+     * Get users that follow a user from Firebase in real-time
+     */
+    fun getUserFollowers(userUid: String): Flow<List<FirebaseUserFollow>> = callbackFlow {
+        val subscription = userFollowsCollection
+            .whereEqualTo("followingId", userUid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to followers", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+                
+                val followers = snapshot?.documents?.mapNotNull { it.toObject<FirebaseUserFollow>() } ?: emptyList()
+                android.util.Log.d("FirestoreService", "User $userUid has ${followers.size} followers")
+                trySend(followers)
+            }
+        
+        awaitClose { subscription.remove() }
+    }
+    
+    /**
+     * Check if a user is following another user
+     */
+    suspend fun isFollowing(followerUid: String, followingUid: String): com.example.ecosort.data.model.Result<Boolean> {
+        return try {
+            val querySnapshot = userFollowsCollection
+                .whereEqualTo("followerId", followerUid)
+                .whereEqualTo("followingId", followingUid)
+                .get()
+                .await()
+            
+            val isFollowing = !querySnapshot.isEmpty
+            com.example.ecosort.data.model.Result.Success(isFollowing)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error checking if following", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+
 // ====================================================================
 
 }

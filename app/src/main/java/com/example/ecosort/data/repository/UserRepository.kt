@@ -1,6 +1,7 @@
 package com.example.ecosort.data.repository
 
 import com.example.ecosort.data.local.UserDao
+import com.example.ecosort.data.local.EcoSortDatabase
 import com.example.ecosort.data.model.User
 import com.example.ecosort.data.model.UserSession
 import com.example.ecosort.data.model.UserType
@@ -22,6 +23,7 @@ import android.content.Context
 @Singleton
 class UserRepository @Inject constructor(
     private val userDao: UserDao,
+    private val database: EcoSortDatabase,
     private val preferencesManager: UserPreferencesManager,
     private val securityManager: SecurityManager,
     private val firestoreService: FirestoreService,
@@ -41,8 +43,38 @@ class UserRepository @Inject constructor(
             val session = preferencesManager.userSession.first()
                 ?: return Result.Error(Exception("No active session"))
 
-            val user = userDao.getUserById(session.userId)
-                ?: return Result.Error(Exception("User not found"))
+            // Handle admin IDs (negative) vs regular user IDs (positive)
+            val user = if (session.userId < 0 || session.userType == UserType.ADMIN) {
+                // Admin account - convert negative session ID back to positive admin ID
+                val adminId = kotlin.math.abs(session.userId)
+                val adminDao = database.adminDao()
+                val admin = adminDao.getAdminById(adminId)
+                
+                if (admin != null) {
+                    // Convert Admin to User for uniform access
+                    User(
+                        id = session.userId,  // Keep negative ID for session consistency
+                        firebaseUid = admin.firebaseUid,
+                        username = admin.username,
+                        email = admin.email,
+                        passwordHash = admin.passwordHash,
+                        userType = UserType.ADMIN,
+                        profileImageUrl = admin.profileImageUrl,
+                        bio = admin.bio,
+                        location = admin.location,
+                        itemsRecycled = admin.itemsRecycled,
+                        totalPoints = admin.totalPoints,
+                        createdAt = admin.createdAt,
+                        lastActive = admin.lastLogin
+                    )
+                } else {
+                    return Result.Error(Exception("Admin not found"))
+                }
+            } else {
+                // Regular user account
+                userDao.getUserById(session.userId)
+                    ?: return Result.Error(Exception("User not found"))
+            }
 
             Result.Success(user)
         } catch (e: Exception) {
@@ -306,9 +338,45 @@ class UserRepository @Inject constructor(
             val currentSession = preferencesManager.userSession.first()
                 ?: return Result.Error(Exception("No active session"))
             
-            val users = userDao.searchUsersByUsername(query, currentSession.userId)
+            // Determine actual admin ID if current user is admin (negative session ID)
+            val currentAdminId = if (currentSession.userId < 0) kotlin.math.abs(currentSession.userId) else null
+            
+            // Search regular users (excluding current user if they're a regular user)
+            val users = userDao.searchUsersByUsername(query, currentSession.userId).toMutableList()
+            
+            // Also search admins and convert them to User objects
+            val adminDao = database.adminDao()
+            val admins = adminDao.getAllActiveAdmins()
+            val matchingAdmins = admins.filter { admin ->
+                // Match query AND exclude current admin if logged in as admin
+                admin.username.contains(query, ignoreCase = true) && 
+                admin.id != currentAdminId  // Exclude current admin by actual admin ID
+            }
+            
+            // Convert admins to User objects for uniform display
+            val adminUsers = matchingAdmins.map { admin ->
+                User(
+                    id = admin.id,  // Use positive admin ID for consistency
+                    firebaseUid = admin.firebaseUid,
+                    username = admin.username,
+                    email = admin.email,
+                    passwordHash = admin.passwordHash,
+                    userType = UserType.ADMIN,
+                    profileImageUrl = admin.profileImageUrl,
+                    bio = admin.bio,
+                    location = admin.location,
+                    itemsRecycled = admin.itemsRecycled,
+                    totalPoints = admin.totalPoints,
+                    createdAt = admin.createdAt,
+                    lastActive = admin.lastLogin
+                )
+            }
+            
+            users.addAll(adminUsers)
+            android.util.Log.d("UserRepository", "Search results: ${users.size} total (${users.size - adminUsers.size} users, ${adminUsers.size} admins)")
             Result.Success(users)
         } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "Search error", e)
             Result.Error(e)
         }
     }

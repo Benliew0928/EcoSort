@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    
+    <item
+        android:id="@+id/action_refresh"
+        android:title="Refresh"
+        android:icon="@drawable/ic_refresh"
+        app:showAsAction="ifRoom" />
+        
+    <item
+        android:id="@+id/action_add_sample"
+        android:title="Add Sample"
+        android:icon="@drawable/ic_add"
+        app:showAsAction="never" />
+        
+    <item
+        android:id="@+id/action_debug"
+        android:title="Debug DB"
+        android:icon="@drawable/ic_bug_report"
+        app:showAsAction="never" />
+        
+</menu>

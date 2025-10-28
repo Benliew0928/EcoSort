@@ -340,6 +340,9 @@ interface CommunityPostDao {
     @Query("SELECT * FROM community_posts WHERE id = :postId LIMIT 1")
     suspend fun getPostById(postId: Long): CommunityPost?
 
+    @Query("SELECT * FROM community_posts WHERE firebaseId = :firebaseId LIMIT 1")
+    suspend fun getPostByFirebaseId(firebaseId: String): CommunityPost?
+
     @Query("SELECT * FROM community_posts WHERE postType = :postType AND status = 'PUBLISHED' ORDER BY postedAt DESC")
     fun getPostsByType(postType: PostType): Flow<List<CommunityPost>>
 
@@ -594,7 +597,7 @@ interface BlockedUserDao {
         UserPoints::class,
         PointsTransaction::class
     ],
-    version = 23,
+    version = 24,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -650,7 +653,8 @@ abstract class EcoSortDatabase : RoomDatabase() {
                 MIGRATION_19_20,
                 MIGRATION_20_21,
                 MIGRATION_21_22,
-                MIGRATION_22_23
+                MIGRATION_22_23,
+                MIGRATION_23_24
             )
                     .allowMainThreadQueries() // Temporary for debugging
                     .fallbackToDestructiveMigration() // For development only
@@ -1192,6 +1196,20 @@ internal val MIGRATION_22_23 = object : androidx.room.migration.Migration(22, 23
             android.util.Log.d("Migration_22_23", "Added itemsRecycled and totalPoints columns to admins table successfully")
         } catch (e: Exception) {
             android.util.Log.e("Migration_22_23", "Migration failed: ${e.message}")
+            throw e
+        }
+    }
+}
+
+internal val MIGRATION_23_24 = object : androidx.room.migration.Migration(23, 24) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add firebaseUid column to admins table (critical for Firebase sync and social features)
+            database.execSQL("ALTER TABLE admins ADD COLUMN firebaseUid TEXT")
+            
+            android.util.Log.d("Migration_23_24", "Added firebaseUid column to admins table successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_23_24", "Migration failed: ${e.message}")
             throw e
         }
     }

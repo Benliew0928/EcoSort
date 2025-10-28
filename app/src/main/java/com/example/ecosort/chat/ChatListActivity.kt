@@ -9,9 +9,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ecosort.databinding.ActivityChatListBinding
 import com.example.ecosort.data.repository.ChatRepository
-import com.example.ecosort.utils.BottomNavigationHelper
 import com.example.ecosort.data.repository.UserRepository
 import com.example.ecosort.data.model.Result
+import com.example.ecosort.utils.BottomNavigationHelper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -40,8 +40,21 @@ class ChatListActivity : AppCompatActivity() {
             supportActionBar?.setDisplayHomeAsUpEnabled(true)
             supportActionBar?.title = "Messages"
             
+            // Add bottom navigation
+            BottomNavigationHelper.addBottomNavigationToActivity(this)
+            
+            // Ensure FAB appears above any overlays and raise it programmatically
+            binding.fabNewChat.post {
+                val raiseByDp = 160
+                val raiseByPx = (raiseByDp * resources.displayMetrics.density).toInt()
+                binding.fabNewChat.translationY = -raiseByPx.toFloat()
+                binding.fabNewChat.bringToFront()
+            }
+            
             // Set up FAB for new chat
+            android.util.Log.d("ChatListActivity", "Setting up FAB click listener")
             binding.fabNewChat.setOnClickListener {
+                android.util.Log.d("ChatListActivity", "FAB clicked!")
                 try {
                     startActivity(Intent(this, UserSearchActivity::class.java))
                 } catch (e: Exception) {
@@ -50,14 +63,16 @@ class ChatListActivity : AppCompatActivity() {
                 }
             }
             
+            // Debug FAB visibility
+            android.util.Log.d("ChatListActivity", "FAB visibility: ${binding.fabNewChat.visibility}")
+            android.util.Log.d("ChatListActivity", "FAB isShown: ${binding.fabNewChat.isShown}")
+            android.util.Log.d("ChatListActivity", "FAB alpha: ${binding.fabNewChat.alpha}")
+            
             // Setup RecyclerView
             setupRecyclerView(binding)
             
             // Load conversations
             loadConversations(binding)
-            
-            // Add bottom navigation
-            BottomNavigationHelper.addBottomNavigationToActivity(this)
             
             android.util.Log.d("ChatListActivity", "onCreate completed successfully")
         } catch (e: Exception) {

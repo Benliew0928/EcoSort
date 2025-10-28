@@ -39,18 +39,26 @@ class AdminRepository @Inject constructor(
                         return@withContext Result.Error(Exception("User is not an admin"))
                     }
                     
+                    // Get Firebase user data to extract Firebase UID
+                    val userResult = firebaseAuthService.getUserFromFirebase(username, context)
+                    val firebaseUser = if (userResult is com.example.ecosort.data.model.Result.Success) userResult.data else null
+                    val firebaseUid = firebaseUser?.firebaseUid
+                    
                     // Get or create local admin
                     val localAdmin = adminDao.getAdminByUsername(username)
                     val adminId = if (localAdmin != null) {
-                        // Update existing local admin
+                        // Update existing local admin with Firebase UID if missing
+                        if (localAdmin.firebaseUid.isNullOrEmpty() && firebaseUid != null) {
+                            adminDao.updateAdmin(localAdmin.copy(firebaseUid = firebaseUid))
+                            android.util.Log.d("AdminRepository", "Updated admin with Firebase UID: $firebaseUid")
+                        }
                         adminDao.updateLastLogin(localAdmin.id, System.currentTimeMillis())
                         localAdmin.id
                     } else {
-                        // Get user data from Firebase and create locally
-                        val userResult = firebaseAuthService.getUserFromFirebase(username, context)
-                        if (userResult is com.example.ecosort.data.model.Result.Success && userResult.data != null) {
-                            val firebaseUser = userResult.data
+                        // Create local admin from Firebase data
+                        if (firebaseUser != null) {
                             val admin = Admin(
+                                firebaseUid = firebaseUser.firebaseUid,
                                 username = firebaseUser.username,
                                 email = firebaseUser.email,
                                 passwordHash = firebaseUser.passwordHash,
@@ -60,6 +68,7 @@ class AdminRepository @Inject constructor(
                         } else {
                             // Fallback: create minimal admin
                             val fallbackAdmin = Admin(
+                                firebaseUid = null,
                                 username = username,
                                 email = "",
                                 passwordHash = "",
@@ -149,9 +158,25 @@ class AdminRepository @Inject constructor(
                     return@withContext Result.Error(Exception("Admin email already exists"))
                 }
 
-                // Create new admin
+                // Register admin with Firebase authentication FIRST to get Firebase UID
+                var firebaseUid: String? = null
+                try {
+                    val firebaseResult = firebaseAuthService.registerUser(username, email, password, com.example.ecosort.data.model.UserType.ADMIN, context)
+                    if (firebaseResult is com.example.ecosort.data.model.Result.Success) {
+                        firebaseUid = firebaseResult.data.firebaseUid
+                        android.util.Log.d("AdminRepository", "Admin registered with Firebase authentication: ${username}, UID: $firebaseUid")
+                    } else {
+                        android.util.Log.w("AdminRepository", "Failed to register admin with Firebase: ${(firebaseResult as com.example.ecosort.data.model.Result.Error).exception.message}")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("AdminRepository", "Failed to register admin with Firebase: ${e.message}")
+                    // Continue with null firebaseUid - admin will still work locally
+                }
+                
+                // Create new admin with Firebase UID
                 val passwordHash = SecurityManager.hashPassword(password)
                 val admin = Admin(
+                    firebaseUid = firebaseUid, // Store Firebase UID for cross-device sync
                     username = username,
                     email = email,
                     passwordHash = passwordHash,
@@ -160,19 +185,6 @@ class AdminRepository @Inject constructor(
 
                 val adminId = adminDao.insertAdmin(admin)
                 val createdAdmin = admin.copy(id = adminId)
-                
-                // Register admin with Firebase authentication (same as regular users)
-                try {
-                    val firebaseResult = firebaseAuthService.registerUser(username, email, password, com.example.ecosort.data.model.UserType.ADMIN, context)
-                    if (firebaseResult is com.example.ecosort.data.model.Result.Success) {
-                        android.util.Log.d("AdminRepository", "Admin registered with Firebase authentication: ${createdAdmin.username}")
-                    } else {
-                        android.util.Log.w("AdminRepository", "Failed to register admin with Firebase: ${(firebaseResult as com.example.ecosort.data.model.Result.Error).exception.message}")
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("AdminRepository", "Failed to register admin with Firebase: ${e.message}")
-                    // Don't fail admin creation if Firebase registration fails
-                }
                 
                 // Log admin creation
                 adminDao.logAdminAction(AdminAction(

@@ -80,6 +80,19 @@ class CreatePostActivity : AppCompatActivity() {
         
         // Add bottom navigation
         BottomNavigationHelper.addBottomNavigationToActivity(this)
+        
+        // Ensure content can scroll above bottom nav by adding extra bottom padding
+        binding.root.post {
+            val extraBottomDp = 120
+            val extraBottomPx = (extraBottomDp * resources.displayMetrics.density).toInt()
+            val content = findViewById<android.view.View>(R.id.contentContainer)
+            content?.setPadding(
+                content.paddingLeft,
+                content.paddingTop,
+                content.paddingRight,
+                content.paddingBottom + extraBottomPx
+            )
+        }
     }
 
     private fun setupToolbar() {

@@ -9,6 +9,7 @@ import androidx.room.PrimaryKey
 data class Admin(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val firebaseUid: String? = null, // Firebase Authentication UID (same as User model)
     val username: String,
     val email: String,
     val passwordHash: String,

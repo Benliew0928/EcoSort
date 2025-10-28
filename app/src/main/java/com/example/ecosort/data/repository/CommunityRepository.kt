@@ -106,8 +106,16 @@ class CommunityRepository @Inject constructor(
 
             // Sync to Firebase for real-time updates
             try {
-                firestoreService.addCommunityPost(localPost.toFirebaseModel())
-                android.util.Log.d("CommunityRepository", "Post synced to Firebase successfully")
+                val firebaseResult = firestoreService.addCommunityPost(localPost.toFirebaseModel())
+                if (firebaseResult.isSuccess) {
+                    val firebaseId = firebaseResult.getOrNull() ?: ""
+                    // Update local post with Firebase ID
+                    val updatedPost = localPost.copy(firebaseId = firebaseId)
+                    communityPostDao.updatePost(updatedPost)
+                    android.util.Log.d("CommunityRepository", "Post synced to Firebase successfully with ID: $firebaseId")
+                } else {
+                    android.util.Log.e("CommunityRepository", "Error syncing post to Firebase", firebaseResult.exceptionOrNull())
+                }
             } catch (e: Exception) {
                 android.util.Log.e("CommunityRepository", "Error syncing post to Firebase", e)
                 // Continue with local success even if Firebase fails
@@ -496,6 +504,55 @@ class CommunityRepository @Inject constructor(
             Result.Success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("CommunityRepository", "Error admin deleting comment", e)
+            Result.Error(e)
+        }
+    }
+
+    /**
+     * Sync community posts from Firebase to local database
+     * This enables cross-device synchronization
+     */
+    suspend fun syncCommunityPostsFromFirebase(): Result<Int> {
+        return try {
+            android.util.Log.d("CommunityRepository", "Starting Firebase sync for community posts...")
+            
+            // Get all posts from Firebase
+            val firebasePosts = firestoreService.getAllCommunityPosts().first()
+            android.util.Log.d("CommunityRepository", "Retrieved ${firebasePosts.size} posts from Firebase")
+            
+            var syncedCount = 0
+            
+            for (firebasePost in firebasePosts) {
+                try {
+                    // Convert Firebase post to local model
+                    val localPost = firebasePost.toLocalModel()
+                    
+                    // Check if post already exists locally (by Firebase ID)
+                    val existingPost = communityPostDao.getPostByFirebaseId(firebasePost.id)
+                    
+                    if (existingPost == null) {
+                        // Insert new post
+                        communityPostDao.insertPost(localPost)
+                        syncedCount++
+                        android.util.Log.d("CommunityRepository", "Synced new post: ${localPost.title}")
+                    } else {
+                        // Update existing post if Firebase version is newer
+                        if (localPost.postedAt > existingPost.postedAt) {
+                            val updatedPost = localPost.copy(id = existingPost.id) // Keep local ID
+                            communityPostDao.updatePost(updatedPost)
+                            syncedCount++
+                            android.util.Log.d("CommunityRepository", "Updated existing post: ${localPost.title}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("CommunityRepository", "Error syncing individual post: ${firebasePost.title}", e)
+                }
+            }
+            
+            android.util.Log.d("CommunityRepository", "Firebase sync completed. Synced $syncedCount posts")
+            Result.Success(syncedCount)
+        } catch (e: Exception) {
+            android.util.Log.e("CommunityRepository", "Error syncing community posts from Firebase", e)
             Result.Error(e)
         }
     }

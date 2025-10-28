@@ -6,6 +6,9 @@ import com.example.ecosort.data.model.User
 import com.example.ecosort.data.model.UserFollow
 import com.example.ecosort.data.model.UserFriend
 import com.example.ecosort.data.model.FriendStatus
+import com.example.ecosort.data.firebase.FirestoreService
+import com.example.ecosort.data.firebase.FirebaseUserFollow
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -13,7 +16,8 @@ import javax.inject.Singleton
 
 @Singleton
 class SocialRepository @Inject constructor(
-    private val database: EcoSortDatabase
+    private val database: EcoSortDatabase,
+    private val firestoreService: FirestoreService
 ) {
     private val userFollowDao = database.userFollowDao()
     private val userFriendDao = database.userFriendDao()
@@ -23,6 +27,8 @@ class SocialRepository @Inject constructor(
 
     suspend fun followUser(followerId: Long, followingId: Long): Result<Unit> {
         return try {
+            android.util.Log.d("SocialRepository", "followUser: followerId=$followerId, followingId=$followingId")
+            
             // Check if already following
             val existingFollow = userFollowDao.getFollow(followerId, followingId)
             if (existingFollow != null) {
@@ -34,7 +40,15 @@ class SocialRepository @Inject constructor(
                 return Result.Error(Exception("Cannot follow yourself"))
             }
 
-            // Create follow relationship
+            // Get follower and following users
+            val follower = userDao.getUserById(followerId)
+            val following = userDao.getUserById(followingId)
+            
+            if (follower == null || following == null) {
+                return Result.Error(Exception("User not found"))
+            }
+
+            // Create follow relationship locally
             val follow = UserFollow(
                 followerId = followerId,
                 followingId = followingId,
@@ -42,17 +56,75 @@ class SocialRepository @Inject constructor(
             )
             
             userFollowDao.insertFollow(follow)
+            android.util.Log.d("SocialRepository", "Follow relationship created locally: ${follower.username} → ${following.username}")
+
+            // Sync to Firebase
+            try {
+                val followerFirebaseUid = follower.firebaseUid
+                val followingFirebaseUid = following.firebaseUid
+                
+                if (!followerFirebaseUid.isNullOrEmpty() && !followingFirebaseUid.isNullOrEmpty()) {
+                    val firebaseFollow = FirebaseUserFollow(
+                        id = "", // Auto-generated
+                        followerId = followerFirebaseUid,
+                        followingId = followingFirebaseUid,
+                        followedAt = Timestamp.now()
+                    )
+                    
+                    val firebaseResult = firestoreService.followUser(firebaseFollow)
+                    when (firebaseResult) {
+                        is Result.Success -> {
+                            android.util.Log.d("SocialRepository", "Follow synced to Firebase: ${firebaseResult.data}")
+                        }
+                        is Result.Error -> {
+                            android.util.Log.e("SocialRepository", "Failed to sync follow to Firebase", firebaseResult.exception)
+                        }
+                        else -> {}
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SocialRepository", "Error syncing follow to Firebase", e)
+                // Continue - local follow was successful
+            }
+
             Result.Success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("SocialRepository", "Error following user", e)
             Result.Error(e)
         }
     }
 
     suspend fun unfollowUser(followerId: Long, followingId: Long): Result<Unit> {
         return try {
+            android.util.Log.d("SocialRepository", "unfollowUser: followerId=$followerId, followingId=$followingId")
+            
+            // Get follower and following users
+            val follower = userDao.getUserById(followerId)
+            val following = userDao.getUserById(followingId)
+            
+            // Remove follow relationship locally
             userFollowDao.removeFollow(followerId, followingId)
+            android.util.Log.d("SocialRepository", "Follow relationship removed locally")
+
+            // Sync to Firebase
+            try {
+                if (follower != null && following != null) {
+                    val followerFirebaseUid = follower.firebaseUid
+                    val followingFirebaseUid = following.firebaseUid
+                    
+                    if (!followerFirebaseUid.isNullOrEmpty() && !followingFirebaseUid.isNullOrEmpty()) {
+                        firestoreService.unfollowUser(followerFirebaseUid, followingFirebaseUid)
+                        android.util.Log.d("SocialRepository", "Unfollow synced to Firebase")
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SocialRepository", "Error syncing unfollow to Firebase", e)
+                // Continue - local unfollow was successful
+            }
+
             Result.Success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("SocialRepository", "Error unfollowing user", e)
             Result.Error(e)
         }
     }
@@ -199,6 +271,130 @@ class SocialRepository @Inject constructor(
             }
             Result.Success(users)
         } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    // ==================== FIREBASE SYNC ====================
+
+    suspend fun syncFollowersFromFirebase(userId: Long): Result<Int> {
+        return try {
+            android.util.Log.d("SocialRepository", "Syncing followers from Firebase for user: $userId")
+            
+            // Get user's Firebase UID
+            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            val userFirebaseUid = user.firebaseUid
+            
+            if (userFirebaseUid.isNullOrEmpty()) {
+                android.util.Log.w("SocialRepository", "User has no Firebase UID, skipping sync")
+                return Result.Success(0)
+            }
+
+            // Get followers from Firebase
+            val firebaseFollowersFlow = firestoreService.getUserFollowers(userFirebaseUid)
+            val firebaseFollowers = firebaseFollowersFlow.first()
+            
+            android.util.Log.d("SocialRepository", "Retrieved ${firebaseFollowers.size} followers from Firebase")
+            
+            var syncedCount = 0
+            val allUsers = userDao.getAllUsers()
+            
+            for (firebaseFollow in firebaseFollowers) {
+                try {
+                    // Find follower and following by Firebase UID
+                    val follower = allUsers.find { it.firebaseUid == firebaseFollow.followerId }
+                    val following = allUsers.find { it.firebaseUid == firebaseFollow.followingId }
+                    
+                    if (follower == null || following == null) {
+                        android.util.Log.w("SocialRepository", "User not found locally for Firebase follow: ${firebaseFollow.id}")
+                        continue
+                    }
+                    
+                    // Check if follow already exists locally
+                    val existingFollow = userFollowDao.getFollow(follower.id, following.id)
+                    
+                    if (existingFollow == null) {
+                        // Insert new follow
+                        val localFollow = UserFollow(
+                            followerId = follower.id,
+                            followingId = following.id,
+                            followedAt = firebaseFollow.followedAt?.toDate()?.time ?: System.currentTimeMillis()
+                        )
+                        userFollowDao.insertFollow(localFollow)
+                        syncedCount++
+                        android.util.Log.d("SocialRepository", "Synced new follow: ${follower.username} → ${following.username}")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("SocialRepository", "Error syncing individual follow: ${firebaseFollow.id}", e)
+                }
+            }
+            
+            android.util.Log.d("SocialRepository", "Followers sync completed. Synced $syncedCount follows")
+            Result.Success(syncedCount)
+            
+        } catch (e: Exception) {
+            android.util.Log.e("SocialRepository", "Error syncing followers from Firebase", e)
+            Result.Error(e)
+        }
+    }
+
+    suspend fun syncFollowingFromFirebase(userId: Long): Result<Int> {
+        return try {
+            android.util.Log.d("SocialRepository", "Syncing following from Firebase for user: $userId")
+            
+            // Get user's Firebase UID
+            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            val userFirebaseUid = user.firebaseUid
+            
+            if (userFirebaseUid.isNullOrEmpty()) {
+                android.util.Log.w("SocialRepository", "User has no Firebase UID, skipping sync")
+                return Result.Success(0)
+            }
+
+            // Get following from Firebase
+            val firebaseFollowingFlow = firestoreService.getUserFollowing(userFirebaseUid)
+            val firebaseFollowing = firebaseFollowingFlow.first()
+            
+            android.util.Log.d("SocialRepository", "Retrieved ${firebaseFollowing.size} following from Firebase")
+            
+            var syncedCount = 0
+            val allUsers = userDao.getAllUsers()
+            
+            for (firebaseFollow in firebaseFollowing) {
+                try {
+                    // Find follower and following by Firebase UID
+                    val follower = allUsers.find { it.firebaseUid == firebaseFollow.followerId }
+                    val following = allUsers.find { it.firebaseUid == firebaseFollow.followingId }
+                    
+                    if (follower == null || following == null) {
+                        android.util.Log.w("SocialRepository", "User not found locally for Firebase follow: ${firebaseFollow.id}")
+                        continue
+                    }
+                    
+                    // Check if follow already exists locally
+                    val existingFollow = userFollowDao.getFollow(follower.id, following.id)
+                    
+                    if (existingFollow == null) {
+                        // Insert new follow
+                        val localFollow = UserFollow(
+                            followerId = follower.id,
+                            followingId = following.id,
+                            followedAt = firebaseFollow.followedAt?.toDate()?.time ?: System.currentTimeMillis()
+                        )
+                        userFollowDao.insertFollow(localFollow)
+                        syncedCount++
+                        android.util.Log.d("SocialRepository", "Synced new follow: ${follower.username} → ${following.username}")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("SocialRepository", "Error syncing individual follow: ${firebaseFollow.id}", e)
+                }
+            }
+            
+            android.util.Log.d("SocialRepository", "Following sync completed. Synced $syncedCount follows")
+            Result.Success(syncedCount)
+            
+        } catch (e: Exception) {
+            android.util.Log.e("SocialRepository", "Error syncing following from Firebase", e)
             Result.Error(e)
         }
     }

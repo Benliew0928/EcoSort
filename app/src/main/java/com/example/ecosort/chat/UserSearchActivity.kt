@@ -59,7 +59,6 @@ class UserSearchActivity : AppCompatActivity() {
         supportActionBar?.title = "New Chat"
         
         // Set up search functionality
-        binding.editTextSearch.hint = "Search for users by username..."
         
             // Show empty state initially
             binding.textViewEmpty.text = "Search for users to start a conversation!"
@@ -84,7 +83,7 @@ class UserSearchActivity : AppCompatActivity() {
             
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val query = s?.toString()?.trim() ?: ""
-                if (query.length >= 2) {
+                if (query.length >= 1) {  // Changed from 2 to 1 for better UX
                     searchUsers(query)
                 } else if (query.isEmpty()) {
                     clearSearchResults()

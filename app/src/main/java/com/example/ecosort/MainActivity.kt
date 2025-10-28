@@ -67,6 +67,15 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
     @Inject
     lateinit var pointsRepository: com.example.ecosort.data.repository.PointsRepository
 
+    @Inject
+    lateinit var friendRepository: com.example.ecosort.data.repository.FriendRepository
+
+    @Inject
+    lateinit var chatRepository: com.example.ecosort.data.repository.ChatRepository
+
+    @Inject
+    lateinit var socialRepository: com.example.ecosort.data.repository.SocialRepository
+
     private var currentUserType: UserType = UserType.USER
     
     private val fontSizeChangeReceiver = object : BroadcastReceiver() {
@@ -257,47 +266,117 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
         }
 
         // Load community posts from local database (with updated profile pictures)
-        lifecycleScope.launch {
+        // Run ALL Firebase syncs in background to avoid blocking UI startup
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
-                // Wait a bit for database to initialize
-                kotlinx.coroutines.delay(1000)
+                android.util.Log.d("MainActivity", "Starting background Firebase sync (non-blocking)...")
+                
+                // Small delay to let UI render first
+                kotlinx.coroutines.delay(500)
 
-                // Sync user profiles from Firebase to local database
+                // Sync users
                 try {
                     val syncResult = userRepository.syncAllUsersFromFirebase()
                     if (syncResult is com.example.ecosort.data.model.Result.Success) {
-                        android.util.Log.d("MainActivity", "Successfully synced ${syncResult.data} users from Firebase")
-                    } else {
-                        android.util.Log.w("MainActivity", "Failed to sync users from Firebase: ${(syncResult as com.example.ecosort.data.model.Result.Error).exception.message}")
+                        android.util.Log.d("MainActivity", "Synced ${syncResult.data} users")
                     }
                 } catch (e: Exception) {
-                    android.util.Log.w("MainActivity", "Error syncing users from Firebase: ${e.message}")
+                    android.util.Log.w("MainActivity", "User sync error: ${e.message}")
                 }
-
-                // Sync admin profiles from Firebase to local database
+                
+                // Sync admins
                 try {
                     val adminSyncResult = adminRepository.syncAllAdminsFromFirebase()
                     if (adminSyncResult is com.example.ecosort.data.model.Result.Success) {
-                        android.util.Log.d("MainActivity", "Successfully synced ${adminSyncResult.data} admins from Firebase")
-                    } else {
-                        android.util.Log.w("MainActivity", "Failed to sync admins from Firebase: ${(adminSyncResult as com.example.ecosort.data.model.Result.Error).exception.message}")
+                        android.util.Log.d("MainActivity", "Synced ${adminSyncResult.data} admins")
                     }
                 } catch (e: Exception) {
-                    android.util.Log.w("MainActivity", "Error syncing admins from Firebase: ${e.message}")
+                    android.util.Log.w("MainActivity", "Admin sync error: ${e.message}")
+                }
+                
+                // Sync community posts
+                try {
+                    val communitySyncResult = communityRepository.syncCommunityPostsFromFirebase()
+                    if (communitySyncResult is com.example.ecosort.data.model.Result.Success) {
+                        android.util.Log.d("MainActivity", "Synced ${communitySyncResult.data} posts")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("MainActivity", "Community sync error: ${e.message}")
                 }
 
-                // Update existing posts with profile pictures (one-time fix for old posts)
+                // Get current user ID for social syncs
+                try {
+                    val session = userPreferencesManager.userSession.first()
+                    val currentUserId = session?.userId
+                    
+                    if (currentUserId != null) {
+                        // Sync friend requests
+                        try {
+                            val friendRequestsResult = friendRepository.syncFriendRequestsFromFirebase(currentUserId)
+                            if (friendRequestsResult is com.example.ecosort.data.model.Result.Success) {
+                                android.util.Log.d("MainActivity", "Synced ${friendRequestsResult.data} friend requests")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("MainActivity", "Friend requests sync error: ${e.message}")
+                        }
+
+                        // Sync friendships
+                        try {
+                            val friendshipsResult = friendRepository.syncFriendshipsFromFirebase(currentUserId)
+                            if (friendshipsResult is com.example.ecosort.data.model.Result.Success) {
+                                android.util.Log.d("MainActivity", "Synced ${friendshipsResult.data} friendships")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("MainActivity", "Friendships sync error: ${e.message}")
+                        }
+
+                        // Sync conversations
+                        try {
+                            val conversationsResult = chatRepository.syncConversationsFromFirebase(currentUserId)
+                            if (conversationsResult is com.example.ecosort.data.model.Result.Success) {
+                                android.util.Log.d("MainActivity", "Synced ${conversationsResult.data} conversations")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("MainActivity", "Conversations sync error: ${e.message}")
+                        }
+
+                        // Sync followers
+                        try {
+                            val followersResult = socialRepository.syncFollowersFromFirebase(currentUserId)
+                            if (followersResult is com.example.ecosort.data.model.Result.Success) {
+                                android.util.Log.d("MainActivity", "Synced ${followersResult.data} followers")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("MainActivity", "Followers sync error: ${e.message}")
+                        }
+
+                        // Sync following
+                        try {
+                            val followingResult = socialRepository.syncFollowingFromFirebase(currentUserId)
+                            if (followingResult is com.example.ecosort.data.model.Result.Success) {
+                                android.util.Log.d("MainActivity", "Synced ${followingResult.data} following")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("MainActivity", "Following sync error: ${e.message}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("MainActivity", "Social sync error: ${e.message}")
+                }
+                
+                // Profile picture update can run after a delay
+                kotlinx.coroutines.delay(2000)
                 try {
                     communityRepository.updateExistingPostsWithProfilePictures()
-                    android.util.Log.d("MainActivity", "Updated existing posts with profile pictures")
+                    android.util.Log.d("MainActivity", "Updated posts with profile pictures")
                 } catch (e: Exception) {
-                    android.util.Log.w("MainActivity", "Failed to update existing posts with profile pictures: ${e.message}")
+                    android.util.Log.w("MainActivity", "Profile pic update error: ${e.message}")
                 }
 
                 // Load following posts from local database (which has updated profile pictures)
                 val followingPostsFlow = communityRepository.getFollowingPosts()
                 followingPostsFlow.collect { followingPosts ->
-                    withContext(Dispatchers.Main) {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                         // Check if activity is still valid before rendering
                         if (!isFinishing && !isDestroyed) {
                             renderCommunityPostsFromLocal(followingPosts, featuredContainer)
@@ -306,7 +385,7 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
                 }
             } catch (e: Exception) {
                 // If database fails, show empty state
-                withContext(Dispatchers.Main) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     // Check if activity is still valid before rendering
                     if (!isFinishing && !isDestroyed) {
                         renderCommunityPostsFromLocal(emptyList(), featuredContainer)

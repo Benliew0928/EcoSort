@@ -7,6 +7,7 @@
 
     <!-- Main Content -->
     <LinearLayout
+        android:id="@+id/content_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -58,6 +59,8 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:padding="16dp"
+            android:paddingBottom="80dp"
+            android:clipToPadding="false"
             android:visibility="gone" />
 
         <!-- No Friends Message -->
@@ -76,15 +79,26 @@
 
     </LinearLayout>
 
+    <!-- Bottom Navigation Bar -->
+    <include
+        android:id="@+id/bottomNavBar"
+        layout="@layout/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom" />
+
     <!-- Floating Action Button -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddFriend"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:src="@drawable/ic_add"
+        android:elevation="12dp"
         app:backgroundTint="@color/primary_green"
-        app:tint="@color/white" />
+        app:tint="@color/white"
+        app:layout_anchor="@id/content_container"
+        app:layout_anchorGravity="bottom|end"
+        app:layout_dodgeInsetEdges="bottom" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

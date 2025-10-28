@@ -17,10 +17,12 @@ import com.example.ecosort.utils.ResponsiveUtils
 import com.example.ecosort.utils.setResponsiveLayoutManager
 import com.example.ecosort.utils.BottomNavigationHelper
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -51,12 +53,48 @@ class CommunityFeedActivity : AppCompatActivity() {
 
         setupToolbar()
         setupRecyclerView()
+        
+        // Add bottom navigation BEFORE setting up click listeners
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
+        
+        // Raise FAB programmatically to ensure visibility above overlays
+        binding.fabAddPost.post {
+            val raiseByDp = 160
+            val raiseByPx = (raiseByDp * resources.displayMetrics.density).toInt()
+            binding.fabAddPost.translationY = -raiseByPx.toFloat()
+            binding.fabAddPost.bringToFront()
+            binding.fabAddPost.visibility = View.VISIBLE
+            binding.fabAddPost.alpha = 1.0f
+        }
+        
         setupClickListeners()
         loadCurrentUser()
-        loadPosts(null) // Load all posts initially
         
-        // Add bottom navigation
-        BottomNavigationHelper.addBottomNavigationToActivity(this)
+        // Load local posts IMMEDIATELY for fast UI response
+        loadPosts(null)
+        
+        // Sync from Firebase in background (non-blocking)
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                android.util.Log.d("CommunityFeedActivity", "Background sync from Firebase starting...")
+                val syncResult = communityRepository.syncCommunityPostsFromFirebase()
+                
+                when (syncResult) {
+                    is com.example.ecosort.data.model.Result.Success -> {
+                        android.util.Log.d("CommunityFeedActivity", "Background sync completed: ${syncResult.data} posts")
+                        // Posts will auto-update via Flow/LiveData - no need to manually reload
+                    }
+                    is com.example.ecosort.data.model.Result.Error -> {
+                        android.util.Log.w("CommunityFeedActivity", "Background sync failed: ${syncResult.exception.message}")
+                    }
+                    is com.example.ecosort.data.model.Result.Loading -> {
+                        // Loading state - ignore
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("CommunityFeedActivity", "Background sync error: ${e.message}")
+            }
+        }
         
         android.util.Log.d("CommunityFeedActivity", "=== ACTIVITY SETUP COMPLETE ===")
     }
@@ -67,6 +105,29 @@ class CommunityFeedActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener {
             onBackPressed()
+        }
+        
+        // Add refresh button to toolbar
+        binding.toolbar.inflateMenu(R.menu.community_feed_menu)
+        binding.toolbar.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_refresh -> {
+                    android.util.Log.d("CommunityFeedActivity", "Manual refresh triggered")
+                    loadPosts(null)
+                    true
+                }
+                R.id.action_add_sample -> {
+                    android.util.Log.d("CommunityFeedActivity", "Adding sample posts manually")
+                    addSamplePosts()
+                    true
+                }
+                R.id.action_debug -> {
+                    android.util.Log.d("CommunityFeedActivity", "Debug database state")
+                    debugDatabaseState()
+                    true
+                }
+                else -> false
+            }
         }
     }
 
@@ -81,19 +142,32 @@ class CommunityFeedActivity : AppCompatActivity() {
             onAuthorClick = { authorId -> openUserProfile(authorId) }
         )
         
-        // Use responsive layout manager
-        binding.rvPosts.setResponsiveLayoutManager(
-            context = this,
-            baseColumns = 1,
-            useStaggered = false
-        )
+        // Use LinearLayoutManager for better compatibility
+        binding.rvPosts.layoutManager = LinearLayoutManager(this)
         binding.rvPosts.adapter = adapter
+        
+        // Ensure RecyclerView is visible and properly configured
+        binding.rvPosts.visibility = View.VISIBLE
+        binding.rvPosts.setHasFixedSize(false)
+        
+        android.util.Log.d("CommunityFeedActivity", "RecyclerView setup complete")
     }
 
     private fun setupClickListeners() {
+        android.util.Log.d("CommunityFeedActivity", "Setting up FAB click listener")
         binding.fabAddPost.setOnClickListener {
+            android.util.Log.d("CommunityFeedActivity", "FAB clicked!")
             startActivityForResult(Intent(this, CreatePostActivity::class.java), REQUEST_CODE_CREATE_POST)
         }
+        
+        // Debug FAB visibility
+        android.util.Log.d("CommunityFeedActivity", "FAB visibility: ${binding.fabAddPost.visibility}")
+        android.util.Log.d("CommunityFeedActivity", "FAB isShown: ${binding.fabAddPost.isShown}")
+        android.util.Log.d("CommunityFeedActivity", "FAB alpha: ${binding.fabAddPost.alpha}")
+        
+        // Ensure FAB is visible
+        binding.fabAddPost.visibility = View.VISIBLE
+        binding.fabAddPost.alpha = 1.0f
 
         binding.btnFilterAll.setOnClickListener { 
             android.util.Log.d("CommunityFeedActivity", "All filter clicked")
@@ -103,22 +177,16 @@ class CommunityFeedActivity : AppCompatActivity() {
             android.util.Log.d("CommunityFeedActivity", "Tips filter clicked")
             loadPosts(PostType.TIP) 
         }
-        binding.btnFilterAchievements.setOnClickListener { 
-            android.util.Log.d("CommunityFeedActivity", "Achievements filter clicked")
-            loadPosts(PostType.ACHIEVEMENT) 
-        }
         binding.btnFilterQuestions.setOnClickListener { 
             android.util.Log.d("CommunityFeedActivity", "Questions filter clicked")
             loadPosts(PostType.QUESTION) 
         }
-        
-        // Add long press on toolbar to force refresh
-        binding.toolbar.setOnLongClickListener {
-            android.util.Log.d("CommunityFeedActivity", "Toolbar long pressed - forcing refresh")
-            loadPosts(null)
-            Toast.makeText(this, "Refreshing posts...", Toast.LENGTH_SHORT).show()
-            true
+        binding.btnFilterEvents.setOnClickListener { 
+            android.util.Log.d("CommunityFeedActivity", "Events filter clicked")
+            loadPosts(PostType.EVENT) 
         }
+        
+        // Manual sync removed; automatic sync happens on start and on resume
         
         // Add double tap on toolbar to add sample data
         var lastTapTime = 0L
@@ -158,7 +226,6 @@ class CommunityFeedActivity : AppCompatActivity() {
     private fun loadPosts(postType: PostType?, tagFilter: String? = null) {
         lifecycleScope.launch {
             android.util.Log.d("CommunityFeedActivity", "Starting to load posts - postType: $postType, tagFilter: $tagFilter")
-            // No progress bar in this layout
             try {
                 val postsFlow = when {
                     tagFilter != null -> {
@@ -185,7 +252,11 @@ class CommunityFeedActivity : AppCompatActivity() {
                     
                     // Submit posts directly - like status will be updated when user interacts
                     android.util.Log.d("CommunityFeedActivity", "Submitting ${posts.size} posts to adapter")
-                    adapter.submitList(posts)
+                    adapter.submitList(posts) {
+                        android.util.Log.d("CommunityFeedActivity", "Adapter list updated with ${posts.size} posts")
+                        // Ensure RecyclerView is visible after data is loaded
+                        binding.rvPosts.visibility = View.VISIBLE
+                    }
                     binding.llEmptyState.visibility = if (posts.isEmpty()) View.VISIBLE else View.GONE
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -359,7 +430,7 @@ class CommunityFeedActivity : AppCompatActivity() {
                 
                 // Add each post to the database
                 for (post in samplePosts) {
-                    communityRepository.addCommunityPost(
+                    val result = communityRepository.addCommunityPost(
                         title = post.title,
                         content = post.content,
                         postType = post.postType,
@@ -369,15 +440,48 @@ class CommunityFeedActivity : AppCompatActivity() {
                         location = post.location,
                         tags = post.tags
                     )
-                    android.util.Log.d("CommunityFeedActivity", "Added sample post: ${post.title}")
+                    android.util.Log.d("CommunityFeedActivity", "Added sample post: ${post.title}, result: $result")
                 }
                 
-                Toast.makeText(this@CommunityFeedActivity, "Sample posts added! Refresh to see them.", Toast.LENGTH_LONG).show()
+                // Refresh the feed after adding sample posts
+                loadPosts(null)
+                
+                Toast.makeText(this@CommunityFeedActivity, "Sample posts added successfully!", Toast.LENGTH_SHORT).show()
                 android.util.Log.d("CommunityFeedActivity", "Sample posts added successfully")
                 
             } catch (e: Exception) {
                 android.util.Log.e("CommunityFeedActivity", "Error adding sample posts", e)
                 Toast.makeText(this@CommunityFeedActivity, "Error adding sample posts: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    private fun debugDatabaseState() {
+        lifecycleScope.launch {
+            try {
+                android.util.Log.d("CommunityFeedActivity", "=== DATABASE DEBUG ===")
+                
+                // Check total post count
+                val allPosts = communityRepository.getAllCommunityPosts().first()
+                android.util.Log.d("CommunityFeedActivity", "Total posts in database: ${allPosts.size}")
+                
+                // Log each post
+                allPosts.forEachIndexed { index, post ->
+                    android.util.Log.d("CommunityFeedActivity", "Post $index: ID=${post.id}, Title='${post.title}', Author='${post.authorName}', Type=${post.postType}, PostedAt=${post.postedAt}")
+                }
+                
+                // Check if adapter has data
+                android.util.Log.d("CommunityFeedActivity", "Adapter item count: ${adapter?.itemCount ?: 0}")
+                
+                // Check RecyclerView state
+                android.util.Log.d("CommunityFeedActivity", "RecyclerView visibility: ${binding.rvPosts.visibility}")
+                android.util.Log.d("CommunityFeedActivity", "RecyclerView adapter: ${binding.rvPosts.adapter}")
+                
+                Toast.makeText(this@CommunityFeedActivity, "Database has ${allPosts.size} posts. Check logs for details.", Toast.LENGTH_LONG).show()
+                
+            } catch (e: Exception) {
+                android.util.Log.e("CommunityFeedActivity", "Error debugging database", e)
+                Toast.makeText(this@CommunityFeedActivity, "Debug error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -390,17 +494,19 @@ class CommunityFeedActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Refresh posts when activity becomes visible
-        android.util.Log.d("CommunityFeedActivity", "Activity resumed, refreshing posts...")
+        android.util.Log.d("CommunityFeedActivity", "Activity resumed, quick refresh...")
         
-        // Force refresh with a small delay to ensure UI is ready
-        binding.root.post {
-            if (currentTagFilter != null) {
-                loadPosts(null, currentTagFilter)
-            } else {
-                loadPosts(null) // Load all posts
+        // Quick background sync - don't block UI
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                android.util.Log.d("CommunityFeedActivity", "Background sync on resume...")
+                communityRepository.syncCommunityPostsFromFirebase()
+            } catch (e: Exception) {
+                android.util.Log.w("CommunityFeedActivity", "Resume sync error: ${e.message}")
             }
         }
+        
+        // Posts will automatically update via Flow - no manual reload needed
     }
 
     override fun onBackPressed() {

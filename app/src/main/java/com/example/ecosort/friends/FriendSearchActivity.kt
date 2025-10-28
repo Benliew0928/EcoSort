@@ -103,7 +103,7 @@ class FriendSearchActivity : AppCompatActivity() {
 
             override fun afterTextChanged(s: Editable?) {
                 val query = s.toString().trim()
-                if (query.length >= 2) {
+                if (query.length >= 1) {  // Changed from 2 to 1 for better UX
                     searchUsers(query)
                 } else {
                     searchAdapter.submitList(emptyList())

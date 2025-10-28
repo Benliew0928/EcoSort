@@ -3,23 +3,171 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Users collection rules
     match /users/{userId} {
+      // Allow read access to ALL users (needed for username-to-email lookup during login and user search)
+      allow read: if true;
+      
+      // Allow create for new authenticated users OR during registration (before auth completes)
+      allow create: if true;
+      
+      // Allow update only for the authenticated user's own document
+      allow update: if request.auth != null 
+        && request.auth.uid == userId;
+      
+      // Allow delete only for the user themselves
+      allow delete: if request.auth != null 
+        && request.auth.uid == userId;
+    }
+    
+    // Community posts collection rules
+    match /community_posts/{postId} {
+      // Allow read access to all authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow create/update for authenticated users
+      allow create, update: if request.auth != null;
+      
+      // Allow delete only for the post author
+      allow delete: if request.auth != null 
+        && request.auth.uid == resource.data.authorId;
+    }
+    
+    // Community comments collection rules
+    match /community_comments/{commentId} {
+      // Allow read access to all authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow create/update for authenticated users
+      allow create, update: if request.auth != null;
+      
+      // Allow delete only for the comment author
+      allow delete: if request.auth != null 
+        && request.auth.uid == resource.data.authorId;
+    }
+    
+    // Community likes collection rules
+    match /community_likes/{likeId} {
+      // Allow read access to all authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow create/update for authenticated users
+      allow create, update: if request.auth != null;
+      
+      // Allow delete only for the user who created the like
+      allow delete: if request.auth != null 
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // Recycled items collection rules
+    match /recycled_items/{itemId} {
+      // Allow read/write access only for the item owner
+      allow read, write: if request.auth != null 
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // Points collections rules
+    match /user_points/{userId} {
+      // Allow read/write access only for the user's own points
+      allow read, write: if request.auth != null 
+        && request.auth.uid == userId;
+    }
+    
+    match /points_transactions/{transactionId} {
+      // Allow read/write access only for the transaction owner
+      allow read, write: if request.auth != null 
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // Recycle bins collection rules (public read, admin write)
+    match /recycleBins/{binId} {
+      // Allow read access to all authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow write access to all authenticated users (for now)
+      allow write: if request.auth != null;
+    }
+    
+    // ==================== CHAT COLLECTIONS ====================
+    
+    // Chat messages collection rules
+    match /chat_messages/{messageId} {
+      // Allow read access to authenticated users who are part of the conversation
+      allow read: if request.auth != null;
+      
+      // Allow create for authenticated users
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.senderId;
+      
+      // Allow update for marking as read
+      allow update: if request.auth != null;
+      
+      // Allow delete only for the message sender
+      allow delete: if request.auth != null 
+        && request.auth.uid == resource.data.senderId;
+    }
+    
+    // Conversations collection rules
+    match /conversations/{conversationId} {
+      // Allow read access to authenticated users who are participants
+      allow read: if request.auth != null;
+      
+      // Allow create/update for participants
+      allow create, update: if request.auth != null;
+      
+      // Allow delete for participants
+      allow delete: if request.auth != null;
+    }
+    
+    // ==================== FRIEND COLLECTIONS ====================
+    
+    // Friend requests collection rules
+    match /friend_requests/{requestId} {
       // Allow read access to authenticated users
       allow read: if request.auth != null;
       
-      // Allow write access only for the authenticated user's own document
-      // and ensure username uniqueness
+      // Allow create for authenticated users
       allow create: if request.auth != null 
-        && request.auth.uid == userId
-        && !exists(/databases/$(database)/documents/users)
-        || !exists(/databases/$(database)/documents/users) 
-        || !exists(/databases/$(database)/documents/users, where('username', '==', request.resource.data.username));
+        && request.auth.uid == request.resource.data.senderId;
       
+      // Allow update for accepting/declining requests
       allow update: if request.auth != null 
-        && request.auth.uid == userId
-        && resource.data.username == request.resource.data.username;
+        && (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
       
+      // Allow delete for sender or receiver
       allow delete: if request.auth != null 
-        && request.auth.uid == userId;
+        && (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
+    }
+    
+    // Friendships collection rules
+    match /friendships/{friendshipId} {
+      // Allow read access to authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow create for authenticated users
+      allow create: if request.auth != null;
+      
+      // Allow update for interaction timestamp
+      allow update: if request.auth != null 
+        && (request.auth.uid == resource.data.userId1 || request.auth.uid == resource.data.userId2);
+      
+      // Allow delete for either participant
+      allow delete: if request.auth != null 
+        && (request.auth.uid == resource.data.userId1 || request.auth.uid == resource.data.userId2);
+    }
+    
+    // ==================== FOLLOW COLLECTIONS ====================
+    
+    // User follows collection rules
+    match /user_follows/{followId} {
+      // Allow read access to all authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow create only for the follower
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.followerId;
+      
+      // Allow delete only for the follower
+      allow delete: if request.auth != null 
+        && request.auth.uid == resource.data.followerId;
     }
     
     // Default deny all other collections

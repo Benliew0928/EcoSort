@@ -13,6 +13,7 @@ import com.example.ecosort.data.repository.UserRepository
 import com.example.ecosort.data.model.Result
 import com.example.ecosort.data.model.UserType
 import com.example.ecosort.utils.FirebaseUidHelper
+import com.example.ecosort.utils.BottomNavigationHelper
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -38,8 +39,11 @@ class RecycledItemActivity : AppCompatActivity() {
         
         initViews()
         loadRecycledItems()
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
     }
-    
+
     private fun initViews() {
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)

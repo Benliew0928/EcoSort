@@ -168,14 +168,21 @@ class LoginViewModel @Inject constructor(
                     when (val adminResult = adminRepository.authenticateAdmin(username, password, context)) {
                         is Result.Success -> {
                             android.util.Log.d("LoginViewModel", "Admin login successful for: ${adminResult.data.username}")
+                            
+                            // CRITICAL: Use negative ID for admins to avoid collision with regular users
+                            // Admin ID 1 becomes -1, Admin ID 2 becomes -2, etc.
+                            val sessionUserId = -adminResult.data.adminId
+                            
                             // Convert AdminSession to UserSession for consistency
                             val userSession = UserSession(
-                                userId = adminResult.data.adminId,
+                                userId = sessionUserId,  // Use negative ID to separate from regular users
                                 username = adminResult.data.username,
                                 userType = UserType.ADMIN,
                                 token = "admin_${adminResult.data.adminId}",
                                 isLoggedIn = true
                             )
+                            
+                            android.util.Log.d("LoginViewModel", "Admin session created: adminId=${adminResult.data.adminId}, sessionUserId=$sessionUserId")
                             
                             // Save admin session to preferences
                             userPreferencesManager.saveUserSession(userSession)

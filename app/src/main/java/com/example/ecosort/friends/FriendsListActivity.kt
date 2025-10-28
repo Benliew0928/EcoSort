@@ -12,10 +12,13 @@ import com.example.ecosort.data.model.User
 import com.example.ecosort.data.repository.FriendRepository
 import com.example.ecosort.data.repository.UserRepository
 import com.example.ecosort.data.model.Result
+import com.example.ecosort.utils.BottomNavigationHelper
 import com.example.ecosort.databinding.ActivityFriendsListBinding
 import com.example.ecosort.profile.UserProfileViewActivity
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -44,6 +47,43 @@ class FriendsListActivity : AppCompatActivity() {
                     is Result.Success<*> -> {
                         currentUserId = (currentUserResult.data as User).id
                         android.util.Log.d("FriendsListActivity", "Current user ID set to: $currentUserId")
+                        
+                        // Sync friend requests and friendships from Firebase in background
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            try {
+                                android.util.Log.d("FriendsListActivity", "Syncing friend requests from Firebase...")
+                                val syncResult = friendRepository.syncFriendRequestsFromFirebase(currentUserId)
+                                when (syncResult) {
+                                    is Result.Success -> {
+                                        android.util.Log.d("FriendsListActivity", "Synced ${syncResult.data} friend requests from Firebase")
+                                    }
+                                    is Result.Error -> {
+                                        android.util.Log.e("FriendsListActivity", "Failed to sync friend requests", syncResult.exception)
+                                    }
+                                    else -> {}
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("FriendsListActivity", "Error syncing friend requests", e)
+                            }
+
+                            // Also sync friendships
+                            try {
+                                android.util.Log.d("FriendsListActivity", "Syncing friendships from Firebase...")
+                                val friendshipsResult = friendRepository.syncFriendshipsFromFirebase(currentUserId)
+                                when (friendshipsResult) {
+                                    is Result.Success -> {
+                                        android.util.Log.d("FriendsListActivity", "Synced ${friendshipsResult.data} friendships from Firebase")
+                                    }
+                                    is Result.Error -> {
+                                        android.util.Log.e("FriendsListActivity", "Failed to sync friendships", friendshipsResult.exception)
+                                    }
+                                    else -> {}
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("FriendsListActivity", "Error syncing friendships", e)
+                            }
+                        }
+                        
                         loadFriends()
                     }
                     is Result.Error -> {
@@ -64,6 +104,17 @@ class FriendsListActivity : AppCompatActivity() {
 
         setupUI()
         setupRecyclerView()
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
+        
+        // Raise FAB programmatically to ensure visibility above overlays
+        val raiseByDp = 160
+        val raiseByPx = (raiseByDp * resources.displayMetrics.density).toInt()
+        binding.fabAddFriend.post {
+            binding.fabAddFriend.translationY = -raiseByPx.toFloat()
+            binding.fabAddFriend.bringToFront()
+        }
     }
 
     private fun setupUI() {
