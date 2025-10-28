@@ -170,9 +170,10 @@ object RepositoryModule {
     @Singleton
     fun provideSocialRepository(
         database: EcoSortDatabase,
+        userRepository: com.example.ecosort.data.repository.UserRepository,
         firestoreService: FirestoreService
     ): com.example.ecosort.data.repository.SocialRepository {
-        return com.example.ecosort.data.repository.SocialRepository(database, firestoreService)
+        return com.example.ecosort.data.repository.SocialRepository(database, userRepository, firestoreService)
     }
 
     @Provides

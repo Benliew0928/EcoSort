@@ -17,6 +17,7 @@ import javax.inject.Singleton
 @Singleton
 class SocialRepository @Inject constructor(
     private val database: EcoSortDatabase,
+    private val userRepository: UserRepository,
     private val firestoreService: FirestoreService
 ) {
     private val userFollowDao = database.userFollowDao()
@@ -40,9 +41,9 @@ class SocialRepository @Inject constructor(
                 return Result.Error(Exception("Cannot follow yourself"))
             }
 
-            // Get follower and following users
-            val follower = userDao.getUserById(followerId)
-            val following = userDao.getUserById(followingId)
+            // Get follower and following users (handles admin negative IDs)
+            val follower = userRepository.getUserOrAdmin(followerId)
+            val following = userRepository.getUserOrAdmin(followingId)
             
             if (follower == null || following == null) {
                 return Result.Error(Exception("User not found"))
@@ -98,9 +99,9 @@ class SocialRepository @Inject constructor(
         return try {
             android.util.Log.d("SocialRepository", "unfollowUser: followerId=$followerId, followingId=$followingId")
             
-            // Get follower and following users
-            val follower = userDao.getUserById(followerId)
-            val following = userDao.getUserById(followingId)
+            // Get follower and following users (handles admin negative IDs)
+            val follower = userRepository.getUserOrAdmin(followerId)
+            val following = userRepository.getUserOrAdmin(followingId)
             
             // Remove follow relationship locally
             userFollowDao.removeFollow(followerId, followingId)
@@ -264,7 +265,7 @@ class SocialRepository @Inject constructor(
         return try {
             val users = mutableListOf<User>()
             for (userId in userIds) {
-                val user = userDao.getUserById(userId)
+                val user = userRepository.getUserOrAdmin(userId)
                 if (user != null) {
                     users.add(user)
                 }
@@ -281,8 +282,8 @@ class SocialRepository @Inject constructor(
         return try {
             android.util.Log.d("SocialRepository", "Syncing followers from Firebase for user: $userId")
             
-            // Get user's Firebase UID
-            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            // Get user's Firebase UID (handles admin negative IDs)
+            val user = userRepository.getUserOrAdmin(userId) ?: return Result.Error(Exception("User not found"))
             val userFirebaseUid = user.firebaseUid
             
             if (userFirebaseUid.isNullOrEmpty()) {
@@ -342,8 +343,8 @@ class SocialRepository @Inject constructor(
         return try {
             android.util.Log.d("SocialRepository", "Syncing following from Firebase for user: $userId")
             
-            // Get user's Firebase UID
-            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            // Get user's Firebase UID (handles admin negative IDs)
+            val user = userRepository.getUserOrAdmin(userId) ?: return Result.Error(Exception("User not found"))
             val userFirebaseUid = user.firebaseUid
             
             if (userFirebaseUid.isNullOrEmpty()) {

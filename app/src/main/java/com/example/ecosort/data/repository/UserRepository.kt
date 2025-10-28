@@ -323,9 +323,43 @@ class UserRepository @Inject constructor(
 
     // ==================== USER MANAGEMENT ====================
 
+    /**
+     * Get user or admin by ID - handles negative IDs for admins
+     * This is the CORRECT way to look up users/admins throughout the app
+     */
+    suspend fun getUserOrAdmin(userId: Long): User? {
+        return if (userId < 0) {
+            // Admin account - convert negative ID to positive
+            val adminId = kotlin.math.abs(userId)
+            val adminDao = database.adminDao()
+            val admin = adminDao.getAdminById(adminId)
+            
+            admin?.let {
+                User(
+                    id = userId,  // Keep negative ID for consistency
+                    firebaseUid = it.firebaseUid,
+                    username = it.username,
+                    email = it.email,
+                    passwordHash = it.passwordHash,
+                    userType = UserType.ADMIN,
+                    profileImageUrl = it.profileImageUrl,
+                    bio = it.bio,
+                    location = it.location,
+                    itemsRecycled = it.itemsRecycled,
+                    totalPoints = it.totalPoints,
+                    createdAt = it.createdAt,
+                    lastActive = it.lastLogin
+                )
+            }
+        } else {
+            // Regular user account
+            userDao.getUserById(userId)
+        }
+    }
+
     suspend fun getUserById(userId: Long): Result<User> {
         return try {
-            val user = userDao.getUserById(userId)
+            val user = getUserOrAdmin(userId)
                 ?: return Result.Error(Exception("User not found"))
             Result.Success(user)
         } catch (e: Exception) {
@@ -356,7 +390,7 @@ class UserRepository @Inject constructor(
             // Convert admins to User objects for uniform display
             val adminUsers = matchingAdmins.map { admin ->
                 User(
-                    id = admin.id,  // Use positive admin ID for consistency
+                    id = -admin.id,  // ✅ Use NEGATIVE ID to avoid collision with regular users
                     firebaseUid = admin.firebaseUid,
                     username = admin.username,
                     email = admin.email,

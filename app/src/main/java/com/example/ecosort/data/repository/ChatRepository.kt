@@ -48,8 +48,8 @@ class ChatRepository @Inject constructor(
             val session = preferencesManager.userSession.first()
                 ?: return Result.Error(Exception("No active session"))
 
-            // Get sender's Firebase UID
-            val sender = userDao.getUserById(session.userId)
+            // Get sender's Firebase UID (handles admin negative IDs)
+            val sender = userRepository.getUserOrAdmin(session.userId)
             val senderFirebaseUid = sender?.firebaseUid
 
             val message = ChatMessage(
@@ -286,9 +286,10 @@ class ChatRepository @Inject constructor(
      */
     suspend fun createOrGetConversation(user1Id: Long, user1Username: String, user2Id: Long, user2Username: String): Result<Conversation> {
         return try {
-            // Create a consistent channel ID (always smaller ID first)
+            // Create a consistent channel ID using absolute values for comparison
+            // This ensures admin IDs (negative) are handled correctly
             // Use "chat_" prefix for compatibility with old conversations
-            val channelId = if (user1Id < user2Id) {
+            val channelId = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) {
                 "chat_${user1Id}_${user2Id}"
             } else {
                 "chat_${user2Id}_${user1Id}"
@@ -300,13 +301,13 @@ class ChatRepository @Inject constructor(
                 return Result.Success(existingConversation)
             }
 
-            // Create new conversation
+            // Create new conversation using absolute value comparison for consistency
             val conversation = Conversation(
                 channelId = channelId,
-                participant1Id = if (user1Id < user2Id) user1Id else user2Id,
-                participant1Username = if (user1Id < user2Id) user1Username else user2Username,
-                participant2Id = if (user1Id < user2Id) user2Id else user1Id,
-                participant2Username = if (user1Id < user2Id) user2Username else user1Username
+                participant1Id = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) user1Id else user2Id,
+                participant1Username = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) user1Username else user2Username,
+                participant2Id = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) user2Id else user1Id,
+                participant2Username = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) user2Username else user1Username
             )
 
             conversationDao.insertConversation(conversation)
@@ -321,9 +322,9 @@ class ChatRepository @Inject constructor(
      */
     suspend fun getOrCreateConversation(user1Id: Long, user2Id: Long): Result<Conversation> {
         return try {
-            // Create a consistent channel ID (always smaller ID first)
+            // Create a consistent channel ID using absolute values (handles admin negative IDs)
             // Use "chat_" prefix for compatibility with old conversations
-            val channelId = if (user1Id < user2Id) {
+            val channelId = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) {
                 "chat_${user1Id}_${user2Id}"
             } else {
                 "chat_${user2Id}_${user1Id}"
@@ -339,7 +340,7 @@ class ChatRepository @Inject constructor(
             }
 
             // Check for old format conversations (user_ prefix) and migrate them
-            val oldChannelId = if (user1Id < user2Id) {
+            val oldChannelId = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) {
                 "user_${user1Id}_${user2Id}"
             } else {
                 "user_${user2Id}_${user1Id}"

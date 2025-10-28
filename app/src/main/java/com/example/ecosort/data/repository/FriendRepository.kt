@@ -18,6 +18,7 @@ class FriendRepository @Inject constructor(
     private val friendRequestDao: FriendRequestDao,
     private val friendshipDao: FriendshipDao,
     private val blockedUserDao: BlockedUserDao,
+    private val userRepository: UserRepository,
     private val firestoreService: FirestoreService
 ) {
 
@@ -45,9 +46,9 @@ class FriendRepository @Inject constructor(
                 return Result.Error(Exception("Cannot send friend request to blocked user"))
             }
 
-            // Get sender and receiver Firebase UIDs
-            val sender = userDao.getUserById(senderId)
-            val receiver = userDao.getUserById(receiverId)
+            // Get sender and receiver Firebase UIDs (handles admin negative IDs)
+            val sender = userRepository.getUserOrAdmin(senderId)
+            val receiver = userRepository.getUserOrAdmin(receiverId)
             
             if (sender == null || receiver == null) {
                 android.util.Log.e("FriendRepository", "Sender or receiver not found: sender=$sender, receiver=$receiver")
@@ -126,9 +127,9 @@ class FriendRepository @Inject constructor(
                 return Result.Error(SecurityException("Unauthorized to accept this request"))
             }
 
-            // Get sender and receiver users
-            val sender = userDao.getUserById(request.senderId)
-            val receiver = userDao.getUserById(request.receiverId)
+            // Get sender and receiver users (handles admin negative IDs)
+            val sender = userRepository.getUserOrAdmin(request.senderId)
+            val receiver = userRepository.getUserOrAdmin(request.receiverId)
             
             if (sender == null || receiver == null) {
                 return Result.Error(Exception("User not found"))
@@ -216,9 +217,9 @@ class FriendRepository @Inject constructor(
                 return Result.Error(SecurityException("Unauthorized to decline this request"))
             }
 
-            // Get sender and receiver users
-            val sender = userDao.getUserById(request.senderId)
-            val receiver = userDao.getUserById(request.receiverId)
+            // Get sender and receiver users (handles admin negative IDs)
+            val sender = userRepository.getUserOrAdmin(request.senderId)
+            val receiver = userRepository.getUserOrAdmin(request.receiverId)
 
             // Update request status locally
             friendRequestDao.updateFriendRequestStatus(
@@ -281,8 +282,8 @@ class FriendRepository @Inject constructor(
         return try {
             android.util.Log.d("FriendRepository", "Syncing friendships from Firebase for user: $userId")
             
-            // Get user's Firebase UID
-            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            // Get user's Firebase UID (handles admin negative IDs)
+            val user = userRepository.getUserOrAdmin(userId) ?: return Result.Error(Exception("User not found"))
             val userFirebaseUid = user.firebaseUid
             
             if (userFirebaseUid.isNullOrEmpty()) {
@@ -343,8 +344,8 @@ class FriendRepository @Inject constructor(
         return try {
             android.util.Log.d("FriendRepository", "Syncing friend requests from Firebase for user: $userId")
             
-            // Get user's Firebase UID
-            val user = userDao.getUserById(userId) ?: return Result.Error(Exception("User not found"))
+            // Get user's Firebase UID (handles admin negative IDs)
+            val user = userRepository.getUserOrAdmin(userId) ?: return Result.Error(Exception("User not found"))
             val userFirebaseUid = user.firebaseUid
             
             if (userFirebaseUid.isNullOrEmpty()) {
@@ -420,9 +421,9 @@ class FriendRepository @Inject constructor(
         return try {
             android.util.Log.d("FriendRepository", "removeFriend: userId=$userId, friendId=$friendId")
             
-            // Get both users
-            val user = userDao.getUserById(userId)
-            val friend = userDao.getUserById(friendId)
+            // Get both users (handles admin negative IDs)
+            val user = userRepository.getUserOrAdmin(userId)
+            val friend = userRepository.getUserOrAdmin(friendId)
             
             // Remove friendship locally
             friendshipDao.removeFriendship(userId, friendId)
@@ -538,8 +539,8 @@ class FriendRepository @Inject constructor(
         return try {
             android.util.Log.d("FriendRepository", "getUsersWithFriendStatus called with query: '$query', currentUserId: $currentUserId")
             
-            // Get current user for logging
-            val currentUser = userDao.getUserById(currentUserId)
+            // Get current user for logging (handles admin negative IDs)
+            val currentUser = userRepository.getUserOrAdmin(currentUserId)
             android.util.Log.d("FriendRepository", "Current user: ${currentUser?.username} (ID: ${currentUser?.id})")
             
             // Use searchUsersByUsername for precise username matching (like chat search)
