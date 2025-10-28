@@ -53,7 +53,8 @@ class AdminRepository @Inject constructor(
                             val admin = Admin(
                                 username = firebaseUser.username,
                                 email = firebaseUser.email,
-                                passwordHash = firebaseUser.passwordHash
+                                passwordHash = firebaseUser.passwordHash,
+                                profileImageUrl = null
                             )
                             adminDao.insertAdmin(admin)
                         } else {
@@ -61,7 +62,8 @@ class AdminRepository @Inject constructor(
                             val fallbackAdmin = Admin(
                                 username = username,
                                 email = "",
-                                passwordHash = ""
+                                passwordHash = "",
+                                profileImageUrl = null
                             )
                             adminDao.insertAdmin(fallbackAdmin)
                         }
@@ -80,33 +82,44 @@ class AdminRepository @Inject constructor(
                     android.util.Log.w("AdminRepository", "Firebase authentication failed, trying local fallback: ${(firebaseResult as com.example.ecosort.data.model.Result.Error).exception.message}")
                     
                     val admin = adminDao.getAdminByUsername(username)
-                    if (admin != null && admin.isActive && SecurityManager.verifyPassword(password, admin.passwordHash)) {
-                        // Update last login
-                        adminDao.updateLastLogin(admin.id, System.currentTimeMillis())
+                    android.util.Log.d("AdminRepository", "Local admin lookup for '$username': ${if (admin != null) "Found (ID: ${admin.id}, Active: ${admin.isActive})" else "Not found"}")
+                    
+                    if (admin != null && admin.isActive) {
+                        val passwordValid = SecurityManager.verifyPassword(password, admin.passwordHash)
+                        android.util.Log.d("AdminRepository", "Password verification for '$username': ${if (passwordValid) "Valid" else "Invalid"}")
                         
-                        val session = AdminSession(
-                            adminId = admin.id,
-                            username = admin.username,
-                            email = admin.email
-                        )
-                        
-                        // Try to migrate admin to Firebase in background
-                        try {
-                            val user = com.example.ecosort.data.model.User(
+                        if (passwordValid) {
+                            // Update last login
+                            adminDao.updateLastLogin(admin.id, System.currentTimeMillis())
+                            
+                            val session = AdminSession(
+                                adminId = admin.id,
                                 username = admin.username,
-                                email = admin.email,
-                                passwordHash = admin.passwordHash,
-                                userType = com.example.ecosort.data.model.UserType.ADMIN
+                                email = admin.email
                             )
-                            firebaseAuthService.migrateUserToFirebase(user, context)
-                            android.util.Log.d("AdminRepository", "Admin migrated to Firebase: $username")
-                        } catch (e: Exception) {
-                            android.util.Log.w("AdminRepository", "Failed to migrate admin to Firebase: ${e.message}")
+                            
+                            // Try to migrate admin to Firebase in background
+                            try {
+                                val user = com.example.ecosort.data.model.User(
+                                    username = admin.username,
+                                    email = admin.email,
+                                    passwordHash = admin.passwordHash,
+                                    userType = com.example.ecosort.data.model.UserType.ADMIN
+                                )
+                                firebaseAuthService.migrateUserToFirebase(user, context)
+                                android.util.Log.d("AdminRepository", "Admin migrated to Firebase: $username")
+                            } catch (e: Exception) {
+                                android.util.Log.w("AdminRepository", "Failed to migrate admin to Firebase: ${e.message}")
+                            }
+                            
+                            android.util.Log.d("AdminRepository", "Admin authenticated via local fallback: $username")
+                            return@withContext Result.Success(session)
+                        } else {
+                            android.util.Log.w("AdminRepository", "Invalid password for admin: $username")
+                            return@withContext Result.Error(Exception("Invalid admin credentials"))
                         }
-                        
-                        android.util.Log.d("AdminRepository", "Admin authenticated via local fallback: $username")
-                        return@withContext Result.Success(session)
                     } else {
+                        android.util.Log.w("AdminRepository", "Admin not found or inactive: $username")
                         return@withContext Result.Error(Exception("Invalid admin credentials"))
                     }
                 }
@@ -141,7 +154,8 @@ class AdminRepository @Inject constructor(
                 val admin = Admin(
                     username = username,
                     email = email,
-                    passwordHash = passwordHash
+                    passwordHash = passwordHash,
+                    profileImageUrl = null
                 )
 
                 val adminId = adminDao.insertAdmin(admin)
@@ -179,6 +193,110 @@ class AdminRepository @Inject constructor(
         }
     }
 
+    // ==================== ADMIN PROFILE MANAGEMENT ====================
+    
+    suspend fun updateAdminProfileImage(adminId: Long, imageUrl: String?): Result<Unit> {
+        return try {
+            withContext(Dispatchers.IO) {
+                adminDao.updateProfileImage(adminId, imageUrl)
+                
+                // Sync to Firebase
+                try {
+                    val admin = adminDao.getAdminById(adminId)
+                    if (admin != null) {
+                        syncAdminProfileToFirebase(admin)
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("AdminRepository", "Failed to sync admin profile image to Firebase: ${e.message}")
+                    // Don't fail the operation if Firebase sync fails
+                }
+                
+                Result.Success(Unit)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("AdminRepository", "Error updating admin profile image", e)
+            Result.Error(e)
+        }
+    }
+    
+    suspend fun getAdminProfileImage(adminId: Long): Result<String?> {
+        return try {
+            withContext(Dispatchers.IO) {
+                val admin = adminDao.getAdminById(adminId)
+                if (admin != null) {
+                    Result.Success(admin.profileImageUrl)
+                } else {
+                    Result.Error(Exception("Admin not found"))
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("AdminRepository", "Error getting admin profile image", e)
+            Result.Error(e)
+        }
+    }
+    
+    suspend fun getAdminById(adminId: Long): Result<com.example.ecosort.data.model.Admin?> {
+        return try {
+            withContext(Dispatchers.IO) {
+                val admin = adminDao.getAdminById(adminId)
+                Result.Success(admin)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("AdminRepository", "Error getting admin by ID", e)
+            Result.Error(e)
+        }
+    }
+    
+    suspend fun updateAdminBio(adminId: Long, bio: String?): Result<Unit> {
+        return try {
+            withContext(Dispatchers.IO) {
+                adminDao.updateBio(adminId, bio)
+                
+                // Get the updated admin and sync to Firebase
+                val admin = adminDao.getAdminById(adminId)
+                if (admin != null) {
+                    try {
+                        updateAdminInFirebase(admin)
+                        android.util.Log.d("AdminRepository", "Admin bio updated in Firebase: ${admin.username} (adminId: ${adminId})")
+                    } catch (e: Exception) {
+                        android.util.Log.w("AdminRepository", "Failed to update admin bio in Firebase: ${e.message}")
+                        // Don't fail the operation if Firebase sync fails
+                    }
+                }
+                
+                Result.Success(Unit)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("AdminRepository", "Error updating admin bio", e)
+            Result.Error(e)
+        }
+    }
+    
+    suspend fun updateAdminLocation(adminId: Long, location: String?): Result<Unit> {
+        return try {
+            withContext(Dispatchers.IO) {
+                adminDao.updateLocation(adminId, location)
+                
+                // Get the updated admin and sync to Firebase
+                val admin = adminDao.getAdminById(adminId)
+                if (admin != null) {
+                    try {
+                        updateAdminInFirebase(admin)
+                        android.util.Log.d("AdminRepository", "Admin location updated in Firebase: ${admin.username} (adminId: ${adminId})")
+                    } catch (e: Exception) {
+                        android.util.Log.w("AdminRepository", "Failed to update admin location in Firebase: ${e.message}")
+                        // Don't fail the operation if Firebase sync fails
+                    }
+                }
+                
+                Result.Success(Unit)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("AdminRepository", "Error updating admin location", e)
+            Result.Error(e)
+        }
+    }
+    
     // ==================== ADMIN MANAGEMENT ====================
     
     suspend fun getAllAdmins(): Result<List<Admin>> {
@@ -190,6 +308,87 @@ class AdminRepository @Inject constructor(
         } catch (e: Exception) {
             Result.Error(e)
         }
+    }
+
+    suspend fun syncAllUsersFromFirebase(): Result<Int> {
+        return try {
+            val result = firestoreService.getAllUserProfiles()
+            if (result.isSuccess) {
+                val firebaseUsers = result.getOrNull() ?: emptyList()
+                var syncedCount = 0
+                
+                for (userData in firebaseUsers) {
+                    try {
+                        val username = userData["username"] as? String ?: continue
+                        val syncResult = syncUserFromFirebase(username)
+                        if (syncResult is Result.Success) {
+                            syncedCount++
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.w("AdminRepository", "Failed to sync user: ${e.message}")
+                    }
+                }
+                
+                android.util.Log.d("AdminRepository", "Synced $syncedCount users from Firebase")
+                Result.Success(syncedCount)
+            } else {
+                Result.Error(result.exceptionOrNull() as? Exception ?: Exception("Failed to get users from Firebase"))
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    private suspend fun syncUserFromFirebase(username: String): Result<Unit> {
+        return try {
+            val result = firestoreService.getUserProfileByUsername(username)
+            if (result.isSuccess) {
+                val userData = result.getOrNull()
+                if (userData != null) {
+                    val user = convertFirebaseUserToUser(userData)
+                    val existingUser = database.userDao().getUserByUsername(username)
+                    
+                    if (existingUser != null) {
+                        // Update existing user
+                        database.userDao().updateUser(user)
+                    } else {
+                        // Insert new user
+                        database.userDao().insertUser(user)
+                    }
+                    Result.Success(Unit)
+                } else {
+                    Result.Error(Exception("User data is null"))
+                }
+            } else {
+                Result.Error(result.exceptionOrNull() as? Exception ?: Exception("Failed to get user from Firebase"))
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    private fun convertFirebaseUserToUser(userData: HashMap<String, Any>): com.example.ecosort.data.model.User {
+        return com.example.ecosort.data.model.User(
+            id = (userData["id"] as? Number)?.toLong() ?: 0L,
+            firebaseUid = userData["firebaseUid"] as? String,
+            username = userData["username"] as? String ?: "",
+            email = userData["email"] as? String ?: "",
+            passwordHash = "", // Don't sync password hash
+            userType = com.example.ecosort.data.model.UserType.valueOf(userData["userType"] as? String ?: "USER"),
+            createdAt = (userData["createdAt"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+            itemsRecycled = (userData["itemsRecycled"] as? Number)?.toInt() ?: 0,
+            totalPoints = (userData["totalPoints"] as? Number)?.toInt() ?: 0,
+            profileImageUrl = userData["profileImageUrl"] as? String,
+            bio = userData["bio"] as? String,
+            location = userData["location"] as? String,
+            joinDate = (userData["joinDate"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+            lastActive = (userData["lastActive"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+            profileCompletion = (userData["profileCompletion"] as? Number)?.toInt() ?: 0,
+            privacySettings = userData["privacySettings"] as? String,
+            achievements = userData["achievements"] as? String,
+            socialLinks = userData["socialLinks"] as? String,
+            preferences = userData["preferences"] as? String
+        )
     }
 
     suspend fun updateAdminStatus(adminId: Long, isActive: Boolean, currentAdminId: Long): Result<Unit> {
@@ -383,6 +582,13 @@ class AdminRepository @Inject constructor(
     // ==================== FIREBASE SYNC ====================
 
     /**
+     * Sync admin profile to Firebase (alias for syncAdminToFirebase)
+     */
+    private suspend fun syncAdminProfileToFirebase(admin: Admin) {
+        syncAdminToFirebase(admin)
+    }
+    
+    /**
      * Sync admin profile to Firebase
      */
     private suspend fun syncAdminToFirebase(admin: Admin) {
@@ -391,6 +597,7 @@ class AdminRepository @Inject constructor(
             "username" to admin.username,
             "email" to admin.email,
             "userType" to "ADMIN", // Mark as admin type
+            "profileImageUrl" to (admin.profileImageUrl ?: ""),
             "createdAt" to admin.createdAt,
             "lastLogin" to admin.lastLogin,
             "isActive" to admin.isActive,
@@ -412,15 +619,24 @@ class AdminRepository @Inject constructor(
             "username" to admin.username,
             "email" to admin.email,
             "userType" to "ADMIN", // Mark as admin type
+            "profileImageUrl" to (admin.profileImageUrl ?: ""),
+            "bio" to (admin.bio ?: ""),
+            "location" to (admin.location ?: ""),
+            "itemsRecycled" to admin.itemsRecycled,
+            "totalPoints" to admin.totalPoints,
             "createdAt" to admin.createdAt,
             "lastLogin" to admin.lastLogin,
             "isActive" to admin.isActive,
             "permissions" to admin.permissions
         )
 
+        android.util.Log.d("AdminRepository", "Updating admin in Firebase: ${admin.username}, bio: '${admin.bio}', location: '${admin.location}'")
+
         val result = firestoreService.updateUserProfile(admin.id.toString(), adminData)
         if (result.isFailure) {
             android.util.Log.w("AdminRepository", "Failed to update admin in Firebase: ${result.exceptionOrNull()?.message}")
+        } else {
+            android.util.Log.d("AdminRepository", "Successfully updated admin in Firebase: ${admin.username}")
         }
     }
 
@@ -438,6 +654,7 @@ class AdminRepository @Inject constructor(
                         username = userData["username"] as? String ?: "",
                         email = userData["email"] as? String ?: "",
                         passwordHash = "", // Don't sync password hash
+                        profileImageUrl = userData["profileImageUrl"] as? String,
                         createdAt = (userData["createdAt"] as? Number)?.toLong() ?: System.currentTimeMillis(),
                         lastLogin = (userData["lastLogin"] as? Number)?.toLong() ?: System.currentTimeMillis(),
                         isActive = (userData["isActive"] as? Boolean) ?: true,

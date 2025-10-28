@@ -13,6 +13,7 @@ import com.example.ecosort.R
 import com.example.ecosort.data.model.*
 import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.utils.LanguageManager
+import com.example.ecosort.utils.BottomNavigationHelper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -59,6 +60,9 @@ class UserPreferencesActivity : AppCompatActivity() {
         setupSpinners()
         loadPreferences()
         setupListeners()
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
     }
     
     private fun initViews() {

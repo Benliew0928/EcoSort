@@ -34,8 +34,10 @@
     <color name="text_hint">#BDBDBD</color>
 
     <color name="success_green">#4CAF50</color>
+    <color name="success_color">#4CAF50</color>
     <color name="warning_orange">#dc4f00</color>
     <color name="error_red">#F44336</color>
+    <color name="error_color">#F44336</color>
 
     <color name="card_shadow">#1A000000</color>
     <color name="divider">#E0E0E0</color>
@@ -61,5 +63,9 @@
     <!-- Color for Add Bin -->
     <color name="colorPrimary">@color/primary_green</color>
     <color name="colorSecondary">@color/accent_teal</color>
+    
+    <!-- Additional colors for Recycled Items -->
+    <color name="background_color">@color/background_light</color>
+    <color name="accent_color">@color/accent_teal</color>
 
 </resources>

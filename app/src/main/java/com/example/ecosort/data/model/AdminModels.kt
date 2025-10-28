@@ -12,11 +12,16 @@ data class Admin(
     val username: String,
     val email: String,
     val passwordHash: String,
+    val profileImageUrl: String? = null,
+    val bio: String? = null,
+    val location: String? = null,
+    val itemsRecycled: Int = 0,
+    val totalPoints: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val lastLogin: Long = System.currentTimeMillis(),
     val isActive: Boolean = true,
     val permissions: String = "FULL_ACCESS" // JSON string for future permission system
-)
+) : java.io.Serializable
 
 // Admin session for tracking admin login state
 data class AdminSession(

@@ -15,6 +15,7 @@ import com.example.ecosort.data.repository.UserRepository
 import com.example.ecosort.databinding.ActivityCommunityFeedBinding
 import com.example.ecosort.utils.ResponsiveUtils
 import com.example.ecosort.utils.setResponsiveLayoutManager
+import com.example.ecosort.utils.BottomNavigationHelper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
@@ -28,6 +29,7 @@ class CommunityFeedActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_CODE_CREATE_POST = 1001
     }
+
 
     private lateinit var binding: ActivityCommunityFeedBinding
     private lateinit var adapter: CommunityPostAdapter
@@ -52,6 +54,10 @@ class CommunityFeedActivity : AppCompatActivity() {
         setupClickListeners()
         loadCurrentUser()
         loadPosts(null) // Load all posts initially
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
+        
         android.util.Log.d("CommunityFeedActivity", "=== ACTIVITY SETUP COMPLETE ===")
     }
 
@@ -76,12 +82,12 @@ class CommunityFeedActivity : AppCompatActivity() {
         )
         
         // Use responsive layout manager
-        binding.recyclerViewPosts.setResponsiveLayoutManager(
+        binding.rvPosts.setResponsiveLayoutManager(
             context = this,
             baseColumns = 1,
             useStaggered = false
         )
-        binding.recyclerViewPosts.adapter = adapter
+        binding.rvPosts.adapter = adapter
     }
 
     private fun setupClickListeners() {
@@ -152,7 +158,7 @@ class CommunityFeedActivity : AppCompatActivity() {
     private fun loadPosts(postType: PostType?, tagFilter: String? = null) {
         lifecycleScope.launch {
             android.util.Log.d("CommunityFeedActivity", "Starting to load posts - postType: $postType, tagFilter: $tagFilter")
-            binding.progressBar.visibility = View.VISIBLE
+            // No progress bar in this layout
             try {
                 val postsFlow = when {
                     tagFilter != null -> {
@@ -180,8 +186,7 @@ class CommunityFeedActivity : AppCompatActivity() {
                     // Submit posts directly - like status will be updated when user interacts
                     android.util.Log.d("CommunityFeedActivity", "Submitting ${posts.size} posts to adapter")
                     adapter.submitList(posts)
-                    binding.textViewEmpty.visibility = if (posts.isEmpty()) View.VISIBLE else View.GONE
-                    binding.progressBar.visibility = View.GONE
+                    binding.llEmptyState.visibility = if (posts.isEmpty()) View.VISIBLE else View.GONE
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 android.util.Log.d("CommunityFeedActivity", "Post loading cancelled")
@@ -189,9 +194,7 @@ class CommunityFeedActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 android.util.Log.e("CommunityFeedActivity", "Error loading posts", e)
                 Toast.makeText(this@CommunityFeedActivity, "Error loading posts: ${e.message}", Toast.LENGTH_SHORT).show()
-                binding.progressBar.visibility = View.GONE
-                binding.textViewEmpty.text = "Error loading posts: ${e.message}"
-                binding.textViewEmpty.visibility = View.VISIBLE
+                binding.llEmptyState.visibility = View.VISIBLE
             }
         }
     }

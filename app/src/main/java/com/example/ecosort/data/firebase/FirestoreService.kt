@@ -24,6 +24,13 @@ class FirestoreService @Inject constructor() {
     
     // User profiles collection
     private val usersCollection by lazy { firestore.collection("users") }
+    
+    // Recycled items collection
+    private val recycledItemsCollection by lazy { firestore.collection("recycled_items") }
+    
+    // Points collections
+    private val userPointsCollection by lazy { firestore.collection("user_points") }
+    private val pointsTransactionsCollection by lazy { firestore.collection("points_transactions") }
 
     /**
      * NEW: Save a document to a specific collection. Used for RecycleBins.
@@ -104,8 +111,18 @@ class FirestoreService @Inject constructor() {
     suspend fun updateUserProfile(userId: String, userData: HashMap<String, Any>): Result<Unit> {
         return try {
             android.util.Log.d("FirestoreService", "Updating user profile in Firebase: $userId")
-            usersCollection.document(userId).set(userData).await()
-            android.util.Log.d("FirestoreService", "User profile updated successfully")
+            
+            // First try to update the document
+            try {
+                usersCollection.document(userId).update(userData).await()
+                android.util.Log.d("FirestoreService", "User profile updated successfully")
+            } catch (updateException: Exception) {
+                // If update fails (document doesn't exist), try to set with merge
+                android.util.Log.w("FirestoreService", "Update failed, trying to set with merge: ${updateException.message}")
+                usersCollection.document(userId).set(userData, com.google.firebase.firestore.SetOptions.merge()).await()
+                android.util.Log.d("FirestoreService", "User profile set with merge successfully")
+            }
+            
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("FirestoreService", "Failed to update user profile", e)
@@ -125,12 +142,229 @@ class FirestoreService @Inject constructor() {
                 android.util.Log.d("FirestoreService", "No user found with username: $username")
                 Result.success(null)
             } else {
-                val userData = querySnapshot.documents.first().data as HashMap<String, Any>
+                val documents = querySnapshot.documents
+                android.util.Log.d("FirestoreService", "Found ${documents.size} documents for username: $username")
+                
+                if (documents.size > 1) {
+                    android.util.Log.w("FirestoreService", "Multiple documents found for username: $username, consolidating...")
+                    return consolidateDuplicateUsers(username, documents)
+                }
+                
+                val userData = documents.first().data as HashMap<String, Any>
                 android.util.Log.d("FirestoreService", "Found user profile: $username")
                 Result.success(userData)
             }
         } catch (e: Exception) {
             android.util.Log.e("FirestoreService", "Failed to get user profile by username", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Consolidate duplicate user documents in Firebase
+     * Keeps the document with the most recent lastActive timestamp
+     */
+    private suspend fun consolidateDuplicateUsers(username: String, documents: List<com.google.firebase.firestore.DocumentSnapshot>): Result<HashMap<String, Any>?> {
+        return try {
+            android.util.Log.d("FirestoreService", "Consolidating ${documents.size} duplicate documents for username: $username")
+            
+            // Sort documents by lastActive timestamp (most recent first)
+            val sortedDocuments = documents.sortedByDescending { doc ->
+                val lastActive = doc.data?.get("lastActive") as? Number
+                lastActive?.toLong() ?: 0L
+            }
+            
+            val primaryDocument = sortedDocuments.first()
+            val duplicateDocuments = sortedDocuments.drop(1)
+            
+            android.util.Log.d("FirestoreService", "Primary document ID: ${primaryDocument.id}, lastActive: ${primaryDocument.data?.get("lastActive")}")
+            
+            // Merge data from all documents, prioritizing non-empty values
+            val mergedData = mergeUserDocuments(sortedDocuments)
+            
+            // Update the primary document with merged data
+            try {
+                primaryDocument.reference.update(mergedData).await()
+                android.util.Log.d("FirestoreService", "Updated primary document with merged data")
+            } catch (e: Exception) {
+                android.util.Log.w("FirestoreService", "Failed to update primary document, trying set with merge: ${e.message}")
+                primaryDocument.reference.set(mergedData, com.google.firebase.firestore.SetOptions.merge()).await()
+            }
+            
+            // Delete duplicate documents
+            for (duplicateDoc in duplicateDocuments) {
+                try {
+                    android.util.Log.d("FirestoreService", "Deleting duplicate document: ${duplicateDoc.id}")
+                    duplicateDoc.reference.delete().await()
+                } catch (e: Exception) {
+                    android.util.Log.w("FirestoreService", "Failed to delete duplicate document ${duplicateDoc.id}: ${e.message}")
+                }
+            }
+            
+            android.util.Log.d("FirestoreService", "Consolidated ${duplicateDocuments.size} duplicate documents for username: $username")
+            Result.success(mergedData)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to consolidate duplicate users", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Merge data from multiple user documents, prioritizing non-empty values
+     */
+    private fun mergeUserDocuments(documents: List<com.google.firebase.firestore.DocumentSnapshot>): HashMap<String, Any> {
+        val mergedData = HashMap<String, Any>()
+        
+        // Define the fields we want to merge
+        val fieldsToMerge = listOf(
+            "id", "firebaseUid", "username", "email", "userType", "createdAt",
+            "itemsRecycled", "totalPoints", "profileImageUrl", "bio", "location",
+            "joinDate", "lastActive", "profileCompletion", "privacySettings",
+            "achievements", "socialLinks", "preferences"
+        )
+        
+        // For each field, find the best value across all documents
+        for (field in fieldsToMerge) {
+            var bestValue: Any? = null
+            
+            // Priority order: non-empty string, non-zero number, non-null value
+            for (doc in documents) {
+                val value = doc.data?.get(field)
+                if (value != null) {
+                    when (field) {
+                        "bio", "location", "profileImageUrl", "privacySettings", 
+                        "achievements", "socialLinks", "preferences" -> {
+                            // For string fields, prefer non-empty values
+                            if (value is String && value.isNotBlank()) {
+                                bestValue = value
+                                break
+                            } else if (bestValue == null) {
+                                bestValue = value
+                            }
+                        }
+                        "itemsRecycled", "totalPoints", "profileCompletion" -> {
+                            // For number fields, prefer non-zero values
+                            if (value is Number && value.toInt() > 0) {
+                                bestValue = value
+                                break
+                            } else if (bestValue == null) {
+                                bestValue = value
+                            }
+                        }
+                        "lastActive" -> {
+                            // For lastActive, prefer the most recent (highest value)
+                            if (value is Number) {
+                                if (bestValue == null || (bestValue as Number).toLong() < value.toLong()) {
+                                    bestValue = value
+                                }
+                            }
+                        }
+                        else -> {
+                            // For other fields, prefer non-null values
+                            if (bestValue == null) {
+                                bestValue = value
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Set the best value found, or empty string for string fields if nothing found
+            mergedData[field] = when (field) {
+                "bio", "location", "profileImageUrl", "privacySettings", 
+                "achievements", "socialLinks", "preferences" -> bestValue ?: ""
+                "itemsRecycled", "totalPoints", "profileCompletion" -> bestValue ?: 0
+                "lastActive" -> bestValue ?: System.currentTimeMillis()
+                else -> bestValue ?: ""
+            }
+        }
+        
+        android.util.Log.d("FirestoreService", "Merged data: bio='${mergedData["bio"]}', location='${mergedData["location"]}', profileImageUrl='${mergedData["profileImageUrl"]}'")
+        return mergedData
+    }
+
+    /**
+     * Clean up all duplicate user documents in Firebase
+     * This method should be called periodically to consolidate duplicates
+     */
+    suspend fun cleanupAllDuplicateUsers(): Result<Int> {
+        return try {
+            android.util.Log.d("FirestoreService", "Starting cleanup of all duplicate users in Firebase")
+            
+            // Get all user documents
+            val querySnapshot = usersCollection.get().await()
+            val allDocuments = querySnapshot.documents
+            
+            // Group documents by username
+            val documentsByUsername = allDocuments.groupBy { doc ->
+                doc.data?.get("username") as? String ?: "unknown"
+            }
+            
+            var cleanedCount = 0
+            
+            for ((username, documents) in documentsByUsername) {
+                if (documents.size > 1) {
+                    android.util.Log.w("FirestoreService", "Found ${documents.size} duplicate documents for username: $username")
+                    
+                    // Sort documents by lastActive timestamp (most recent first)
+                    val sortedDocuments = documents.sortedByDescending { doc ->
+                        val lastActive = doc.data?.get("lastActive") as? Number
+                        lastActive?.toLong() ?: 0L
+                    }
+                    
+                    val primaryDocument = sortedDocuments.first()
+                    val duplicateDocuments = sortedDocuments.drop(1)
+                    
+                    android.util.Log.d("FirestoreService", "Keeping primary document: ${primaryDocument.id} for username: $username")
+                    
+                    // Merge data from all documents, prioritizing non-empty values
+                    val mergedData = mergeUserDocuments(sortedDocuments)
+                    
+                    // Update the primary document with merged data
+                    try {
+                        primaryDocument.reference.update(mergedData).await()
+                        android.util.Log.d("FirestoreService", "Updated primary document with merged data for username: $username")
+                    } catch (e: Exception) {
+                        android.util.Log.w("FirestoreService", "Failed to update primary document, trying set with merge: ${e.message}")
+                        primaryDocument.reference.set(mergedData, com.google.firebase.firestore.SetOptions.merge()).await()
+                    }
+                    
+                    // Delete duplicate documents
+                    for (duplicateDoc in duplicateDocuments) {
+                        try {
+                            android.util.Log.d("FirestoreService", "Deleting duplicate document: ${duplicateDoc.id}")
+                            duplicateDoc.reference.delete().await()
+                            cleanedCount++
+                        } catch (e: Exception) {
+                            android.util.Log.w("FirestoreService", "Failed to delete duplicate document ${duplicateDoc.id}: ${e.message}")
+                        }
+                    }
+                }
+            }
+            
+            android.util.Log.d("FirestoreService", "Firebase cleanup completed. Removed $cleanedCount duplicate documents")
+            Result.success(cleanedCount)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to cleanup duplicate users in Firebase", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getUserProfileByFirebaseUid(firebaseUid: String): Result<HashMap<String, Any>?> {
+        return try {
+            android.util.Log.d("FirestoreService", "Getting user profile by firebaseUid: $firebaseUid")
+            val querySnapshot = usersCollection.whereEqualTo("firebaseUid", firebaseUid).get().await()
+            
+            if (querySnapshot.isEmpty) {
+                android.util.Log.d("FirestoreService", "No user found with firebaseUid: $firebaseUid")
+                Result.success(null)
+            } else {
+                val userData = querySnapshot.documents.first().data as HashMap<String, Any>
+                android.util.Log.d("FirestoreService", "Found user profile by firebaseUid: $firebaseUid")
+                Result.success(userData)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to get user profile by firebaseUid", e)
             Result.failure(e)
         }
     }
@@ -466,6 +700,198 @@ class FirestoreService @Inject constructor() {
         } catch (e: Exception) {
             android.util.Log.e("FirestoreService", "Error deleting bin $documentId", e)
             false
+        }
+    }
+
+// ==================== RECYCLED ITEMS ====================
+
+    /**
+     * Save recycled item to Firebase
+     */
+    suspend fun saveRecycledItem(itemData: HashMap<String, Any>): com.example.ecosort.data.model.Result<Unit> {
+        return try {
+            val itemId = itemData["id"] as? Long ?: 0L
+            recycledItemsCollection.document(itemId.toString())
+                .set(itemData)
+                .await()
+            
+            android.util.Log.d("FirestoreService", "Recycled item saved successfully: $itemId")
+            com.example.ecosort.data.model.Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error saving recycled item", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Get user's recycled items from Firebase
+     */
+    suspend fun getUserRecycledItems(userId: Long): com.example.ecosort.data.model.Result<List<HashMap<String, Any>>> {
+        return try {
+            val querySnapshot = recycledItemsCollection
+                .whereEqualTo("userId", userId)
+                .orderBy("recycledDate", Query.Direction.DESCENDING)
+                .get()
+                .await()
+            
+            val items = querySnapshot.documents.map { document ->
+                val data = document.data as HashMap<String, Any>
+                data["id"] = document.id.toLongOrNull() ?: 0L
+                data
+            }
+            
+            android.util.Log.d("FirestoreService", "Retrieved ${items.size} recycled items for user: $userId")
+            com.example.ecosort.data.model.Result.Success(items)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error getting user recycled items", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Delete recycled item from Firebase
+     */
+    suspend fun deleteRecycledItem(itemId: Long): com.example.ecosort.data.model.Result<Unit> {
+        return try {
+            recycledItemsCollection.document(itemId.toString())
+                .delete()
+                .await()
+            
+            android.util.Log.d("FirestoreService", "Recycled item deleted successfully: $itemId")
+            com.example.ecosort.data.model.Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error deleting recycled item", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Get recycled item by ID from Firebase
+     */
+    suspend fun getRecycledItemById(itemId: Long): com.example.ecosort.data.model.Result<HashMap<String, Any>?> {
+        return try {
+            val document = recycledItemsCollection.document(itemId.toString())
+                .get()
+                .await()
+            
+            if (document.exists()) {
+                val data = document.data as HashMap<String, Any>
+                data["id"] = itemId
+                android.util.Log.d("FirestoreService", "Retrieved recycled item: $itemId")
+                com.example.ecosort.data.model.Result.Success(data)
+            } else {
+                android.util.Log.d("FirestoreService", "Recycled item not found: $itemId")
+                com.example.ecosort.data.model.Result.Success(null)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error getting recycled item by ID", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+
+    // ==================== USER POINTS ====================
+
+    /**
+     * Save user points to Firebase
+     */
+    suspend fun saveUserPoints(pointsData: HashMap<String, Any>): com.example.ecosort.data.model.Result<Unit> {
+        return try {
+            val userId = pointsData["userId"] as? Long ?: 0L
+            userPointsCollection.document(userId.toString())
+                .set(pointsData)
+                .await()
+            
+            android.util.Log.d("FirestoreService", "User points saved successfully: $userId")
+            com.example.ecosort.data.model.Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error saving user points", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Get user points from Firebase
+     */
+    suspend fun getUserPoints(userId: Long): com.example.ecosort.data.model.Result<HashMap<String, Any>?> {
+        return try {
+            val document = userPointsCollection.document(userId.toString())
+                .get()
+                .await()
+            
+            if (document.exists()) {
+                val data = document.data as HashMap<String, Any>
+                data["id"] = document.id.toLongOrNull() ?: 0L
+                android.util.Log.d("FirestoreService", "Retrieved user points: $userId")
+                com.example.ecosort.data.model.Result.Success(data)
+            } else {
+                android.util.Log.d("FirestoreService", "User points not found: $userId")
+                com.example.ecosort.data.model.Result.Success(null)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error getting user points", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+
+    // ==================== POINTS TRANSACTIONS ====================
+
+    /**
+     * Save points transaction to Firebase
+     */
+    suspend fun savePointsTransaction(transactionData: HashMap<String, Any>): com.example.ecosort.data.model.Result<Unit> {
+        return try {
+            val transactionId = transactionData["id"] as? Long ?: 0L
+            pointsTransactionsCollection.document(transactionId.toString())
+                .set(transactionData)
+                .await()
+            
+            android.util.Log.d("FirestoreService", "Points transaction saved successfully: $transactionId")
+            com.example.ecosort.data.model.Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error saving points transaction", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Get user points transactions from Firebase
+     */
+    suspend fun getUserPointsTransactions(userId: Long): com.example.ecosort.data.model.Result<List<HashMap<String, Any>>> {
+        return try {
+            val querySnapshot = pointsTransactionsCollection
+                .whereEqualTo("userId", userId)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .await()
+            
+            val transactions = querySnapshot.documents.map { document ->
+                val data = document.data as HashMap<String, Any>
+                data["id"] = document.id.toLongOrNull() ?: 0L
+                data
+            }
+            
+            android.util.Log.d("FirestoreService", "Retrieved ${transactions.size} points transactions for user: $userId")
+            com.example.ecosort.data.model.Result.Success(transactions)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error getting user points transactions", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+    
+    /**
+     * Delete points transaction from Firebase
+     */
+    suspend fun deletePointsTransaction(transactionId: Long): com.example.ecosort.data.model.Result<Unit> {
+        return try {
+            pointsTransactionsCollection.document(transactionId.toString())
+                .delete()
+                .await()
+            
+            android.util.Log.d("FirestoreService", "Points transaction deleted successfully: $transactionId")
+            com.example.ecosort.data.model.Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error deleting points transaction", e)
+            com.example.ecosort.data.model.Result.Error(e)
         }
     }
 

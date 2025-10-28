@@ -63,7 +63,17 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
+        
+        try {
+            setContentView(R.layout.activity_login)
+            android.util.Log.d("LoginActivity", "LoginActivity UI set up successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("LoginActivity", "Error setting content view", e)
+            // Fallback: try to show a simple message
+            android.widget.Toast.makeText(this, "Error loading login screen. Please restart the app.", android.widget.Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
 
         // Reset login and register states to ensure clean state
         viewModel.resetLoginState()

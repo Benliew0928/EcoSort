@@ -20,7 +20,8 @@ import javax.inject.Singleton
 @Singleton
 class ProfileImageManager @Inject constructor(
     private val profileImageStorageService: ProfileImageStorageService,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val adminRepository: com.example.ecosort.data.repository.AdminRepository
 ) {
     
     companion object {
@@ -229,6 +230,83 @@ class ProfileImageManager @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e("ProfileImageManager", "Error cleaning up temp files", e)
+        }
+    }
+    
+    /**
+     * Upload profile image for admin users
+     */
+    suspend fun uploadAdminProfileImage(
+        context: Context,
+        adminId: Long,
+        imageUri: Uri,
+        oldImageUrl: String? = null
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            Log.d("ProfileImageManager", "Processing admin profile image for admin: $adminId")
+            
+            // Step 1: Validate and process the image
+            val processedImageUri = processImage(context, imageUri) ?: return@withContext Result.failure(
+                Exception("Failed to process image")
+            )
+            
+            // Step 2: Upload to Firebase Storage
+            val uploadResult = profileImageStorageService.updateProfileImage(
+                adminId, 
+                processedImageUri, 
+                oldImageUrl
+            )
+            
+            if (uploadResult.isFailure) {
+                return@withContext Result.failure(uploadResult.exceptionOrNull() ?: Exception("Upload failed"))
+            }
+            
+            val newImageUrl = uploadResult.getOrNull() ?: return@withContext Result.failure(Exception("Failed to get image URL"))
+            
+            // Step 3: Update admin profile in database
+            val updateResult = adminRepository.updateAdminProfileImage(adminId, newImageUrl)
+            if (updateResult is com.example.ecosort.data.model.Result.Error) {
+                Log.e("ProfileImageManager", "Failed to update admin profile with new image URL")
+                // Try to delete the uploaded image since database update failed
+                profileImageStorageService.deleteProfileImage(newImageUrl)
+                return@withContext Result.failure(updateResult.exception)
+            }
+            
+            Log.d("ProfileImageManager", "Admin profile image uploaded and updated successfully")
+            Result.success(newImageUrl)
+            
+        } catch (e: Exception) {
+            Log.e("ProfileImageManager", "Error uploading admin profile image", e)
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * Delete profile image for admin users
+     */
+    suspend fun deleteAdminProfileImage(adminId: Long, imageUrl: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            Log.d("ProfileImageManager", "Deleting admin profile image for admin: $adminId")
+            
+            // Delete from Firebase Storage
+            val deleteResult = profileImageStorageService.deleteProfileImage(imageUrl)
+            if (deleteResult.isFailure) {
+                return@withContext Result.failure(deleteResult.exceptionOrNull() ?: Exception("Delete failed"))
+            }
+            
+            // Update admin profile in database
+            val updateResult = adminRepository.updateAdminProfileImage(adminId, null)
+            if (updateResult is com.example.ecosort.data.model.Result.Error) {
+                Log.e("ProfileImageManager", "Failed to update admin profile after image deletion")
+                return@withContext Result.failure(updateResult.exception)
+            }
+            
+            Log.d("ProfileImageManager", "Admin profile image deleted successfully")
+            Result.success(Unit)
+            
+        } catch (e: Exception) {
+            Log.e("ProfileImageManager", "Error deleting admin profile image", e)
+            Result.failure(e)
         }
     }
     

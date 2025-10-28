@@ -22,6 +22,9 @@ import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.data.repository.UserRepository
 import com.example.ecosort.ui.login.LoginActivity
 import com.example.ecosort.utils.ProfileImageManager
+import com.example.ecosort.utils.BottomNavigationHelper
+import com.example.ecosort.recycled.RecycledItemActivity
+import com.example.ecosort.points.PointsActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,6 +42,9 @@ class UserProfileActivity : AppCompatActivity() {
     lateinit var userRepository: UserRepository
     
     @Inject
+    lateinit var adminRepository: com.example.ecosort.data.repository.AdminRepository
+    
+    @Inject
     lateinit var profileImageManager: ProfileImageManager
     
     @Inject
@@ -46,6 +52,8 @@ class UserProfileActivity : AppCompatActivity() {
 
     private var currentUserId: Long = 0L
     private var currentImageUrl: String? = null
+    private var currentUserType: UserType = UserType.USER
+    private var isRecreating = false
 
 
     // Image picker launcher
@@ -73,10 +81,10 @@ class UserProfileActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Apply saved language before setting content view
-        applySavedLanguage()
-        
         setContentView(R.layout.activity_user_profile)
+        
+        // Apply saved language after setting content view to prevent recreation loops
+        applySavedLanguage()
         
         // Setup back button handler
         setupBackPressedHandler()
@@ -87,30 +95,38 @@ class UserProfileActivity : AppCompatActivity() {
         val tvStatsPoints = findViewById<TextView>(R.id.tvStatsPoints)
         val btnEditProfile = findViewById<Button>(R.id.btnEditProfile)
         val btnPrivacySettings = findViewById<Button>(R.id.btnPrivacySettings)
-        val btnSettings = findViewById<Button>(R.id.btnSettings)
         val btnPreferences = findViewById<Button>(R.id.btnPreferences)
         val btnFriendRequests = findViewById<Button>(R.id.btnFriendRequests)
         val btnLogout = findViewById<Button>(R.id.btnLogout)
         val btnBack = findViewById<Button>(R.id.btnBack)
         val profileImageContainer = findViewById<LinearLayout>(R.id.profileImageContainer)
-        val ivProfileImage = findViewById<ImageView>(R.id.ivProfileImage)
-        val tvProfilePlaceholder = findViewById<TextView>(R.id.tvProfilePlaceholder)
+        // Profile image components will be initialized in loadProfileImage method
 
         // Populate user info from DataStore session
         lifecycleScope.launch {
-            val session = withContext(Dispatchers.IO) { userPreferencesManager.userSession.first() }
-            if (session == null || !session.isLoggedIn) {
-                startActivity(Intent(this@UserProfileActivity, LoginActivity::class.java))
-                finish()
-                return@launch
+            try {
+                val session = withContext(Dispatchers.IO) { userPreferencesManager.userSession.first() }
+                if (session == null || !session.isLoggedIn) {
+                    android.util.Log.w("UserProfileActivity", "No valid session found, redirecting to login")
+                    startActivity(Intent(this@UserProfileActivity, LoginActivity::class.java))
+                    finish()
+                    return@launch
+                }
+                
+                android.util.Log.d("UserProfileActivity", "Loading profile for user: ${session.username}, ID: ${session.userId}")
+                
+                currentUserId = session.userId
+                currentUserType = session.userType
+                tvUsername.text = session.username.ifBlank { "User" }
+                tvUserType.text = if (session.userType == UserType.ADMIN) "Administrator" else "Regular User"
+                
+                // Load user profile data
+                loadUserProfile()
+            } catch (e: Exception) {
+                android.util.Log.e("UserProfileActivity", "Error loading user session", e)
+                Toast.makeText(this@UserProfileActivity, "Error loading profile. Please try again.", Toast.LENGTH_SHORT).show()
+                // Don't finish the activity, just show error
             }
-            
-            currentUserId = session.userId
-            tvUsername.text = session.username.ifBlank { "User" }
-            tvUserType.text = if (session.userType == UserType.ADMIN) "Administrator" else "Regular User"
-            
-            // Load user profile data
-            loadUserProfile()
         }
         
         // Display stats (you can make these dynamic later)
@@ -133,9 +149,6 @@ class UserProfileActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        btnSettings.setOnClickListener {
-            Toast.makeText(this, "Settings - Coming Soon!", Toast.LENGTH_SHORT).show()
-        }
 
         btnPreferences.setOnClickListener {
             val intent = Intent(this, com.example.ecosort.preferences.UserPreferencesActivity::class.java)
@@ -150,6 +163,8 @@ class UserProfileActivity : AppCompatActivity() {
         btnLogout.setOnClickListener {
             lifecycleScope.launch {
                 try {
+                    android.util.Log.d("UserProfileActivity", "Starting logout process")
+                    
                     withContext(Dispatchers.IO) { 
                         // Clear local session
                         userPreferencesManager.clearUserSession()
@@ -159,16 +174,35 @@ class UserProfileActivity : AppCompatActivity() {
                         
                         android.util.Log.d("UserProfileActivity", "User session cleared and Firebase sign out completed")
                     }
+                    
                     Toast.makeText(this@UserProfileActivity, "Logged out successfully", Toast.LENGTH_SHORT).show()
                     
                     // Clear activity stack and navigate to login
                     val intent = Intent(this@UserProfileActivity, LoginActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    
+                    android.util.Log.d("UserProfileActivity", "Navigating to LoginActivity")
                     startActivity(intent)
-                    finish()
+                    
+                    // Add a small delay to ensure the intent is processed
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        finish()
+                    }, 100)
+                    
                 } catch (e: Exception) {
                     android.util.Log.e("UserProfileActivity", "Error during logout", e)
                     Toast.makeText(this@UserProfileActivity, "Logout failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    
+                    // Even if logout fails, try to navigate to login
+                    try {
+                        val intent = Intent(this@UserProfileActivity, LoginActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    } catch (navException: Exception) {
+                        android.util.Log.e("UserProfileActivity", "Error navigating to login after logout failure", navException)
+                    }
                 }
             }
         }
@@ -176,6 +210,21 @@ class UserProfileActivity : AppCompatActivity() {
         btnBack.setOnClickListener {
             finish()
         }
+        
+        // Add click listeners for stats cards
+        val cardRecycledItems = findViewById<LinearLayout>(R.id.cardRecycledItems)
+        val cardPoints = findViewById<LinearLayout>(R.id.cardPoints)
+        
+        cardRecycledItems.setOnClickListener {
+            startActivity(Intent(this, RecycledItemActivity::class.java))
+        }
+        
+        cardPoints.setOnClickListener {
+            startActivity(Intent(this, PointsActivity::class.java))
+        }
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
     }
 
     // Handle back button press using modern OnBackPressedDispatcher
@@ -189,12 +238,20 @@ class UserProfileActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Refresh user profile when returning to UserProfileActivity
-        // This ensures the data is up-to-date if it was changed elsewhere
-        loadUserProfile()
+        // Only refresh user profile if we're not in the middle of a language change
+        // This prevents unnecessary reloads and potential loops
+        if (!isFinishing && !isDestroyed && !isRecreating) {
+            loadUserProfile()
+        }
     }
     
     private fun applySavedLanguage() {
+        // Skip language application if already recreating or activity is finishing
+        if (isRecreating || isFinishing || isDestroyed) {
+            android.util.Log.d("UserProfileActivity", "Skipping language application - activity state: recreating=$isRecreating, finishing=$isFinishing, destroyed=$isDestroyed")
+            return
+        }
+        
         lifecycleScope.launch {
             try {
                 val preferences = withContext(Dispatchers.IO) {
@@ -215,8 +272,10 @@ class UserProfileActivity : AppCompatActivity() {
                     else -> "en"
                 }
                 
-                // Only apply if different
-                if (preferences.language != currentLanguage) {
+                android.util.Log.d("UserProfileActivity", "Current language: $currentLanguage, Saved language: ${preferences.language}")
+                
+                // Only apply if different and not already recreating
+                if (preferences.language != currentLanguage && !isFinishing && !isDestroyed && !isRecreating) {
                     val locale = when (preferences.language) {
                         "zh" -> java.util.Locale("zh", "CN")
                         "ms" -> java.util.Locale("ms", "MY")
@@ -230,19 +289,22 @@ class UserProfileActivity : AppCompatActivity() {
                     configuration.setLocale(locale)
                     
                     // Apply to current context
+                    @Suppress("DEPRECATION")
                     resources.updateConfiguration(configuration, resources.displayMetrics)
                     
                     // Apply to application context for global effect
+                    @Suppress("DEPRECATION")
                     applicationContext.resources.updateConfiguration(configuration, applicationContext.resources.displayMetrics)
                     
                     android.util.Log.d("UserProfileActivity", "Applied saved language: ${preferences.language}")
                     
-                    // Recreate the activity to apply language changes
-                    if (!isFinishing && !isDestroyed) {
-                        recreate()
-                    }
+                    // Set flag to prevent multiple recreations
+                    isRecreating = true
+                    
+                    // Recreate the activity to apply language changes only once
+                    recreate()
                 } else {
-                    android.util.Log.d("UserProfileActivity", "Language already correct: ${preferences.language}")
+                    android.util.Log.d("UserProfileActivity", "Language already correct or activity in invalid state: ${preferences.language}")
                 }
             } catch (e: Exception) {
                 android.util.Log.e("UserProfileActivity", "Error applying saved language", e)
@@ -261,20 +323,99 @@ class UserProfileActivity : AppCompatActivity() {
     private fun loadUserProfile() {
         lifecycleScope.launch {
             try {
-                val userResult = userRepository.getCurrentUser()
-                if (userResult is com.example.ecosort.data.model.Result.Success) {
-                    val user = userResult.data
-                    currentImageUrl = user.profileImageUrl
-                    
-                    // Load profile image
-                    loadProfileImage(user.profileImageUrl)
-                    
-                    // Update stats with real data
-                    findViewById<TextView>(R.id.tvStatsRecycled).text = user.itemsRecycled.toString()
-                    findViewById<TextView>(R.id.tvStatsPoints).text = "${user.totalPoints} points"
+                android.util.Log.d("UserProfileActivity", "Loading profile for user $currentUserId, type: $currentUserType")
+                
+                // First sync current user data from Firebase to ensure latest data
+                try {
+                    val session = withContext(Dispatchers.IO) { userPreferencesManager.userSession.first() }
+                    if (session != null && session.isLoggedIn) {
+                        val syncResult = withContext(Dispatchers.IO) { 
+                            userRepository.forceRefreshUserData(session.username) 
+                        }
+                        if (syncResult is com.example.ecosort.data.model.Result.Success) {
+                            android.util.Log.d("UserProfileActivity", "Successfully synced user data from Firebase")
+                        } else {
+                            android.util.Log.w("UserProfileActivity", "Failed to sync user data from Firebase: ${(syncResult as com.example.ecosort.data.model.Result.Error).exception.message}")
+                        }
+                        
+                        // Clean up any duplicate users in Firebase first
+                        try {
+                            val firebaseCleanupResult = withContext(Dispatchers.IO) { 
+                                userRepository.cleanupFirebaseDuplicates() 
+                            }
+                            if (firebaseCleanupResult is com.example.ecosort.data.model.Result.Success && firebaseCleanupResult.data > 0) {
+                                android.util.Log.d("UserProfileActivity", "Cleaned up ${firebaseCleanupResult.data} duplicate users in Firebase")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("UserProfileActivity", "Error cleaning up Firebase duplicates: ${e.message}")
+                        }
+                        
+                        // Clean up any duplicate users in local database
+                        try {
+                            val cleanupResult = withContext(Dispatchers.IO) { 
+                                userRepository.cleanupDuplicateUsers() 
+                            }
+                            if (cleanupResult is com.example.ecosort.data.model.Result.Success && cleanupResult.data > 0) {
+                                android.util.Log.d("UserProfileActivity", "Cleaned up ${cleanupResult.data} duplicate users in local database")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("UserProfileActivity", "Error cleaning up local duplicate users: ${e.message}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("UserProfileActivity", "Error syncing user data from Firebase: ${e.message}")
+                    // Continue loading even if sync fails
+                }
+                
+                if (currentUserType == UserType.ADMIN) {
+                    // Load admin profile
+                    val adminResult = adminRepository.getAdminById(currentUserId)
+                    if (adminResult is com.example.ecosort.data.model.Result.Success && adminResult.data != null) {
+                        val admin = adminResult.data
+                        currentImageUrl = admin.profileImageUrl
+                        loadProfileImage(admin.profileImageUrl)
+                        
+                        android.util.Log.d("UserProfileActivity", "Loaded admin: bio='${admin.bio}', location='${admin.location}', itemsRecycled=${admin.itemsRecycled}, totalPoints=${admin.totalPoints}")
+                        
+                        // Update stats with real admin data
+                        findViewById<TextView>(R.id.tvStatsRecycled).text = admin.itemsRecycled.toString()
+                        findViewById<TextView>(R.id.tvStatsPoints).text = "${admin.totalPoints} points"
+                    } else {
+                        android.util.Log.w("UserProfileActivity", "Failed to load admin profile: ${adminResult}")
+                        // Set default image and stats for admin
+                        loadProfileImage(null)
+                        findViewById<TextView>(R.id.tvStatsRecycled).text = "0"
+                        findViewById<TextView>(R.id.tvStatsPoints).text = "0 points"
+                    }
+                } else {
+                    // Load regular user profile
+                    val userResult = userRepository.getCurrentUser()
+                    if (userResult is com.example.ecosort.data.model.Result.Success) {
+                        val user = userResult.data
+                        currentImageUrl = user.profileImageUrl
+                        
+                        android.util.Log.d("UserProfileActivity", "Loaded user: bio='${user.bio}', location='${user.location}'")
+                        
+                        // Load profile image
+                        loadProfileImage(user.profileImageUrl)
+                        
+                        // Update stats with real data
+                        findViewById<TextView>(R.id.tvStatsRecycled).text = user.itemsRecycled.toString()
+                        findViewById<TextView>(R.id.tvStatsPoints).text = "${user.totalPoints} points"
+                    } else {
+                        android.util.Log.e("UserProfileActivity", "Failed to load user: ${userResult}")
+                        // Show error message to user
+                        Toast.makeText(this@UserProfileActivity, "Failed to load user profile. Please try logging in again.", Toast.LENGTH_LONG).show()
+                        
+                        // Set default values
+                        findViewById<TextView>(R.id.tvStatsRecycled).text = "0"
+                        findViewById<TextView>(R.id.tvStatsPoints).text = "0 points"
+                        loadProfileImage(null)
+                    }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("UserProfileActivity", "Error loading user profile", e)
+                android.util.Log.e("UserProfileActivity", "Error loading profile", e)
+                Toast.makeText(this@UserProfileActivity, "Error loading profile: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -284,6 +425,7 @@ class UserProfileActivity : AppCompatActivity() {
         val tvProfilePlaceholder = findViewById<TextView>(R.id.tvProfilePlaceholder)
         
         try {
+            android.util.Log.d("UserProfileActivity", "loadProfileImage called with URL: $imageUrl")
             if (!imageUrl.isNullOrBlank()) {
                 android.util.Log.d("UserProfileActivity", "Loading profile image: $imageUrl")
                 // Add cache-busting to prevent image sharing between users
@@ -385,15 +527,24 @@ class UserProfileActivity : AppCompatActivity() {
     }
 
     private fun uploadProfileImage(imageUri: Uri) {
-        android.util.Log.d("UserProfileActivity", "Starting profile image upload for user: $currentUserId")
+        android.util.Log.d("UserProfileActivity", "Starting profile image upload for ${currentUserType.name}: $currentUserId")
         lifecycleScope.launch {
             try {
-                val result = profileImageManager.uploadProfileImage(
-                    this@UserProfileActivity,
-                    currentUserId,
-                    imageUri,
-                    currentImageUrl
-                )
+                val result = if (currentUserType == UserType.ADMIN) {
+                    profileImageManager.uploadAdminProfileImage(
+                        this@UserProfileActivity,
+                        currentUserId,
+                        imageUri,
+                        currentImageUrl
+                    )
+                } else {
+                    profileImageManager.uploadProfileImage(
+                        this@UserProfileActivity,
+                        currentUserId,
+                        imageUri,
+                        currentImageUrl
+                    )
+                }
                 
                 android.util.Log.d("UserProfileActivity", "Upload result: ${result.isSuccess}")
                 
@@ -418,7 +569,11 @@ class UserProfileActivity : AppCompatActivity() {
     private fun deleteProfileImage() {
         lifecycleScope.launch {
             try {
-                val result = profileImageManager.deleteProfileImage(currentUserId, currentImageUrl ?: "")
+                val result = if (currentUserType == UserType.ADMIN) {
+                    profileImageManager.deleteAdminProfileImage(currentUserId, currentImageUrl ?: "")
+                } else {
+                    profileImageManager.deleteProfileImage(currentUserId, currentImageUrl ?: "")
+                }
                 
                 if (result.isSuccess) {
                     currentImageUrl = null

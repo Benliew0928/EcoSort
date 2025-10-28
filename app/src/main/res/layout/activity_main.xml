@@ -250,6 +250,7 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/cardPoints"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -257,7 +258,10 @@
                     android:background="@drawable/card_modern"
                     android:padding="16dp"
                     android:layout_marginStart="8dp"
-                    android:elevation="4dp">
+                    android:elevation="4dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -275,6 +279,7 @@
                         android:fontFamily="@string/font_family_caption" />
 
                     <TextView
+                        android:id="@+id/tvPointsCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="1,250"

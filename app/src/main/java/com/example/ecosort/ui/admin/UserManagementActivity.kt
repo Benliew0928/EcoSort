@@ -22,6 +22,7 @@ class UserManagementActivity : AppCompatActivity(), UserManagementAdapter.OnUser
     lateinit var adminRepository: AdminRepository
 
     private lateinit var btnBack: ImageButton
+    private lateinit var btnRefresh: ImageButton
     private lateinit var tvTitle: TextView
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: UserManagementAdapter
@@ -37,8 +38,15 @@ class UserManagementActivity : AppCompatActivity(), UserManagementAdapter.OnUser
         loadUsers()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh users when returning to this activity
+        loadUsers()
+    }
+
     private fun setupUI() {
         btnBack = findViewById(R.id.btnBackUserManagement)
+        btnRefresh = findViewById(R.id.btnRefreshUsers)
         tvTitle = findViewById(R.id.tvUserManagementTitle)
         recyclerView = findViewById(R.id.recyclerViewUsers)
     }
@@ -51,21 +59,41 @@ class UserManagementActivity : AppCompatActivity(), UserManagementAdapter.OnUser
 
     private fun setupListeners() {
         btnBack.setOnClickListener { finish() }
+        btnRefresh.setOnClickListener { 
+            loadUsers()
+            Toast.makeText(this, "Refreshing users...", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun loadUsers() {
         lifecycleScope.launch {
-            when (val result = adminRepository.getAllUsers()) {
-                is com.example.ecosort.data.model.Result.Success -> {
-                    users = result.data
-                    adapter.submitList(users)
+            try {
+                // First sync users from Firebase to ensure we have latest data
+                android.util.Log.d("UserManagementActivity", "Syncing users from Firebase...")
+                val syncResult = adminRepository.syncAllUsersFromFirebase()
+                if (syncResult is com.example.ecosort.data.model.Result.Success) {
+                    android.util.Log.d("UserManagementActivity", "Synced ${syncResult.data} users from Firebase")
+                } else {
+                    android.util.Log.w("UserManagementActivity", "Failed to sync users from Firebase: ${syncResult}")
                 }
-                is com.example.ecosort.data.model.Result.Error -> {
-                    Toast.makeText(this@UserManagementActivity, "Error loading users: ${result.exception.message}", Toast.LENGTH_LONG).show()
+                
+                // Then load users from local database
+                when (val result = adminRepository.getAllUsers()) {
+                    is com.example.ecosort.data.model.Result.Success -> {
+                        users = result.data
+                        adapter.submitList(users)
+                        android.util.Log.d("UserManagementActivity", "Loaded ${users.size} users")
+                    }
+                    is com.example.ecosort.data.model.Result.Error -> {
+                        Toast.makeText(this@UserManagementActivity, "Error loading users: ${result.exception.message}", Toast.LENGTH_LONG).show()
+                    }
+                    else -> {
+                        Toast.makeText(this@UserManagementActivity, "Unexpected error occurred", Toast.LENGTH_SHORT).show()
+                    }
                 }
-                else -> {
-                    Toast.makeText(this@UserManagementActivity, "Unexpected error occurred", Toast.LENGTH_SHORT).show()
-                }
+            } catch (e: Exception) {
+                android.util.Log.e("UserManagementActivity", "Error loading users", e)
+                Toast.makeText(this@UserManagementActivity, "Error loading users: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -83,8 +111,14 @@ class UserManagementActivity : AppCompatActivity(), UserManagementAdapter.OnUser
     }
 
     override fun onViewUserDetails(user: User) {
-        // Show user details dialog
-        UserDetailDialog.newInstance(user).show(supportFragmentManager, "UserDetailDialog")
+        try {
+            android.util.Log.d("UserManagementActivity", "Showing details for user: ${user.username}")
+            // Show user details dialog
+            UserDetailDialog.newInstance(user).show(supportFragmentManager, "UserDetailDialog")
+        } catch (e: Exception) {
+            android.util.Log.e("UserManagementActivity", "Error showing user details", e)
+            Toast.makeText(this, "Error showing user details: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun deleteUser(user: User) {

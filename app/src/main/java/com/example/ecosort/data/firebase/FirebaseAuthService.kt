@@ -396,8 +396,8 @@ BUILD FAILED in 2m 24s
                 
                 // Check for duplicate usernames
                 if (querySnapshot.documents.size > 1) {
-                    android.util.Log.w("FirebaseAuthService", "Multiple accounts found with username: $usernameOrEmail")
-                    throw Exception("Multiple accounts found with this username. Please use your email address to login.")
+                    android.util.Log.w("FirebaseAuthService", "Multiple accounts found with username: $usernameOrEmail, selecting the first one")
+                    // Instead of throwing an error, select the first document
                 }
                 
                 val userDoc = querySnapshot.documents.firstOrNull()

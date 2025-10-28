@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ecosort.databinding.ActivityChatListBinding
 import com.example.ecosort.data.repository.ChatRepository
+import com.example.ecosort.utils.BottomNavigationHelper
 import com.example.ecosort.data.repository.UserRepository
 import com.example.ecosort.data.model.Result
 import dagger.hilt.android.AndroidEntryPoint
@@ -54,6 +55,9 @@ class ChatListActivity : AppCompatActivity() {
             
             // Load conversations
             loadConversations(binding)
+            
+            // Add bottom navigation
+            BottomNavigationHelper.addBottomNavigationToActivity(this)
             
             android.util.Log.d("ChatListActivity", "onCreate completed successfully")
         } catch (e: Exception) {

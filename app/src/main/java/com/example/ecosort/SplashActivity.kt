@@ -37,11 +37,40 @@ class SplashActivity : AppCompatActivity() {
         
         // Show PNG logo for 2 loops (4 seconds), then switch to Lottie animation
         Handler(Looper.getMainLooper()).postDelayed({
-            appLogo.visibility = View.GONE
-            lottieAnimationView.visibility = View.VISIBLE
-            loadingText.visibility = View.VISIBLE // Show loading text with animation
-            lottieAnimationView.repeatCount = 1 // This will play 2 times (0-based: 0=1 loop, 1=2 loops)
-            lottieAnimationView.playAnimation()
+            try {
+                appLogo.visibility = View.GONE
+                lottieAnimationView.visibility = View.VISIBLE
+                loadingText.visibility = View.VISIBLE // Show loading text with animation
+                
+                // Configure Lottie animation
+                lottieAnimationView.repeatCount = 1 // This will play 2 times (0-based: 0=1 loop, 1=2 loops)
+                lottieAnimationView.setRenderMode(com.airbnb.lottie.RenderMode.HARDWARE)
+                
+                // Add error handling for Lottie animation
+                lottieAnimationView.addAnimatorListener(object : android.animation.Animator.AnimatorListener {
+                    override fun onAnimationStart(animation: android.animation.Animator) {
+                        android.util.Log.d("SplashActivity", "Lottie animation started")
+                    }
+                    
+                    override fun onAnimationEnd(animation: android.animation.Animator) {
+                        android.util.Log.d("SplashActivity", "Lottie animation ended")
+                    }
+                    
+                    override fun onAnimationCancel(animation: android.animation.Animator) {
+                        android.util.Log.d("SplashActivity", "Lottie animation cancelled")
+                    }
+                    
+                    override fun onAnimationRepeat(animation: android.animation.Animator) {
+                        android.util.Log.d("SplashActivity", "Lottie animation repeated")
+                    }
+                })
+                
+                lottieAnimationView.playAnimation()
+            } catch (e: Exception) {
+                android.util.Log.e("SplashActivity", "Error starting Lottie animation", e)
+                // Fallback: just show loading text without animation
+                loadingText.visibility = View.VISIBLE
+            }
         }, 4000)
 
         // Check user session and navigate accordingly

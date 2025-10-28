@@ -17,6 +17,7 @@ import com.example.ecosort.data.model.CommunityComment
 import com.example.ecosort.data.model.CommunityPost
 import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.data.repository.CommunityRepository
+import com.example.ecosort.utils.BottomNavigationHelper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -52,6 +53,9 @@ class CommentActivity : AppCompatActivity() {
         setupRecyclerView()
         setupClickListeners()
         loadCurrentUser()
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
         
         // Get post data from intent
         currentPost = intent.getSerializableExtra("post") as? CommunityPost

@@ -34,9 +34,9 @@ data class User(
     val achievements: String? = null, // JSON string for List<Achievement>
     val socialLinks: String? = null, // JSON string for SocialLinks
     val preferences: String? = null // JSON string for UserPreferences
-)
+) : Serializable
 
-enum class UserType {
+enum class UserType : Serializable {
     USER, ADMIN
 }
 

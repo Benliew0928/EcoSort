@@ -246,10 +246,18 @@
                 android:layout_marginBottom="24dp">
 
                 <androidx.cardview.widget.CardView
+                    android:id="@+id/cardRecycledItems"
                     android:layout_width="0dp"
                     android:layout_height="130dp"
                     android:layout_weight="1"
-                    android:layout_marginStart="18dp" android:layout_marginEnd="8dp"  app:cardCornerRadius="16dp"  app:cardElevation="0dp">     <RelativeLayout
+                    android:layout_marginStart="18dp" 
+                    android:layout_marginEnd="8dp"  
+                    app:cardCornerRadius="16dp"  
+                    app:cardElevation="0dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground">     
+                    <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@color/white"
@@ -304,13 +312,17 @@
                 </androidx.cardview.widget.CardView>
 
                 <androidx.cardview.widget.CardView
+                    android:id="@+id/cardPoints"
                     android:layout_width="0dp"
                     android:layout_height="130dp"
                     android:layout_weight="1"
                     android:layout_marginStart="24dp"
                     android:layout_marginEnd="18dp"
                     app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp">
+                    app:cardElevation="0dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground">
 
                     <RelativeLayout
                         android:layout_width="match_parent"

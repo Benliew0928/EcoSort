@@ -219,10 +219,29 @@ object RepositoryModule {
     @Singleton
     fun provideProfileImageManager(
         profileImageStorageService: ProfileImageStorageService,
-        userRepository: com.example.ecosort.data.repository.UserRepository
+        userRepository: com.example.ecosort.data.repository.UserRepository,
+        adminRepository: com.example.ecosort.data.repository.AdminRepository
     ): com.example.ecosort.utils.ProfileImageManager {
         return com.example.ecosort.utils.ProfileImageManager(
-            profileImageStorageService, userRepository
+            profileImageStorageService, userRepository, adminRepository
         )
+    }
+    
+    @Provides
+    @Singleton
+    fun provideRecycledItemRepository(
+        database: com.example.ecosort.data.local.EcoSortDatabase,
+        firestoreService: com.example.ecosort.data.firebase.FirestoreService
+    ): com.example.ecosort.data.repository.RecycledItemRepository {
+        return com.example.ecosort.data.repository.RecycledItemRepository(database, firestoreService)
+    }
+
+    @Provides
+    @Singleton
+    fun providePointsRepository(
+        database: com.example.ecosort.data.local.EcoSortDatabase,
+        firestoreService: com.example.ecosort.data.firebase.FirestoreService
+    ): com.example.ecosort.data.repository.PointsRepository {
+        return com.example.ecosort.data.repository.PointsRepository(database, firestoreService)
     }
 }

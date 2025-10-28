@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/bottomNavBar"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:orientation="horizontal"
+    android:background="@color/background_white"
+    android:paddingVertical="8dp"
+    android:elevation="8dp"
+    android:gravity="center">
+
+    <Button
+        android:id="@+id/bottomHome"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:drawableTop="@drawable/ic_home_24"
+        android:drawableTint="@color/primary_green"
+        android:text="Home"
+        android:textSize="10sp"
+        android:textColor="@color/primary_green"
+        android:background="@android:color/transparent"
+        android:padding="4dp" />
+
+    <Button
+        android:id="@+id/bottomCommunity"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:drawableTop="@drawable/ic_com_gray_24"
+        android:drawableTint="@color/text_secondary"
+        android:text="Community"
+        android:textSize="10sp"
+        android:textColor="@color/text_secondary"
+        android:background="@android:color/transparent"
+        android:padding="4dp" />
+
+    <Button
+        android:id="@+id/bottomChat"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:drawableTop="@drawable/ic_chat_24"
+        android:drawableTint="@color/text_secondary"
+        android:text="Chat"
+        android:textSize="10sp"
+        android:textColor="@color/text_secondary"
+        android:background="@android:color/transparent"
+        android:padding="4dp" />
+
+    <Button
+        android:id="@+id/bottomProfile"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:drawableTop="@drawable/ic_person_24"
+        android:drawableTint="@color/text_secondary"
+        android:text="Profile"
+        android:textSize="10sp"
+        android:textColor="@color/text_secondary"
+        android:background="@android:color/transparent"
+        android:padding="4dp" />
+
+</LinearLayout>

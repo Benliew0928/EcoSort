@@ -23,6 +23,7 @@ import com.example.ecosort.data.model.PostType
 import com.example.ecosort.data.model.Result
 import com.example.ecosort.data.repository.CommunityRepository
 import com.example.ecosort.databinding.ActivityCreatePostBinding
+import com.example.ecosort.utils.BottomNavigationHelper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -76,6 +77,9 @@ class CreatePostActivity : AppCompatActivity() {
         setupPostTypeSpinner()
         setupMediaButtons()
         setupClickListener()
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
     }
 
     private fun setupToolbar() {

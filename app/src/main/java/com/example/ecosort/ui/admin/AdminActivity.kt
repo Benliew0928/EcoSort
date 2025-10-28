@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.ecosort.R
 import com.example.ecosort.utils.SecurityManager
 import com.example.ecosort.data.repository.AdminRepository
+import com.example.ecosort.utils.BottomNavigationHelper
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -34,6 +35,9 @@ class AdminActivity : AppCompatActivity() {
 
         setupUI()
         setupListeners()
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
     }
 
     private fun setupUI() {

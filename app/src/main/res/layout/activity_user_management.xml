@@ -36,10 +36,14 @@
             android:textColor="@color/text_primary"
             android:fontFamily="@string/font_family_heading" />
 
-        <Space
+        <ImageButton
+            android:id="@+id/btnRefreshUsers"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:minWidth="48dp" />
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:src="@drawable/ic_refresh"
+            android:contentDescription="Refresh Users" />
 
     </LinearLayout>
 

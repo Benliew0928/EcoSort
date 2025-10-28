@@ -8,6 +8,7 @@ import com.example.ecosort.R
 import com.example.ecosort.data.model.PrivacySettings
 import com.example.ecosort.data.model.ProfileVisibility
 import com.example.ecosort.data.repository.UserRepository
+import com.example.ecosort.utils.BottomNavigationHelper
 import com.example.ecosort.data.preferences.UserPreferencesManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -44,6 +45,9 @@ class PrivacySettingsActivity : AppCompatActivity() {
         setupClickListeners()
         loadCurrentUser()
         loadPrivacySettings()
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
     }
     
     private fun setupToolbar() {

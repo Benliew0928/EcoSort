@@ -28,6 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.google.ai.client.generativeai.type.content
+import com.example.ecosort.utils.BottomNavigationHelper
 import com.example.ecosort.R.id.btnCapture
 import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions // Needed for lower threshold
 import android.content.Intent
@@ -128,6 +129,9 @@ class ObjectDetectionActivity : AppCompatActivity() {
         } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, CAMERA_REQUEST_CODE)
         }
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
 
     }
 

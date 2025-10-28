@@ -139,6 +139,12 @@
         <activity android:name=".community.VideoPlayerActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".community.CommentActivity" android:exported="false" android:screenOrientation="portrait" />
 
+        <!-- RECYCLED ITEMS ACTIVITIES -->
+        <activity android:name=".recycled.RecycledItemActivity" android:exported="false" android:screenOrientation="portrait" />
+
+        <!-- POINTS ACTIVITIES -->
+        <activity android:name=".points.PointsActivity" android:exported="false" android:screenOrientation="portrait" />
+
         <!-- ==================== FILE PROVIDER ==================== -->
         <!-- FIX 2: Removed the redundant second FileProvider block. Only one is needed. -->
         <provider

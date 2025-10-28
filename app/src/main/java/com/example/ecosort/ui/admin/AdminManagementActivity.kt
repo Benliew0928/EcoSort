@@ -37,6 +37,12 @@ class AdminManagementActivity : AppCompatActivity(), AdminManagementAdapter.OnAd
         loadAdmins()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh admins when returning to this activity
+        loadAdmins()
+    }
+
     private fun setupUI() {
         btnBack = findViewById(R.id.btnBackAdminManagement)
         tvTitle = findViewById(R.id.tvAdminManagementTitle)
@@ -83,8 +89,14 @@ class AdminManagementActivity : AppCompatActivity(), AdminManagementAdapter.OnAd
     }
 
     override fun onViewAdminDetails(admin: Admin) {
-        // Show admin details dialog
-        AdminDetailDialog.newInstance(admin).show(supportFragmentManager, "AdminDetailDialog")
+        try {
+            android.util.Log.d("AdminManagementActivity", "Showing details for admin: ${admin.username}")
+            // Show admin details dialog
+            AdminDetailDialog.newInstance(admin).show(supportFragmentManager, "AdminDetailDialog")
+        } catch (e: Exception) {
+            android.util.Log.e("AdminManagementActivity", "Error showing admin details", e)
+            Toast.makeText(this, "Error showing admin details: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun deleteAdmin(admin: Admin) {

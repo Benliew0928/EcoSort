@@ -34,6 +34,15 @@ interface AdminDao {
     @Query("UPDATE admins SET isActive = :isActive WHERE id = :adminId")
     suspend fun updateAdminStatus(adminId: Long, isActive: Boolean)
     
+    @Query("UPDATE admins SET profileImageUrl = :imageUrl WHERE id = :adminId")
+    suspend fun updateProfileImage(adminId: Long, imageUrl: String?)
+    
+    @Query("UPDATE admins SET bio = :bio WHERE id = :adminId")
+    suspend fun updateBio(adminId: Long, bio: String?)
+    
+    @Query("UPDATE admins SET location = :location WHERE id = :adminId")
+    suspend fun updateLocation(adminId: Long, location: String?)
+    
     @Query("SELECT * FROM admins WHERE isActive = 1")
     suspend fun getAllActiveAdmins(): List<Admin>
 

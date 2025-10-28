@@ -57,6 +57,12 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
     
     @Inject
     lateinit var profileImageManager: com.example.ecosort.utils.ProfileImageManager
+    
+    @Inject
+    lateinit var recycledItemRepository: com.example.ecosort.data.repository.RecycledItemRepository
+
+    @Inject
+    lateinit var pointsRepository: com.example.ecosort.data.repository.PointsRepository
 
     private var currentUserType: UserType = UserType.USER
     
@@ -205,6 +211,22 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
             startActivity(Intent(this, com.example.ecosort.friends.FriendsListActivity::class.java))
         }
 
+        // 4. Recycled Items Card
+        val cardRecycledItems = findViewById<androidx.cardview.widget.CardView>(R.id.cardRecycledItems)
+        cardRecycledItems.setOnClickListener {
+            startActivity(Intent(this, com.example.ecosort.recycled.RecycledItemActivity::class.java))
+        }
+
+        // 5. Points Card
+        val cardPoints = findViewById<androidx.cardview.widget.CardView>(R.id.cardPoints)
+        if (cardPoints != null) {
+            cardPoints.setOnClickListener {
+                startActivity(Intent(this, com.example.ecosort.points.PointsActivity::class.java))
+            }
+        } else {
+            android.util.Log.e("MainActivity", "cardPoints CardView not found in layout")
+        }
+
         // --- Bottom Navigation Clicks ---
 
         bottomHome.setOnClickListener {
@@ -290,11 +312,54 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
             }
         }
 
-        // Load user stats data (Placeholder logic)
+        // Load user stats data
         lifecycleScope.launch {
-            // Placeholder values set here. Replace with actual data fetching logic later.
-            tvItemsRecycledCount.text = "206"
-            tvPointsCount.text = "206"
+            try {
+                val session = withContext(Dispatchers.IO) { userPreferencesManager.userSession.first() }
+                if (session != null && session.isLoggedIn) {
+                    // Load recycled items stats
+                    val statsResult = recycledItemRepository.getRecycledItemStats(session.userId)
+                    if (statsResult is com.example.ecosort.data.model.Result.Success) {
+                        val stats = statsResult.data
+                        withContext(Dispatchers.Main) {
+                            tvItemsRecycledCount.text = stats.totalItems.toString()
+                        }
+                        android.util.Log.d("MainActivity", "Loaded recycled item stats: ${stats.totalItems} items")
+                    } else {
+                        android.util.Log.w("MainActivity", "Failed to load recycled item stats")
+                        withContext(Dispatchers.Main) {
+                            tvItemsRecycledCount.text = "0"
+                        }
+                    }
+
+                    // Load points data
+                    val pointsResult = pointsRepository.getUserPoints(session.userId)
+                    if (pointsResult is com.example.ecosort.data.model.Result.Success) {
+                        val userPoints = pointsResult.data
+                        withContext(Dispatchers.Main) {
+                            tvPointsCount.text = userPoints.totalPoints.toString()
+                        }
+                        android.util.Log.d("MainActivity", "Loaded user points: ${userPoints.totalPoints} points")
+                    } else {
+                        android.util.Log.w("MainActivity", "Failed to load user points")
+                        withContext(Dispatchers.Main) {
+                            tvPointsCount.text = "0"
+                        }
+                    }
+                } else {
+                    android.util.Log.w("MainActivity", "No active session for stats loading")
+                    withContext(Dispatchers.Main) {
+                        tvItemsRecycledCount.text = "0"
+                        tvPointsCount.text = "0"
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error loading stats", e)
+                withContext(Dispatchers.Main) {
+                    tvItemsRecycledCount.text = "0"
+                    tvPointsCount.text = "0"
+                }
+            }
         }
     }
 
@@ -780,12 +845,32 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
     private fun loadUserProfilePicture(profileImageView: android.widget.ImageView) {
         lifecycleScope.launch {
             try {
-                // Get current user's profile image
-                val currentUser = userRepository.getCurrentUser()
-                val profileImageUrl = if (currentUser is com.example.ecosort.data.model.Result.Success<*>) {
-                    (currentUser.data as? com.example.ecosort.data.model.User)?.profileImageUrl
+                // Get current user session to determine user type
+                val session = userPreferencesManager.userSession.first()
+                if (session == null || !session.isLoggedIn) {
+                    android.util.Log.w("MainActivity", "No active session found")
+                    return@launch
+                }
+                
+                currentUserType = session.userType
+                
+                // Get profile image based on user type
+                val profileImageUrl = if (currentUserType == UserType.ADMIN) {
+                    // Get admin profile image
+                    val adminResult = adminRepository.getAdminProfileImage(session.userId)
+                    if (adminResult is com.example.ecosort.data.model.Result.Success) {
+                        adminResult.data
+                    } else {
+                        null
+                    }
                 } else {
-                    null
+                    // Get regular user profile image
+                    val currentUser = userRepository.getCurrentUser()
+                    if (currentUser is com.example.ecosort.data.model.Result.Success<*>) {
+                        (currentUser.data as? com.example.ecosort.data.model.User)?.profileImageUrl
+                    } else {
+                        null
+                    }
                 }
 
                 // Use withContext to ensure we're on the main thread for UI operations

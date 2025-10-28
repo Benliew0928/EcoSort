@@ -153,6 +153,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
     suspend fun getUserByEmail(email: String): User?
 
+    @Query("SELECT * FROM users WHERE firebaseUid = :firebaseUid LIMIT 1")
+    suspend fun getUserByFirebaseUid(firebaseUid: String): User?
+
     @Query("SELECT * FROM users WHERE id = :userId LIMIT 1")
     suspend fun getUserById(userId: Long): User?
 
@@ -169,7 +172,7 @@ interface UserDao {
     suspend fun addPoints(userId: Long, points: Int)
 
     @Query("DELETE FROM users WHERE id = :userId")
-    suspend fun deleteUser(userId: Long)
+    suspend fun deleteUserById(userId: Long)
 
     // Profile management methods
     @Query("UPDATE users SET bio = :bio WHERE id = :userId")
@@ -586,9 +589,12 @@ interface BlockedUserDao {
         Friendship::class,
         BlockedUser::class,
         Admin::class,
-        AdminAction::class
+        AdminAction::class,
+        RecycledItem::class,
+        UserPoints::class,
+        PointsTransaction::class
     ],
-    version = 18,
+    version = 23,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -608,6 +614,8 @@ abstract class EcoSortDatabase : RoomDatabase() {
     abstract fun friendshipDao(): FriendshipDao
     abstract fun blockedUserDao(): BlockedUserDao
     abstract fun adminDao(): AdminDao
+    abstract fun recycledItemDao(): RecycledItemDao
+    abstract fun pointsDao(): PointsDao
 
     companion object {
         @Volatile
@@ -637,7 +645,12 @@ abstract class EcoSortDatabase : RoomDatabase() {
                 MIGRATION_14_15,
                 MIGRATION_15_16,
                 MIGRATION_16_17,
-                MIGRATION_17_18
+                MIGRATION_17_18,
+                MIGRATION_18_19,
+                MIGRATION_19_20,
+                MIGRATION_20_21,
+                MIGRATION_21_22,
+                MIGRATION_22_23
             )
                     .allowMainThreadQueries() // Temporary for debugging
                     .fallbackToDestructiveMigration() // For development only
@@ -1071,6 +1084,114 @@ internal val MIGRATION_17_18 = object : androidx.room.migration.Migration(17, 18
             android.util.Log.d("Migration_17_18", "Added unique constraints for username and email successfully")
         } catch (e: Exception) {
             android.util.Log.e("Migration_17_18", "Migration failed: ${e.message}")
+            throw e
+        }
+    }
+}
+
+internal val MIGRATION_18_19 = object : androidx.room.migration.Migration(18, 19) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add profileImageUrl column to admins table
+            database.execSQL("ALTER TABLE admins ADD COLUMN profileImageUrl TEXT")
+            android.util.Log.d("Migration_18_19", "Added profileImageUrl column to admins table successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_18_19", "Migration failed: ${e.message}")
+            throw e
+        }
+    }
+}
+
+internal val MIGRATION_19_20 = object : androidx.room.migration.Migration(19, 20) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Create recycled_items table
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS recycled_items (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    userId INTEGER NOT NULL,
+                    itemName TEXT NOT NULL,
+                    itemType TEXT NOT NULL,
+                    pointsEarned INTEGER NOT NULL,
+                    recycledDate INTEGER NOT NULL,
+                    imageUrl TEXT,
+                    notes TEXT,
+                    weight REAL,
+                    location TEXT,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL
+                )
+            """)
+            android.util.Log.d("Migration_19_20", "Created recycled_items table successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_19_20", "Migration failed: ${e.message}")
+            throw e
+        }
+    }
+}
+
+internal val MIGRATION_20_21 = object : androidx.room.migration.Migration(20, 21) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Create user_points table
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS user_points (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    userId INTEGER NOT NULL,
+                    totalPoints INTEGER NOT NULL DEFAULT 0,
+                    pointsEarned INTEGER NOT NULL DEFAULT 0,
+                    pointsSpent INTEGER NOT NULL DEFAULT 0,
+                    lastUpdated INTEGER NOT NULL,
+                    createdAt INTEGER NOT NULL
+                )
+            """)
+            
+            // Create points_transactions table
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS points_transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    userId INTEGER NOT NULL,
+                    amount INTEGER NOT NULL,
+                    type TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL
+                )
+            """)
+            
+            android.util.Log.d("Migration_20_21", "Created points tables successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_20_21", "Migration failed: ${e.message}")
+            throw e
+        }
+    }
+}
+
+internal val MIGRATION_21_22 = object : androidx.room.migration.Migration(21, 22) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add bio and location columns to admins table
+            database.execSQL("ALTER TABLE admins ADD COLUMN bio TEXT")
+            database.execSQL("ALTER TABLE admins ADD COLUMN location TEXT")
+            
+            android.util.Log.d("Migration_21_22", "Added bio and location columns to admins table successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_21_22", "Migration failed: ${e.message}")
+            throw e
+        }
+    }
+}
+
+internal val MIGRATION_22_23 = object : androidx.room.migration.Migration(22, 23) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            // Add itemsRecycled and totalPoints columns to admins table
+            database.execSQL("ALTER TABLE admins ADD COLUMN itemsRecycled INTEGER NOT NULL DEFAULT 0")
+            database.execSQL("ALTER TABLE admins ADD COLUMN totalPoints INTEGER NOT NULL DEFAULT 0")
+            
+            android.util.Log.d("Migration_22_23", "Added itemsRecycled and totalPoints columns to admins table successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_22_23", "Migration failed: ${e.message}")
             throw e
         }
     }

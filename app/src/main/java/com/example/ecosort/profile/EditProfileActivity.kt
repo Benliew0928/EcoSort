@@ -21,6 +21,7 @@ import com.example.ecosort.data.model.*
 import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.data.repository.UserRepository
 import com.example.ecosort.utils.ProfileImageManager
+import com.example.ecosort.utils.BottomNavigationHelper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -35,6 +36,9 @@ class EditProfileActivity : AppCompatActivity() {
     lateinit var userRepository: UserRepository
     
     @Inject
+    lateinit var adminRepository: com.example.ecosort.data.repository.AdminRepository
+    
+    @Inject
     lateinit var userPreferencesManager: UserPreferencesManager
     
     @Inject
@@ -42,7 +46,10 @@ class EditProfileActivity : AppCompatActivity() {
 
     private var currentUserId: Long = 0L
     private var currentUser: User? = null
+    private var currentAdmin: com.example.ecosort.data.model.Admin? = null
     private var currentImageUrl: String? = null
+    private var currentUserType: UserType = UserType.USER
+    private var isDataLoaded = false
 
     // UI Components
     private lateinit var ivProfileImage: ImageView
@@ -67,11 +74,13 @@ class EditProfileActivity : AppCompatActivity() {
     }
 
     // Camera launcher
+    private var cameraImageUri: Uri? = null
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
-        if (success) {
-            // Image was captured successfully
+        if (success && cameraImageUri != null) {
+            // Image was captured successfully, now upload it
+            uploadProfileImage(cameraImageUri!!)
         }
     }
 
@@ -82,13 +91,18 @@ class EditProfileActivity : AppCompatActivity() {
         initializeViews()
         setupClickListeners()
         loadUserData()
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
     }
 
     override fun onResume() {
         super.onResume()
-        // Refresh user data when returning to EditProfileActivity
-        // This ensures the data is up-to-date if it was changed elsewhere
-        loadUserData()
+        // Only load user data if it hasn't been loaded yet and activity is not finishing
+        // This prevents unnecessary reloads and data loss during image upload
+        if (!isFinishing && !isDestroyed && !isDataLoaded) {
+            loadUserData()
+        }
     }
 
     private fun initializeViews() {
@@ -161,17 +175,55 @@ class EditProfileActivity : AppCompatActivity() {
                 }
                 
                 currentUserId = session.userId
+                currentUserType = session.userType
                 
-                val userResult = userRepository.getCurrentUser()
-                if (userResult is com.example.ecosort.data.model.Result.Success) {
-                    currentUser = userResult.data
-                    currentImageUrl = currentUser?.profileImageUrl
-                    
-                    populateFields()
-                    updateProfileCompletion()
+                // First sync current user data from Firebase to ensure latest data
+                try {
+                    val syncResult = withContext(Dispatchers.IO) { 
+                        userRepository.forceRefreshUserData(session.username) 
+                    }
+                    if (syncResult is com.example.ecosort.data.model.Result.Success) {
+                        android.util.Log.d("EditProfileActivity", "Successfully synced user data from Firebase")
+                    } else {
+                        android.util.Log.w("EditProfileActivity", "Failed to sync user data from Firebase: ${(syncResult as com.example.ecosort.data.model.Result.Error).exception.message}")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("EditProfileActivity", "Error syncing user data from Firebase: ${e.message}")
+                    // Continue loading even if sync fails
+                }
+                
+                if (currentUserType == UserType.ADMIN) {
+                    // Load admin profile
+                    val adminResult = adminRepository.getAdminById(currentUserId)
+                    if (adminResult is com.example.ecosort.data.model.Result.Success && adminResult.data != null) {
+                        currentAdmin = adminResult.data
+                        currentImageUrl = currentAdmin?.profileImageUrl
+                        
+                        android.util.Log.d("EditProfileActivity", "Loaded admin after sync - bio: '${currentAdmin?.bio}', location: '${currentAdmin?.location}'")
+                        
+                        populateAdminFields()
+                        updateProfileCompletion()
+                        isDataLoaded = true
+                    } else {
+                        Toast.makeText(this@EditProfileActivity, "Failed to load admin data", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
                 } else {
-                    Toast.makeText(this@EditProfileActivity, "Failed to load user data", Toast.LENGTH_SHORT).show()
-                    finish()
+                    // Load regular user profile
+                    val userResult = userRepository.getCurrentUser()
+                    if (userResult is com.example.ecosort.data.model.Result.Success) {
+                        currentUser = userResult.data
+                        currentImageUrl = currentUser?.profileImageUrl
+                        
+                        android.util.Log.d("EditProfileActivity", "Loaded user after sync - bio: '${currentUser?.bio}', location: '${currentUser?.location}'")
+                        
+                        populateFields()
+                        updateProfileCompletion()
+                        isDataLoaded = true
+                    } else {
+                        Toast.makeText(this@EditProfileActivity, "Failed to load user data", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
                 }
             } catch (e: Exception) {
                 android.util.Log.e("EditProfileActivity", "Error loading user data", e)
@@ -186,7 +238,7 @@ class EditProfileActivity : AppCompatActivity() {
     private fun populateFields() {
         currentUser?.let { user ->
             // Load profile image
-            loadProfileImage(user.profileImageUrl)
+            loadProfileImage(currentImageUrl)
             
             // Populate text fields
             etBio.setText(user.bio ?: "")
@@ -209,9 +261,26 @@ class EditProfileActivity : AppCompatActivity() {
             }
         }
     }
+    
+    private fun populateAdminFields() {
+        // Load profile image
+        loadProfileImage(currentImageUrl)
+        
+        // Populate admin fields with actual data
+        etBio.setText(currentAdmin?.bio ?: "")
+        etLocation.setText(currentAdmin?.location ?: "")
+        
+        // Admin users don't have social links in the current model
+        etWebsite.setText("")
+        etInstagram.setText("")
+        etTwitter.setText("")
+        etLinkedin.setText("")
+    }
 
     private fun loadProfileImage(imageUrl: String?) {
         try {
+            android.util.Log.d("EditProfileActivity", "loadProfileImage called with URL: $imageUrl")
+            android.util.Log.d("EditProfileActivity", "ImageView initialized: ${::ivProfileImage.isInitialized}")
             if (!imageUrl.isNullOrBlank()) {
                 android.util.Log.d("EditProfileActivity", "Loading profile image: $imageUrl")
                 // Add cache-busting to prevent image sharing between users
@@ -317,6 +386,7 @@ class EditProfileActivity : AppCompatActivity() {
                 "${packageName}.fileprovider",
                 photoFile
             )
+            cameraImageUri = photoUri
             cameraLauncher.launch(photoUri)
         } else {
             requestCameraPermission()
@@ -349,16 +419,34 @@ class EditProfileActivity : AppCompatActivity() {
             try {
                 showLoading(true)
                 
-                val result = profileImageManager.uploadProfileImage(
-                    this@EditProfileActivity,
-                    currentUserId,
-                    imageUri,
-                    currentImageUrl
-                )
+                val result = if (currentUserType == UserType.ADMIN) {
+                    profileImageManager.uploadAdminProfileImage(
+                        this@EditProfileActivity,
+                        currentUserId,
+                        imageUri,
+                        currentImageUrl
+                    )
+                } else {
+                    profileImageManager.uploadProfileImage(
+                        this@EditProfileActivity,
+                        currentUserId,
+                        imageUri,
+                        currentImageUrl
+                    )
+                }
                 
                 if (result.isSuccess) {
                     val newImageUrl = result.getOrNull()
+                    android.util.Log.d("EditProfileActivity", "Profile image upload successful, new URL: $newImageUrl")
                     currentImageUrl = newImageUrl
+                    
+                    // Update the current user/admin object with the new image URL
+                    if (currentUserType == UserType.ADMIN) {
+                        currentAdmin = currentAdmin?.copy(profileImageUrl = newImageUrl)
+                    } else {
+                        currentUser = currentUser?.copy(profileImageUrl = newImageUrl)
+                    }
+                    
                     loadProfileImage(newImageUrl)
                     updateProfileCompletion()
                     Toast.makeText(this@EditProfileActivity, "Profile picture updated successfully!", Toast.LENGTH_SHORT).show()
@@ -379,10 +467,22 @@ class EditProfileActivity : AppCompatActivity() {
             try {
                 showLoading(true)
                 
-                val result = profileImageManager.deleteProfileImage(currentUserId, currentImageUrl ?: "")
+                val result = if (currentUserType == UserType.ADMIN) {
+                    profileImageManager.deleteAdminProfileImage(currentUserId, currentImageUrl ?: "")
+                } else {
+                    profileImageManager.deleteProfileImage(currentUserId, currentImageUrl ?: "")
+                }
                 
                 if (result.isSuccess) {
                     currentImageUrl = null
+                    
+                    // Update the current user/admin object with null image URL
+                    if (currentUserType == UserType.ADMIN) {
+                        currentAdmin = currentAdmin?.copy(profileImageUrl = null)
+                    } else {
+                        currentUser = currentUser?.copy(profileImageUrl = null)
+                    }
+                    
                     loadProfileImage(null)
                     updateProfileCompletion()
                     Toast.makeText(this@EditProfileActivity, "Profile picture removed successfully!", Toast.LENGTH_SHORT).show()
@@ -406,12 +506,29 @@ class EditProfileActivity : AppCompatActivity() {
                 val bio = etBio.text.toString().trim()
                 val location = etLocation.text.toString().trim()
                 
-                // Update basic profile info
-                val bioResult = userRepository.updateProfileBio(currentUserId, bio.ifEmpty { null })
-                val locationResult = userRepository.updateProfileLocation(currentUserId, location.ifEmpty { null })
+                android.util.Log.d("EditProfileActivity", "Saving profile for user $currentUserId")
+                android.util.Log.d("EditProfileActivity", "Bio: '$bio', Location: '$location'")
+                
+                // Update basic profile info based on user type
+                val bioResult: com.example.ecosort.data.model.Result<Unit>
+                val locationResult: com.example.ecosort.data.model.Result<Unit>
+                
+                if (currentUserType == UserType.ADMIN) {
+                    // For admin users, use admin repository methods
+                    bioResult = adminRepository.updateAdminBio(currentUserId, bio.ifEmpty { null })
+                    locationResult = adminRepository.updateAdminLocation(currentUserId, location.ifEmpty { null })
+                } else {
+                    // For regular users, use user repository methods
+                    bioResult = userRepository.updateProfileBio(currentUserId, bio.ifEmpty { null })
+                    locationResult = userRepository.updateProfileLocation(currentUserId, location.ifEmpty { null })
+                }
+                
+                android.util.Log.d("EditProfileActivity", "Bio update result: ${bioResult::class.simpleName}")
+                android.util.Log.d("EditProfileActivity", "Location update result: ${locationResult::class.simpleName}")
                 
                 if (bioResult is com.example.ecosort.data.model.Result.Error || 
                     locationResult is com.example.ecosort.data.model.Result.Error) {
+                    android.util.Log.e("EditProfileActivity", "Failed to update profile info - Bio: ${bioResult}, Location: ${locationResult}")
                     Toast.makeText(this@EditProfileActivity, "Failed to update profile information", Toast.LENGTH_SHORT).show()
                     return@launch
                 }
@@ -424,8 +541,13 @@ class EditProfileActivity : AppCompatActivity() {
                     linkedin = etLinkedin.text.toString().trim().ifEmpty { null }
                 )
                 
+                android.util.Log.d("EditProfileActivity", "Social links: $socialLinks")
+                
                 val socialLinksResult = userRepository.updateSocialLinks(currentUserId, socialLinks)
+                android.util.Log.d("EditProfileActivity", "Social links update result: ${socialLinksResult::class.simpleName}")
+                
                 if (socialLinksResult is com.example.ecosort.data.model.Result.Error) {
+                    android.util.Log.e("EditProfileActivity", "Failed to update social links: ${socialLinksResult}")
                     Toast.makeText(this@EditProfileActivity, "Failed to update social links", Toast.LENGTH_SHORT).show()
                     return@launch
                 }
@@ -434,8 +556,10 @@ class EditProfileActivity : AppCompatActivity() {
                 val completionResult = userRepository.calculateProfileCompletion(currentUserId)
                 if (completionResult is com.example.ecosort.data.model.Result.Success) {
                     val completion = completionResult.data
+                    android.util.Log.d("EditProfileActivity", "Profile completion: $completion%")
                     Toast.makeText(this@EditProfileActivity, "Profile updated successfully! (${completion}% complete)", Toast.LENGTH_LONG).show()
                 } else {
+                    android.util.Log.w("EditProfileActivity", "Failed to calculate profile completion: ${completionResult}")
                     Toast.makeText(this@EditProfileActivity, "Profile updated successfully!", Toast.LENGTH_SHORT).show()
                 }
                 

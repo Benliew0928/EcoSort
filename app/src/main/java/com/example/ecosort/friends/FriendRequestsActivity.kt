@@ -10,6 +10,7 @@ import com.example.ecosort.data.model.FriendRequest
 import com.example.ecosort.data.model.User
 import com.example.ecosort.data.repository.FriendRepository
 import com.example.ecosort.data.repository.UserRepository
+import com.example.ecosort.utils.BottomNavigationHelper
 import com.example.ecosort.data.model.Result
 import com.example.ecosort.databinding.ActivityFriendRequestsBinding
 import dagger.hilt.android.AndroidEntryPoint
@@ -62,6 +63,9 @@ class FriendRequestsActivity : AppCompatActivity() {
 
         setupUI()
         setupRecyclerView()
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
     }
 
     private fun setupUI() {

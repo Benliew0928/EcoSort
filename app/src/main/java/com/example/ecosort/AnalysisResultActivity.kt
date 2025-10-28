@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File // NEW Import for file handling
+import com.example.ecosort.utils.BottomNavigationHelper
 
 class AnalysisResultActivity : AppCompatActivity() {
 
@@ -80,6 +81,9 @@ class AnalysisResultActivity : AppCompatActivity() {
         } else {
             tvGeminiOutput.text = "Error: Failed to load captured image."
         }
+        
+        // Add bottom navigation
+        BottomNavigationHelper.addBottomNavigationToActivity(this)
     }
 
     // --- Lifecycle Cleanup ---

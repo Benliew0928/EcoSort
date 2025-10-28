@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ecosort.databinding.ActivityChatBinding
 import com.example.ecosort.data.model.ChatMessage
 import com.example.ecosort.data.repository.ChatRepository
+import com.example.ecosort.utils.BottomNavigationHelper
 import com.example.ecosort.data.repository.UserRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -92,6 +93,9 @@ class ChatActivity : AppCompatActivity() {
 
             setupClickListeners()
             setupCurrentUser()
+            
+            // Add bottom navigation
+            BottomNavigationHelper.addBottomNavigationToActivity(this)
             
             android.util.Log.d("ChatActivity", "onCreate completed successfully")
         } catch (e: Exception) {

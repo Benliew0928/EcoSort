@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -8,9 +8,13 @@
     tools:context=".community.CommunityFeedActivity">
 
     <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
+        android:id="@+id/appBarLayout"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
@@ -22,15 +26,21 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:id="@+id/scrollView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toBottomOf="@+id/appBarLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/bottomNavBar">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:paddingBottom="80dp">
 
             <!-- Filter Buttons -->
             <LinearLayout
@@ -48,70 +58,101 @@
                     android:text="All"
                     android:textSize="12sp"
                     android:background="@drawable/button_filter"
-                    android:textColor="@android:color/white" />
+                    android:textColor="@color/primary_green" />
 
                 <Button
                     android:id="@+id/btnFilterTips"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
                     android:text="Tips"
                     android:textSize="12sp"
                     android:background="@drawable/button_filter"
-                    android:textColor="@android:color/white" />
+                    android:textColor="@color/text_secondary" />
 
                 <Button
                     android:id="@+id/btnFilterAchievements"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:text="Achieve"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:text="Achievements"
                     android:textSize="12sp"
                     android:background="@drawable/button_filter"
-                    android:textColor="@android:color/white" />
+                    android:textColor="@color/text_secondary" />
 
                 <Button
                     android:id="@+id/btnFilterQuestions"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Q&amp;A"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:text="Questions"
                     android:textSize="12sp"
                     android:background="@drawable/button_filter"
-                    android:textColor="@android:color/white" />
+                    android:textColor="@color/text_secondary" />
+
+                <Button
+                    android:id="@+id/btnFilterEvents"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="Events"
+                    android:textSize="12sp"
+                    android:background="@drawable/button_filter"
+                    android:textColor="@color/text_secondary" />
 
             </LinearLayout>
 
             <!-- Posts RecyclerView -->
             <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerViewPosts"
+                android:id="@+id/rvPosts"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
                 tools:listitem="@layout/item_community_post" />
 
             <!-- Empty State -->
-            <TextView
-                android:id="@+id/textViewEmpty"
+            <LinearLayout
+                android:id="@+id/llEmptyState"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
+                android:orientation="vertical"
                 android:gravity="center"
-                android:text="No posts yet. Be the first to share something!"
-                android:textColor="@color/text_secondary"
-                android:textSize="16sp"
-                android:visibility="gone" />
+                android:padding="32dp"
+                android:visibility="gone">
 
-            <!-- Loading Progress Bar -->
-            <ProgressBar
-                android:id="@+id/progressBar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="32dp"
-                android:visibility="gone" />
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/ic_com_gray_24"
+                    android:contentDescription="Empty State"
+                    app:tint="@color/text_secondary"
+                    android:alpha="0.5" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="No posts yet"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_secondary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Be the first to share something!"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_hint"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
@@ -122,10 +163,12 @@
         android:id="@+id/fabAddPost"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:src="@drawable/ic_add"
         app:backgroundTint="@color/primary_green"
-        app:tint="@android:color/white" />
+        app:tint="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

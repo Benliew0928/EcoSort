@@ -74,8 +74,8 @@ class UserRepository @Inject constructor(
                 val firebaseUser = firebaseResult.data
                 
                 // Check if user already exists locally
-                val existingLocalUser = userDao.getUserByUsername(username)
-                if (existingLocalUser == null) {
+                val localUser = userDao.getUserByUsername(username)
+                if (localUser == null) {
                     // Insert user to local database
                     val userId = userDao.insertUser(firebaseUser)
                     val createdUser = firebaseUser.copy(id = userId)
@@ -84,9 +84,9 @@ class UserRepository @Inject constructor(
                     return Result.Success(createdUser)
                 } else {
                     // Update existing local user
-                    userDao.updateUser(firebaseUser.copy(id = existingLocalUser.id))
+                    userDao.updateUser(firebaseUser.copy(id = localUser.id))
                     android.util.Log.d("UserRepository", "Updated existing local user from Firebase: $username")
-                    return Result.Success(firebaseUser.copy(id = existingLocalUser.id))
+                    return Result.Success(firebaseUser.copy(id = localUser.id))
                 }
             } else {
                 // Firebase registration failed - no local fallback for security
@@ -124,13 +124,20 @@ class UserRepository @Inject constructor(
             if (firebaseResult is Result.Success) {
                 val firebaseSession = firebaseResult.data
                 
-                // Get or create local user
-                val localUser = userDao.getUserByUsername(username)
+                // Get or create local user - check by username first, then by firebaseUid
+                val localUser = userDao.getUserByUsername(username) ?: 
+                    if (!firebaseSession.token.isNullOrBlank()) {
+                        userDao.getUserByFirebaseUid(firebaseSession.token)
+                    } else {
+                        null
+                    }
                 val userId = if (localUser != null) {
-                    // Update existing local user
-                    userDao.updateUser(localUser.copy(
+                    // Update existing local user with firebaseUid if missing
+                    val updatedUser = localUser.copy(
+                        firebaseUid = firebaseSession.token, // Firebase UID is stored in token
                         lastActive = System.currentTimeMillis()
-                    ))
+                    )
+                    userDao.updateUser(updatedUser)
                     localUser.id
                 } else {
                     // Get user data from Firebase and create locally
@@ -142,6 +149,7 @@ class UserRepository @Inject constructor(
                     } else {
                         // Fallback: create minimal user with the session data
                         val fallbackUser = User(
+                            firebaseUid = firebaseSession.token, // Store Firebase UID
                             username = username,
                             email = firebaseSession.username, // Use username as email fallback
                             passwordHash = "", // No password hash needed
@@ -150,6 +158,8 @@ class UserRepository @Inject constructor(
                         userDao.insertUser(fallbackUser)
                     }
                 }
+                
+                android.util.Log.d("UserRepository", "Login result - Username: $username, Local User ID: $userId, Firebase UID: ${firebaseSession.token}")
                 
                 // Create session with local user ID
                 val session = firebaseSession.copy(userId = userId)
@@ -335,18 +345,120 @@ class UserRepository @Inject constructor(
 
     suspend fun updateProfileBio(userId: Long, bio: String?): Result<Unit> {
         return try {
+            android.util.Log.d("UserRepository", "=== UPDATING BIO ===")
+            android.util.Log.d("UserRepository", "User ID: $userId, Bio: '$bio'")
+            
+            // Get user before update
+            val userBefore = userDao.getUserById(userId)
+            android.util.Log.d("UserRepository", "User before update - bio: '${userBefore?.bio}', location: '${userBefore?.location}', firebaseUid: '${userBefore?.firebaseUid}'")
+            android.util.Log.d("UserRepository", "Full user object before update: $userBefore")
+            
+            // Update local database
             userDao.updateBio(userId, bio)
+            android.util.Log.d("UserRepository", "Database update completed")
+            
+            // Get the updated user to sync to Firebase
+            val user = userDao.getUserById(userId)
+            if (user != null) {
+                android.util.Log.d("UserRepository", "User after bio update - bio: '${user.bio}', location: '${user.location}', firebaseUid: '${user.firebaseUid}'")
+                android.util.Log.d("UserRepository", "Full user object after bio update: $user")
+                
+                // Try to get firebaseUid from current session if user doesn't have one
+                var firebaseUid = user.firebaseUid
+                if (firebaseUid.isNullOrBlank()) {
+                    val session = preferencesManager.userSession.first()
+                    firebaseUid = session?.token
+                    android.util.Log.d("UserRepository", "No firebaseUid in user, trying session token: '$firebaseUid'")
+                    
+                    // Update user with firebaseUid if we found one
+                    if (!firebaseUid.isNullOrBlank()) {
+                        val updatedUser = user.copy(firebaseUid = firebaseUid)
+                        userDao.updateUser(updatedUser)
+                        android.util.Log.d("UserRepository", "Updated user with firebaseUid: '$firebaseUid'")
+                    }
+                }
+                
+                if (!firebaseUid.isNullOrBlank()) {
+                    // Sync updated user profile to Firebase using firebaseUid
+                    try {
+                        val userToSync = user.copy(firebaseUid = firebaseUid)
+                        updateUserInFirebase(userToSync)
+                        android.util.Log.d("UserRepository", "User bio updated in Firebase: ${user.username} (firebaseUid: ${firebaseUid})")
+                    } catch (e: Exception) {
+                        android.util.Log.w("UserRepository", "Failed to update user bio in Firebase: ${e.message}")
+                        // Don't fail the operation if Firebase sync fails
+                    }
+                } else {
+                    android.util.Log.w("UserRepository", "User has no firebaseUid and no session token, skipping Firebase sync for bio update")
+                }
+            } else {
+                android.util.Log.e("UserRepository", "User not found after bio update")
+            }
+            
+            android.util.Log.d("UserRepository", "=== END BIO UPDATE ===")
             Result.Success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "Error updating bio", e)
             Result.Error(e)
         }
     }
 
     suspend fun updateProfileLocation(userId: Long, location: String?): Result<Unit> {
         return try {
+            android.util.Log.d("UserRepository", "=== UPDATING LOCATION ===")
+            android.util.Log.d("UserRepository", "User ID: $userId, Location: '$location'")
+            
+            // Get user before update
+            val userBefore = userDao.getUserById(userId)
+            android.util.Log.d("UserRepository", "User before update - bio: '${userBefore?.bio}', location: '${userBefore?.location}', firebaseUid: '${userBefore?.firebaseUid}'")
+            android.util.Log.d("UserRepository", "Full user object before update: $userBefore")
+            
+            // Update local database
             userDao.updateLocation(userId, location)
+            android.util.Log.d("UserRepository", "Database update completed")
+            
+            // Get the updated user to sync to Firebase
+            val user = userDao.getUserById(userId)
+            if (user != null) {
+                android.util.Log.d("UserRepository", "User after location update - bio: '${user.bio}', location: '${user.location}', firebaseUid: '${user.firebaseUid}'")
+                android.util.Log.d("UserRepository", "Full user object after location update: $user")
+                
+                // Try to get firebaseUid from current session if user doesn't have one
+                var firebaseUid = user.firebaseUid
+                if (firebaseUid.isNullOrBlank()) {
+                    val session = preferencesManager.userSession.first()
+                    firebaseUid = session?.token
+                    android.util.Log.d("UserRepository", "No firebaseUid in user, trying session token: '$firebaseUid'")
+                    
+                    // Update user with firebaseUid if we found one
+                    if (!firebaseUid.isNullOrBlank()) {
+                        val updatedUser = user.copy(firebaseUid = firebaseUid)
+                        userDao.updateUser(updatedUser)
+                        android.util.Log.d("UserRepository", "Updated user with firebaseUid: '$firebaseUid'")
+                    }
+                }
+                
+                if (!firebaseUid.isNullOrBlank()) {
+                    // Sync updated user profile to Firebase using firebaseUid
+                    try {
+                        val userToSync = user.copy(firebaseUid = firebaseUid)
+                        updateUserInFirebase(userToSync)
+                        android.util.Log.d("UserRepository", "User location updated in Firebase: ${user.username} (firebaseUid: ${firebaseUid})")
+                    } catch (e: Exception) {
+                        android.util.Log.w("UserRepository", "Failed to update user location in Firebase: ${e.message}")
+                        // Don't fail the operation if Firebase sync fails
+                    }
+                } else {
+                    android.util.Log.w("UserRepository", "User has no firebaseUid and no session token, skipping Firebase sync for location update")
+                }
+            } else {
+                android.util.Log.e("UserRepository", "User not found after location update")
+            }
+            
+            android.util.Log.d("UserRepository", "=== END LOCATION UPDATE ===")
             Result.Success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "Error updating location", e)
             Result.Error(e)
         }
     }
@@ -469,7 +581,25 @@ class UserRepository @Inject constructor(
         return try {
             val gson = com.google.gson.Gson()
             val json = gson.toJson(socialLinks)
+            
+            // Update local database
             userDao.updateSocialLinks(userId, json)
+            
+            // Get the updated user to sync to Firebase
+            val user = userDao.getUserById(userId)
+            if (user != null && !user.firebaseUid.isNullOrBlank()) {
+                // Sync updated user profile to Firebase using firebaseUid
+                try {
+                    updateUserInFirebase(user)
+                    android.util.Log.d("UserRepository", "User social links updated in Firebase: ${user.username} (firebaseUid: ${user.firebaseUid})")
+                } catch (e: Exception) {
+                    android.util.Log.w("UserRepository", "Failed to update user social links in Firebase: ${e.message}")
+                    // Don't fail the operation if Firebase sync fails
+                }
+            } else {
+                android.util.Log.w("UserRepository", "User has no firebaseUid, skipping Firebase sync for social links update")
+            }
+            
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e)
@@ -570,17 +700,36 @@ class UserRepository @Inject constructor(
             "createdAt" to user.createdAt,
             "itemsRecycled" to user.itemsRecycled,
             "totalPoints" to user.totalPoints,
-            "profileImageUrl" to (user.profileImageUrl ?: ""),
-            "bio" to (user.bio ?: ""),
-            "location" to (user.location ?: ""),
             "joinDate" to user.joinDate,
             "lastActive" to user.lastActive,
-            "profileCompletion" to user.profileCompletion,
-            "privacySettings" to (user.privacySettings ?: ""),
-            "achievements" to (user.achievements ?: ""),
-            "socialLinks" to (user.socialLinks ?: ""),
-            "preferences" to (user.preferences ?: "")
+            "profileCompletion" to user.profileCompletion
         )
+
+        // Only add fields that have actual values (not null or empty)
+        if (!user.firebaseUid.isNullOrBlank()) {
+            userData["firebaseUid"] = user.firebaseUid
+        }
+        if (!user.profileImageUrl.isNullOrBlank()) {
+            userData["profileImageUrl"] = user.profileImageUrl
+        }
+        if (!user.bio.isNullOrBlank()) {
+            userData["bio"] = user.bio
+        }
+        if (!user.location.isNullOrBlank()) {
+            userData["location"] = user.location
+        }
+        if (!user.privacySettings.isNullOrBlank()) {
+            userData["privacySettings"] = user.privacySettings
+        }
+        if (!user.achievements.isNullOrBlank()) {
+            userData["achievements"] = user.achievements
+        }
+        if (!user.socialLinks.isNullOrBlank()) {
+            userData["socialLinks"] = user.socialLinks
+        }
+        if (!user.preferences.isNullOrBlank()) {
+            userData["preferences"] = user.preferences
+        }
 
         val result = firestoreService.saveUserProfile(userData)
         if (result.isFailure) {
@@ -592,6 +741,10 @@ class UserRepository @Inject constructor(
      * Update user profile in Firebase
      */
     private suspend fun updateUserInFirebase(user: User) {
+        android.util.Log.d("UserRepository", "=== UPDATING USER IN FIREBASE ===")
+        android.util.Log.d("UserRepository", "User object - bio: '${user.bio}', location: '${user.location}', profileImageUrl: '${user.profileImageUrl}'")
+        android.util.Log.d("UserRepository", "User object - firebaseUid: '${user.firebaseUid}', username: '${user.username}'")
+        
         val userData = hashMapOf<String, Any>(
             "id" to user.id,
             "username" to user.username,
@@ -600,22 +753,49 @@ class UserRepository @Inject constructor(
             "createdAt" to user.createdAt,
             "itemsRecycled" to user.itemsRecycled,
             "totalPoints" to user.totalPoints,
-            "profileImageUrl" to (user.profileImageUrl ?: ""),
-            "bio" to (user.bio ?: ""),
-            "location" to (user.location ?: ""),
             "joinDate" to user.joinDate,
             "lastActive" to user.lastActive,
-            "profileCompletion" to user.profileCompletion,
-            "privacySettings" to (user.privacySettings ?: ""),
-            "achievements" to (user.achievements ?: ""),
-            "socialLinks" to (user.socialLinks ?: ""),
-            "preferences" to (user.preferences ?: "")
+            "profileCompletion" to user.profileCompletion
         )
 
-        val result = firestoreService.updateUserProfile(user.id.toString(), userData)
+        // Only add fields that have actual values (not null or empty)
+        if (!user.firebaseUid.isNullOrBlank()) {
+            userData["firebaseUid"] = user.firebaseUid
+        }
+        if (!user.profileImageUrl.isNullOrBlank()) {
+            userData["profileImageUrl"] = user.profileImageUrl
+        }
+        if (!user.bio.isNullOrBlank()) {
+            userData["bio"] = user.bio
+        }
+        if (!user.location.isNullOrBlank()) {
+            userData["location"] = user.location
+        }
+        if (!user.privacySettings.isNullOrBlank()) {
+            userData["privacySettings"] = user.privacySettings
+        }
+        if (!user.achievements.isNullOrBlank()) {
+            userData["achievements"] = user.achievements
+        }
+        if (!user.socialLinks.isNullOrBlank()) {
+            userData["socialLinks"] = user.socialLinks
+        }
+        if (!user.preferences.isNullOrBlank()) {
+            userData["preferences"] = user.preferences
+        }
+
+        // Use firebaseUid as the document ID for Firebase updates
+        val documentId = user.firebaseUid ?: user.id.toString()
+        android.util.Log.d("UserRepository", "Document ID: $documentId")
+        android.util.Log.d("UserRepository", "UserData HashMap - bio: '${userData["bio"]}', location: '${userData["location"]}', profileImageUrl: '${userData["profileImageUrl"]}'")
+        
+        val result = firestoreService.updateUserProfile(documentId, userData)
         if (result.isFailure) {
             android.util.Log.w("UserRepository", "Failed to update user in Firebase: ${result.exceptionOrNull()?.message}")
+        } else {
+            android.util.Log.d("UserRepository", "Successfully updated user in Firebase")
         }
+        android.util.Log.d("UserRepository", "=== END FIREBASE UPDATE ===")
     }
 
     /**
@@ -660,27 +840,97 @@ class UserRepository @Inject constructor(
     }
 
     /**
+     * Get user profile from Firebase by firebaseUid
+     */
+    suspend fun getUserProfileFromFirebaseByUid(firebaseUid: String): Result<User?> {
+        return try {
+            val result = firestoreService.getUserProfileByFirebaseUid(firebaseUid)
+            if (result.isSuccess) {
+                val userData = result.getOrNull()
+                if (userData != null) {
+                    val user = User(
+                        id = (userData["id"] as? Number)?.toLong() ?: 0L,
+                        firebaseUid = userData["firebaseUid"] as? String,
+                        username = userData["username"] as? String ?: "",
+                        email = userData["email"] as? String ?: "",
+                        passwordHash = "", // Don't sync password hash
+                        userType = UserType.valueOf(userData["userType"] as? String ?: "USER"),
+                        createdAt = (userData["createdAt"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                        itemsRecycled = (userData["itemsRecycled"] as? Number)?.toInt() ?: 0,
+                        totalPoints = (userData["totalPoints"] as? Number)?.toInt() ?: 0,
+                        profileImageUrl = userData["profileImageUrl"] as? String,
+                        bio = userData["bio"] as? String,
+                        location = userData["location"] as? String,
+                        joinDate = (userData["joinDate"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                        lastActive = (userData["lastActive"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                        profileCompletion = (userData["profileCompletion"] as? Number)?.toInt() ?: 0,
+                        privacySettings = userData["privacySettings"] as? String,
+                        achievements = userData["achievements"] as? String,
+                        socialLinks = userData["socialLinks"] as? String,
+                        preferences = userData["preferences"] as? String
+                    )
+                    Result.Success(user)
+                } else {
+                    Result.Success(null)
+                }
+            } else {
+                Result.Error(result.exceptionOrNull() as? Exception ?: Exception("Failed to get user from Firebase"))
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    /**
      * Sync user profile from Firebase to local database
      */
     suspend fun syncUserFromFirebase(username: String): Result<User> {
         return try {
+            // First try to get user by username
             val firebaseResult = getUserProfileFromFirebase(username)
             if (firebaseResult is Result.Success) {
                 val firebaseUser = firebaseResult.data
                 if (firebaseUser != null) {
-                    // Check if user already exists locally
-                    val localUser = userDao.getUserByUsername(username)
+                    // Check if user already exists locally by username OR firebaseUid
+                    val localUser = userDao.getUserByUsername(username) ?: 
+                        if (!firebaseUser.firebaseUid.isNullOrBlank()) {
+                            userDao.getUserByFirebaseUid(firebaseUser.firebaseUid)
+                        } else {
+                            null
+                        }
+                    
                     if (localUser == null) {
                         // Insert new user to local database
                         val userId = userDao.insertUser(firebaseUser)
                         val syncedUser = firebaseUser.copy(id = userId)
                         android.util.Log.d("UserRepository", "Synced user from Firebase to local: $username")
                         Result.Success(syncedUser)
-                    } else {
-                        // Update existing user
-                        userDao.updateUser(firebaseUser.copy(id = localUser.id))
+                        } else {
+                            // Update existing user - merge Firebase data with local data
+                            // Prefer non-empty local data over empty Firebase data
+                            val mergedUser = localUser.copy(
+                                firebaseUid = firebaseUser.firebaseUid ?: localUser.firebaseUid,
+                                username = firebaseUser.username,
+                                email = firebaseUser.email,
+                                userType = firebaseUser.userType,
+                                createdAt = firebaseUser.createdAt,
+                                itemsRecycled = firebaseUser.itemsRecycled,
+                                totalPoints = firebaseUser.totalPoints,
+                                profileImageUrl = if (!firebaseUser.profileImageUrl.isNullOrBlank()) firebaseUser.profileImageUrl else localUser.profileImageUrl,
+                                bio = if (!firebaseUser.bio.isNullOrBlank()) firebaseUser.bio else localUser.bio,
+                                location = if (!firebaseUser.location.isNullOrBlank()) firebaseUser.location else localUser.location,
+                                joinDate = firebaseUser.joinDate,
+                                lastActive = firebaseUser.lastActive,
+                                profileCompletion = firebaseUser.profileCompletion,
+                                privacySettings = if (!firebaseUser.privacySettings.isNullOrBlank()) firebaseUser.privacySettings else localUser.privacySettings,
+                                achievements = if (!firebaseUser.achievements.isNullOrBlank()) firebaseUser.achievements else localUser.achievements,
+                                socialLinks = if (!firebaseUser.socialLinks.isNullOrBlank()) firebaseUser.socialLinks else localUser.socialLinks,
+                                preferences = if (!firebaseUser.preferences.isNullOrBlank()) firebaseUser.preferences else localUser.preferences
+                            )
+                        userDao.updateUser(mergedUser)
                         android.util.Log.d("UserRepository", "Updated local user from Firebase: $username")
-                        Result.Success(firebaseUser.copy(id = localUser.id))
+                        android.util.Log.d("UserRepository", "Merged user bio: '${mergedUser.bio}', location: '${mergedUser.location}'")
+                        Result.Success(mergedUser)
                     }
                 } else {
                     Result.Error(Exception("User not found in Firebase"))
@@ -690,6 +940,94 @@ class UserRepository @Inject constructor(
             }
         } catch (e: Exception) {
             Result.Error(e)
+        }
+    }
+
+    /**
+     * Clean up duplicate users in local database
+     * Keeps the user with the most recent lastActive timestamp
+     */
+    suspend fun cleanupDuplicateUsers(): Result<Int> {
+        return try {
+            android.util.Log.d("UserRepository", "Starting cleanup of duplicate users")
+            
+            // Get all users grouped by username
+            val allUsers = userDao.getAllUsers()
+            val usersByUsername = allUsers.groupBy { user -> user.username }
+            
+            var cleanedCount = 0
+            
+            for ((username, users) in usersByUsername) {
+                if (users.size > 1) {
+                    android.util.Log.w("UserRepository", "Found ${users.size} duplicate users for username: $username")
+                    
+                    // Sort by lastActive (most recent first) and keep the first one
+                    val sortedUsers = users.sortedByDescending { user -> user.lastActive }
+                    val usersToDelete = sortedUsers.drop(1)
+                    
+                    // Delete duplicate users
+                    for (userToDelete in usersToDelete) {
+                        userDao.deleteUser(userToDelete)
+                        android.util.Log.d("UserRepository", "Deleted duplicate user: ${userToDelete.id} for username: $username")
+                        cleanedCount++
+                    }
+                }
+            }
+            
+            android.util.Log.d("UserRepository", "Cleanup completed. Removed $cleanedCount duplicate users")
+            Result.Success(cleanedCount)
+        } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "Error cleaning up duplicate users", e)
+            Result.Error(e)
+        }
+    }
+
+    /**
+     * Force refresh user data from Firebase with consolidation
+     */
+    suspend fun forceRefreshUserData(username: String): com.example.ecosort.data.model.Result<User> {
+        return try {
+            android.util.Log.d("UserRepository", "Force refreshing user data for: $username")
+            
+            // First cleanup Firebase duplicates
+            val cleanupResult = cleanupFirebaseDuplicates()
+            if (cleanupResult is com.example.ecosort.data.model.Result.Success) {
+                android.util.Log.d("UserRepository", "Cleaned up ${cleanupResult.data} Firebase duplicates")
+            }
+            
+            // Then sync the user data
+            val syncResult = syncUserFromFirebase(username)
+            if (syncResult is com.example.ecosort.data.model.Result.Success) {
+                android.util.Log.d("UserRepository", "Successfully refreshed user data for: $username")
+                syncResult
+            } else {
+                android.util.Log.w("UserRepository", "Failed to refresh user data: ${(syncResult as com.example.ecosort.data.model.Result.Error).exception.message}")
+                syncResult
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "Error force refreshing user data", e)
+            com.example.ecosort.data.model.Result.Error(e)
+        }
+    }
+
+    /**
+     * Clean up duplicate users in Firebase
+     */
+    suspend fun cleanupFirebaseDuplicates(): com.example.ecosort.data.model.Result<Int> {
+        return try {
+            android.util.Log.d("UserRepository", "Starting Firebase duplicate cleanup")
+            val result = firestoreService.cleanupAllDuplicateUsers()
+            if (result.isSuccess) {
+                val cleanedCount = result.getOrNull() ?: 0
+                android.util.Log.d("UserRepository", "Firebase cleanup completed: $cleanedCount duplicates removed")
+                com.example.ecosort.data.model.Result.Success(cleanedCount)
+            } else {
+                android.util.Log.w("UserRepository", "Firebase cleanup failed: ${result.exceptionOrNull()?.message}")
+                com.example.ecosort.data.model.Result.Error(result.exceptionOrNull() as? Exception ?: Exception("Firebase cleanup failed"))
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "Error during Firebase cleanup", e)
+            com.example.ecosort.data.model.Result.Error(e)
         }
     }
 
@@ -713,6 +1051,26 @@ class UserRepository @Inject constructor(
                     } catch (e: Exception) {
                         android.util.Log.w("UserRepository", "Failed to sync user: ${e.message}")
                     }
+                }
+                
+                // Clean up duplicate users in Firebase first
+                try {
+                    val firebaseCleanupResult = cleanupFirebaseDuplicates()
+                    if (firebaseCleanupResult is Result.Success) {
+                        android.util.Log.d("UserRepository", "Cleaned up ${firebaseCleanupResult.data} duplicate users in Firebase")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("UserRepository", "Failed to cleanup Firebase duplicates: ${e.message}")
+                }
+                
+                // Clean up duplicate users in local database after syncing
+                try {
+                    val cleanupResult = cleanupDuplicateUsers()
+                    if (cleanupResult is Result.Success) {
+                        android.util.Log.d("UserRepository", "Cleaned up ${cleanupResult.data} duplicate users in local database")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("UserRepository", "Failed to cleanup local duplicate users: ${e.message}")
                 }
                 
                 android.util.Log.d("UserRepository", "Synced $syncedCount users from Firebase")
