@@ -20,6 +20,9 @@ import com.bumptech.glide.Glide
 import com.example.ecosort.data.model.UserType
 import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.data.repository.UserRepository
+import com.example.ecosort.data.firebase.FirestoreService
+import com.example.ecosort.utils.FirebaseUidHelper
+import com.google.firebase.auth.FirebaseAuth
 import com.example.ecosort.ui.login.LoginActivity
 import com.example.ecosort.utils.ProfileImageManager
 import com.example.ecosort.utils.BottomNavigationHelper
@@ -48,12 +51,19 @@ class UserProfileActivity : AppCompatActivity() {
     lateinit var profileImageManager: ProfileImageManager
     
     @Inject
+    lateinit var firestoreService: FirestoreService
+    
+    @Inject
     lateinit var firebaseAuthService: com.example.ecosort.data.firebase.FirebaseAuthService
 
     private var currentUserId: Long = 0L
     private var currentImageUrl: String? = null
     private var currentUserType: UserType = UserType.USER
     private var isRecreating = false
+    
+    // UI Views
+    private lateinit var tvStatsRecycled: TextView
+    private lateinit var tvStatsPoints: TextView
 
 
     // Image picker launcher
@@ -91,8 +101,8 @@ class UserProfileActivity : AppCompatActivity() {
 
         val tvUsername = findViewById<TextView>(R.id.tvUsername)
         val tvUserType = findViewById<TextView>(R.id.tvUserType)
-        val tvStatsRecycled = findViewById<TextView>(R.id.tvStatsRecycled)
-        val tvStatsPoints = findViewById<TextView>(R.id.tvStatsPoints)
+        tvStatsRecycled = findViewById<TextView>(R.id.tvStatsRecycled)
+        tvStatsPoints = findViewById<TextView>(R.id.tvStatsPoints)
         val btnEditProfile = findViewById<Button>(R.id.btnEditProfile)
         val btnPrivacySettings = findViewById<Button>(R.id.btnPrivacySettings)
         val btnPreferences = findViewById<Button>(R.id.btnPreferences)
@@ -129,9 +139,8 @@ class UserProfileActivity : AppCompatActivity() {
             }
         }
         
-        // Display stats (you can make these dynamic later)
-        tvStatsRecycled.text = "24"
-        tvStatsPoints.text = "1,250 points"
+        // Load real stats data
+        loadUserStats()
 
         // Profile image click listener
         profileImageContainer.setOnClickListener {
@@ -242,6 +251,7 @@ class UserProfileActivity : AppCompatActivity() {
         // This prevents unnecessary reloads and potential loops
         if (!isFinishing && !isDestroyed && !isRecreating) {
             loadUserProfile()
+            loadUserStats()
         }
     }
     
@@ -377,15 +387,13 @@ class UserProfileActivity : AppCompatActivity() {
                         
                         android.util.Log.d("UserProfileActivity", "Loaded admin: bio='${admin.bio}', location='${admin.location}', itemsRecycled=${admin.itemsRecycled}, totalPoints=${admin.totalPoints}")
                         
-                        // Update stats with real admin data
-                        findViewById<TextView>(R.id.tvStatsRecycled).text = admin.itemsRecycled.toString()
-                        findViewById<TextView>(R.id.tvStatsPoints).text = "${admin.totalPoints} points"
+                        // Stats are loaded from Firebase in loadUserStats()
                     } else {
                         android.util.Log.w("UserProfileActivity", "Failed to load admin profile: ${adminResult}")
                         // Set default image and stats for admin
                         loadProfileImage(null)
-                        findViewById<TextView>(R.id.tvStatsRecycled).text = "0"
-                        findViewById<TextView>(R.id.tvStatsPoints).text = "0 points"
+                        tvStatsRecycled.text = "0"
+                        tvStatsPoints.text = "0 points"
                     }
                 } else {
                     // Load regular user profile
@@ -399,17 +407,15 @@ class UserProfileActivity : AppCompatActivity() {
                         // Load profile image
                         loadProfileImage(user.profileImageUrl)
                         
-                        // Update stats with real data
-                        findViewById<TextView>(R.id.tvStatsRecycled).text = user.itemsRecycled.toString()
-                        findViewById<TextView>(R.id.tvStatsPoints).text = "${user.totalPoints} points"
+                        // Stats are loaded from Firebase in loadUserStats()
                     } else {
                         android.util.Log.e("UserProfileActivity", "Failed to load user: ${userResult}")
                         // Show error message to user
                         Toast.makeText(this@UserProfileActivity, "Failed to load user profile. Please try logging in again.", Toast.LENGTH_LONG).show()
                         
                         // Set default values
-                        findViewById<TextView>(R.id.tvStatsRecycled).text = "0"
-                        findViewById<TextView>(R.id.tvStatsPoints).text = "0 points"
+                        tvStatsRecycled.text = "0"
+                        tvStatsPoints.text = "0 points"
                         loadProfileImage(null)
                     }
                 }
@@ -591,6 +597,89 @@ class UserProfileActivity : AppCompatActivity() {
 
     private fun checkCameraPermission(): Boolean {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun loadUserStats() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                if (currentUserType == UserType.ADMIN) {
+                    // For admin users, try to get Firebase UID from current Firebase session
+                    val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                    if (firebaseUser != null) {
+                        val firebaseUid = firebaseUser.uid
+                        android.util.Log.d("UserProfileActivity", "Admin Firebase UID: $firebaseUid")
+                        
+                        // Load recycled items count
+                        val recycledItemsResult = firestoreService.getUserRecycledItems(firebaseUid)
+                        val recycledCount = if (recycledItemsResult is com.example.ecosort.data.model.Result.Success) {
+                            recycledItemsResult.data.size
+                        } else {
+                            0
+                        }
+                        
+                        // Load points
+                        val pointsResult = firestoreService.getUserPoints(firebaseUid)
+                        val totalPoints = if (pointsResult is com.example.ecosort.data.model.Result.Success && pointsResult.data != null) {
+                            (pointsResult.data["totalPoints"] as? Long)?.toInt() ?: 0
+                        } else {
+                            0
+                        }
+                        
+                        withContext(Dispatchers.Main) {
+                            tvStatsRecycled.text = recycledCount.toString()
+                            tvStatsPoints.text = "$totalPoints points"
+                        }
+                    } else {
+                        // Fallback to local admin data if no Firebase session
+                        android.util.Log.w("UserProfileActivity", "No Firebase session for admin, using local data")
+                        withContext(Dispatchers.Main) {
+                            // Keep the existing local data that was set in loadProfileData()
+                        }
+                    }
+                } else {
+                    // For regular users, use the existing logic
+                    val userResult = userRepository.getCurrentUser()
+                    if (userResult is com.example.ecosort.data.model.Result.Error) {
+                        withContext(Dispatchers.Main) {
+                            tvStatsRecycled.text = "0"
+                            tvStatsPoints.text = "0 points"
+                        }
+                        return@launch
+                    }
+                    
+                    val user = (userResult as com.example.ecosort.data.model.Result.Success).data
+                    val firebaseUid = FirebaseUidHelper.getFirebaseUid(user)
+                    
+                    // Load recycled items count
+                    val recycledItemsResult = firestoreService.getUserRecycledItems(firebaseUid)
+                    val recycledCount = if (recycledItemsResult is com.example.ecosort.data.model.Result.Success) {
+                        recycledItemsResult.data.size
+                    } else {
+                        0
+                    }
+                    
+                    // Load points
+                    val pointsResult = firestoreService.getUserPoints(firebaseUid)
+                    val totalPoints = if (pointsResult is com.example.ecosort.data.model.Result.Success && pointsResult.data != null) {
+                        (pointsResult.data["totalPoints"] as? Long)?.toInt() ?: 0
+                    } else {
+                        0
+                    }
+                    
+                    withContext(Dispatchers.Main) {
+                        tvStatsRecycled.text = recycledCount.toString()
+                        tvStatsPoints.text = "$totalPoints points"
+                    }
+                }
+                
+            } catch (e: Exception) {
+                android.util.Log.e("UserProfileActivity", "Error loading user stats", e)
+                withContext(Dispatchers.Main) {
+                    tvStatsRecycled.text = "0"
+                    tvStatsPoints.text = "0 points"
+                }
+            }
+        }
     }
 
     private fun checkStoragePermission(): Boolean {

@@ -1,47 +1,320 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/scrollView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:background="@color/background_light"
+    android:scrollbars="vertical"
+    android:fadeScrollbars="false"
+    android:scrollbarStyle="outsideOverlay"
+    android:clipToPadding="false"
+    android:clipChildren="false">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp"
+        android:paddingBottom="100dp">
 
+        <!-- Header -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="🔍 Waste Analysis Result"
-            android:textSize="24sp"
+            android:text="🔍 Waste Analysis"
+            android:textSize="28sp"
             android:textStyle="bold"
             android:textColor="@color/primary_color"
             android:gravity="center"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="24dp" />
 
-        <ImageView
-            android:id="@+id/ivCapturedObject"
-            android:layout_width="match_parent"
-            android:layout_height="300dp"
-            android:scaleType="centerInside"
-            android:adjustViewBounds="true"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/rounded_corner_background"
-            android:contentDescription="Captured object for analysis" />
-
-        <TextView
-            android:id="@+id/tvGeminiOutput"
+        <!-- Loading State -->
+        <LinearLayout
+            android:id="@+id/llLoadingState"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textColor="@color/black"
-            android:lineSpacingExtra="4dp"
-            android:fontFamily="monospace"
-            android:background="@drawable/rounded_corner_background"
-            android:padding="16dp"
-            android:text="🔄 Analyzing item... Please wait" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp">
+
+            <!-- Lottie Animation -->
+            <com.airbnb.lottie.LottieAnimationView
+                android:id="@+id/lottieLoading"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
+                android:layout_marginBottom="24dp" />
+
+            <!-- Analyzing Text -->
+            <TextView
+                android:id="@+id/tvAnalyzingText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Analyzing Item..."
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary_color"
+                android:gravity="center" />
+
+            <!-- Item Image (shown during loading) -->
+            <ImageView
+                android:id="@+id/ivCapturedObject"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"
+                android:rotation="90"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/rounded_corner_background"
+                android:contentDescription="Captured object for analysis" />
+
+        </LinearLayout>
+
+        <!-- Results State -->
+        <LinearLayout
+            android:id="@+id/llResultsState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Item Image (in results) -->
+            <ImageView
+                android:id="@+id/ivCapturedObjectResult"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"
+                android:rotation="90"
+                android:layout_marginBottom="20dp"
+                android:background="@drawable/rounded_corner_background"
+                android:contentDescription="Captured object for analysis" />
+
+            <!-- Results Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="8dp"
+                android:background="@color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Item Name (Large, Bold) -->
+                    <TextView
+                        android:id="@+id/tvItemName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Item Name"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary_color"
+                        android:gravity="center"
+                        android:layout_marginBottom="16dp" />
+
+                    <!-- Key Info Grid -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="16dp">
+
+                        <!-- Category -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="@drawable/rounded_corner_background"
+                            android:padding="12dp"
+                            android:layout_marginEnd="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📦"
+                                android:textSize="24sp" />
+
+                            <TextView
+                                android:id="@+id/tvCategory"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Category"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"
+                                android:gravity="center" />
+
+                        </LinearLayout>
+
+                        <!-- Bin Color -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:background="@drawable/rounded_corner_background"
+                            android:padding="12dp"
+                            android:layout_marginStart="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🎨"
+                                android:textSize="24sp" />
+
+                            <TextView
+                                android:id="@+id/tvBinColor"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Bin Color"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"
+                                android:gravity="center" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- Recyclable Status -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="♻️"
+                            android:textSize="20sp"
+                            android:layout_marginEnd="8dp" />
+
+                        <TextView
+                            android:id="@+id/tvRecyclableStatus"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Recyclable Status"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary" />
+
+                    </LinearLayout>
+
+                    <!-- Confidence -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📊"
+                            android:textSize="20sp"
+                            android:layout_marginEnd="8dp" />
+
+                        <TextView
+                            android:id="@+id/tvConfidence"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Confidence"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary" />
+
+                    </LinearLayout>
+
+                    <!-- Preparation (if available) -->
+                    <LinearLayout
+                        android:id="@+id/llPreparation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔧 Preparation"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/tvPreparation"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Preparation steps"
+                            android:textSize="14sp"
+                            android:textColor="@color/text_secondary" />
+
+                    </LinearLayout>
+
+                    <!-- Impact (if available) -->
+                    <LinearLayout
+                        android:id="@+id/llImpact"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🌱 Environmental Impact"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/tvImpact"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Environmental impact"
+                            android:textSize="14sp"
+                            android:textColor="@color/text_secondary" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- Recycle Button -->
+            <Button
+                android:id="@+id/btnRecycleIt"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="Recycle It!"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:backgroundTint="@color/primary_green"
+                android:textColor="@android:color/white"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="16dp"
+                android:drawableStart="@drawable/ic_recycle"
+                android:drawablePadding="12dp" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

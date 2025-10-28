@@ -83,25 +83,50 @@
                     android:paddingRight="12dp" />
             </LinearLayout>
 
-            <!-- Welcome Message -->
-            <TextView
-                android:id="@+id/tvWelcomeMessage"
-                android:layout_width="wrap_content"
+            <!-- Welcome Message with Animation -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/welcome_message"
-                android:textSize="18sp"
-                android:textColor="@color/white"
-                android:fontFamily="@string/font_family_primary"
-                android:layout_marginBottom="8dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/welcome_subtitle"
-                android:textSize="14sp"
-                android:textColor="@color/white"
-                android:alpha="0.9"
-                android:fontFamily="@string/font_family_body" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvWelcomeMessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/welcome_message"
+                        android:textSize="18sp"
+                        android:textColor="@color/white"
+                        android:fontFamily="@string/font_family_primary"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/welcome_subtitle"
+                        android:textSize="14sp"
+                        android:textColor="@color/white"
+                        android:alpha="0.9"
+                        android:fontFamily="@string/font_family_body" />
+                </LinearLayout>
+
+                <!-- Green Eco Earth Animation -->
+                <com.airbnb.lottie.LottieAnimationView
+                    android:id="@+id/lottieEcoEarth"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:layout_marginStart="16dp"
+                    android:visibility="gone"
+                    app:lottie_autoPlay="false"
+                    app:lottie_loop="true" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Quick Actions -->
@@ -282,7 +307,7 @@
                         android:id="@+id/tvPointsCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="1,250"
+                        android:text=""
                         android:textSize="28sp"
                         android:textStyle="bold"
                         android:textColor="@color/accent_teal"

@@ -13,6 +13,8 @@ import androidx.lifecycle.lifecycleScope
 import com.example.ecosort.data.model.UserType
 import com.example.ecosort.data.preferences.UserPreferencesManager
 import com.example.ecosort.data.firebase.FirestoreService
+import com.google.firebase.auth.FirebaseAuth
+import com.example.ecosort.utils.FirebaseUidHelper
 import com.example.ecosort.ui.login.LoginActivity
 import com.example.ecosort.utils.DatabaseDebugHelper
 import com.example.ecosort.social.FollowingListActivity
@@ -33,6 +35,7 @@ import kotlinx.coroutines.CoroutineScope
 import androidx.cardview.widget.CardView
 import android.widget.LinearLayout
 import com.example.ecosort.ui.admin.AdminPasskeyDialog
+import com.airbnb.lottie.LottieAnimationView
 
 
 
@@ -110,6 +113,7 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
         // Header
         val btnProfile = findViewById<android.widget.ImageView>(R.id.btnProfile)
         val tvWelcomeMessage = findViewById<TextView>(R.id.tvWelcomeMessage)
+        val lottieEcoEarth = findViewById<LottieAnimationView>(R.id.lottieEcoEarth)
 
         // Quick Actions (Buttons inside CardViews)
         val btnScanContainer = findViewById<LinearLayout>(R.id.btnScanContainer)
@@ -312,55 +316,17 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
             }
         }
 
-        // Load user stats data
-        lifecycleScope.launch {
-            try {
-                val session = withContext(Dispatchers.IO) { userPreferencesManager.userSession.first() }
-                if (session != null && session.isLoggedIn) {
-                    // Load recycled items stats
-                    val statsResult = recycledItemRepository.getRecycledItemStats(session.userId)
-                    if (statsResult is com.example.ecosort.data.model.Result.Success) {
-                        val stats = statsResult.data
-                        withContext(Dispatchers.Main) {
-                            tvItemsRecycledCount.text = stats.totalItems.toString()
-                        }
-                        android.util.Log.d("MainActivity", "Loaded recycled item stats: ${stats.totalItems} items")
-                    } else {
-                        android.util.Log.w("MainActivity", "Failed to load recycled item stats")
-                        withContext(Dispatchers.Main) {
-                            tvItemsRecycledCount.text = "0"
-                        }
-                    }
-
-                    // Load points data
-                    val pointsResult = pointsRepository.getUserPoints(session.userId)
-                    if (pointsResult is com.example.ecosort.data.model.Result.Success) {
-                        val userPoints = pointsResult.data
-                        withContext(Dispatchers.Main) {
-                            tvPointsCount.text = userPoints.totalPoints.toString()
-                        }
-                        android.util.Log.d("MainActivity", "Loaded user points: ${userPoints.totalPoints} points")
-                    } else {
-                        android.util.Log.w("MainActivity", "Failed to load user points")
-                        withContext(Dispatchers.Main) {
-                            tvPointsCount.text = "0"
-                        }
-                    }
-                } else {
-                    android.util.Log.w("MainActivity", "No active session for stats loading")
-                    withContext(Dispatchers.Main) {
-                        tvItemsRecycledCount.text = "0"
-                        tvPointsCount.text = "0"
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "Error loading stats", e)
-                withContext(Dispatchers.Main) {
-                    tvItemsRecycledCount.text = "0"
-                    tvPointsCount.text = "0"
-                }
+        // Setup Lottie animation after a short delay to ensure view is ready
+        if (lottieEcoEarth != null) {
+            lottieEcoEarth.post {
+                setupEcoEarthAnimationSafe(lottieEcoEarth)
             }
+        } else {
+            android.util.Log.e("MainActivity", "LottieAnimationView not found in layout")
         }
+
+        // Load user stats data
+        loadDashboardStats(tvItemsRecycledCount, tvPointsCount)
     }
 
     override fun onResume() {
@@ -372,6 +338,75 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
         // This ensures the image is updated if it was changed in other activities
         val btnProfile = findViewById<android.widget.ImageView>(R.id.btnProfile)
         loadUserProfilePicture(btnProfile)
+
+        // Refresh stats on resume so counts update right after recycling
+        val tvItemsRecycledCount = findViewById<TextView>(R.id.tvItemsRecycledCount)
+        val tvPointsCount = findViewById<TextView>(R.id.tvPointsCount)
+        loadDashboardStats(tvItemsRecycledCount, tvPointsCount)
+    }
+
+    private fun loadDashboardStats(tvItemsRecycledCount: TextView, tvPointsCount: TextView) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // Prefer active Firebase user for cross-device accuracy
+                val authUser = FirebaseAuth.getInstance().currentUser
+                if (authUser != null) {
+                    val uid = authUser.uid
+                    val recycledItemsResult = firestoreService.getUserRecycledItems(uid)
+                    val recycledCount = if (recycledItemsResult is com.example.ecosort.data.model.Result.Success) recycledItemsResult.data.size else 0
+
+                    val pointsResult = firestoreService.getUserPoints(uid)
+                    val totalPoints = if (pointsResult is com.example.ecosort.data.model.Result.Success && pointsResult.data != null) {
+                        (pointsResult.data["totalPoints"] as? Long)?.toInt() ?: 0
+                    } else 0
+
+                    withContext(Dispatchers.Main) {
+                        tvItemsRecycledCount.text = recycledCount.toString()
+                        tvPointsCount.text = totalPoints.toString()
+                    }
+                    return@launch
+                }
+
+                // Fallback to local session -> derive firebaseUid from local user
+                val session = userPreferencesManager.userSession.first()
+                if (session != null && session.isLoggedIn) {
+                    val userResult = userRepository.getUserById(session.userId)
+                    if (userResult is com.example.ecosort.data.model.Result.Success && userResult.data != null) {
+                        val user = userResult.data
+                        val uid = FirebaseUidHelper.getFirebaseUid(user)
+
+                        val recycledItemsResult = firestoreService.getUserRecycledItems(uid)
+                        val recycledCount = if (recycledItemsResult is com.example.ecosort.data.model.Result.Success) recycledItemsResult.data.size else 0
+
+                        val pointsResult = firestoreService.getUserPoints(uid)
+                        val totalPoints = if (pointsResult is com.example.ecosort.data.model.Result.Success && pointsResult.data != null) {
+                            (pointsResult.data["totalPoints"] as? Long)?.toInt() ?: 0
+                        } else 0
+
+                        withContext(Dispatchers.Main) {
+                            tvItemsRecycledCount.text = recycledCount.toString()
+                            tvPointsCount.text = totalPoints.toString()
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            tvItemsRecycledCount.text = "0"
+                            tvPointsCount.text = "0"
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        tvItemsRecycledCount.text = "0"
+                        tvPointsCount.text = "0"
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error loading dashboard stats", e)
+                withContext(Dispatchers.Main) {
+                    tvItemsRecycledCount.text = "0"
+                    tvPointsCount.text = "0"
+                }
+            }
+        }
     }
 
     private fun applySavedLanguageSync() {
@@ -951,5 +986,112 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
     override fun onPasskeyCancelled() {
         // User cancelled passkey entry, do nothing
         Toast.makeText(this, "Admin access cancelled", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun setupEcoEarthAnimationSafe(lottieView: LottieAnimationView) {
+        try {
+            // Check if the view is properly initialized
+            if (lottieView == null) {
+                android.util.Log.e("MainActivity", "LottieAnimationView is null")
+                return
+            }
+            
+            android.util.Log.d("MainActivity", "Setting up eco earth animation safely...")
+            
+            // First try with a simple animation to test if Lottie works
+            try {
+                lottieView.setAnimation("test_animation.json")
+                android.util.Log.d("MainActivity", "Test animation loaded successfully")
+                
+                // If test animation works, try the eco earth animation
+                lottieView.setAnimation("green_eco_earth_animation.json")
+                android.util.Log.d("MainActivity", "Eco earth animation loaded successfully")
+                
+                // Only make visible if animation loads successfully
+                lottieView.visibility = android.view.View.VISIBLE
+                
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Failed to load animation files", e)
+                // Hide the view if animation fails
+                lottieView.visibility = android.view.View.GONE
+                return
+            }
+            
+            // Configure animation properties
+            lottieView.loop(true)
+            lottieView.repeatCount = -1 // Infinite loop
+            
+            // Start the animation
+            lottieView.playAnimation()
+            
+            android.util.Log.d("MainActivity", "Eco Earth animation setup completed successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error setting up eco earth animation", e)
+            // Hide the animation view if it fails to load
+            try {
+                lottieView.visibility = android.view.View.GONE
+            } catch (ex: Exception) {
+                android.util.Log.e("MainActivity", "Error hiding animation view", ex)
+            }
+        }
+    }
+
+    private fun setupEcoEarthAnimation(lottieView: LottieAnimationView) {
+        try {
+            // Check if the view is properly initialized
+            if (lottieView == null) {
+                android.util.Log.e("MainActivity", "LottieAnimationView is null")
+                return
+            }
+            
+            android.util.Log.d("MainActivity", "Setting up eco earth animation...")
+            
+            // First, try to load the animation with error handling
+            try {
+                lottieView.setAnimation("green_eco_earth_animation.json")
+                android.util.Log.d("MainActivity", "Animation file loaded successfully")
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Failed to load animation file", e)
+                // Try to hide the view if animation fails
+                lottieView.visibility = android.view.View.GONE
+                return
+            }
+            
+            // Configure animation properties
+            lottieView.loop(true)
+            lottieView.repeatCount = -1 // Infinite loop
+            
+            // Add animation listener for debugging
+            lottieView.addAnimatorListener(object : android.animation.Animator.AnimatorListener {
+                override fun onAnimationStart(animation: android.animation.Animator) {
+                    android.util.Log.d("MainActivity", "Eco Earth animation started")
+                }
+                
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    android.util.Log.d("MainActivity", "Eco Earth animation ended")
+                }
+                
+                override fun onAnimationCancel(animation: android.animation.Animator) {
+                    android.util.Log.w("MainActivity", "Eco Earth animation cancelled")
+                }
+                
+                override fun onAnimationRepeat(animation: android.animation.Animator) {
+                    android.util.Log.d("MainActivity", "Eco Earth animation repeated")
+                }
+            })
+            
+            // Start the animation
+            lottieView.playAnimation()
+            
+            android.util.Log.d("MainActivity", "Eco Earth animation setup completed successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error setting up eco earth animation", e)
+            // Hide the animation view if it fails to load
+            try {
+                lottieView.visibility = android.view.View.GONE
+            } catch (ex: Exception) {
+                android.util.Log.e("MainActivity", "Error hiding animation view", ex)
+            }
+        }
     }
 }

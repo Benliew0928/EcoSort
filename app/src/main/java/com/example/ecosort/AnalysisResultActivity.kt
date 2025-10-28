@@ -2,21 +2,34 @@ package com.example.ecosort
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri // NEW Import for file handling
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.ImageView
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.content
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.Button
+import com.example.ecosort.data.repository.UserRepository
+import com.example.ecosort.data.firebase.FirestoreService
+import com.example.ecosort.utils.FirebaseUidHelper
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import java.util.*
+import android.content.Intent
+import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.airbnb.lottie.LottieAnimationView
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
 import java.io.File // NEW Import for file handling
 import com.example.ecosort.utils.BottomNavigationHelper
 
+@AndroidEntryPoint
 class AnalysisResultActivity : AppCompatActivity() {
 
     companion object {
@@ -25,21 +38,49 @@ class AnalysisResultActivity : AppCompatActivity() {
         const val EXTRA_LABEL = "extra_label"
     }
 
+    // Loading state views
+    private lateinit var llLoadingState: LinearLayout
+    private lateinit var lottieLoading: LottieAnimationView
+    private lateinit var tvAnalyzingText: TextView
     private lateinit var ivCapturedObject: ImageView
-    private lateinit var tvGeminiOutput: TextView
+    private lateinit var btnRecycleIt: Button
+    
+    // Dependencies
+    @Inject
+    lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var firestoreService: FirestoreService
+    
+    // Results state views
+    private lateinit var llResultsState: LinearLayout
+    private lateinit var ivCapturedObjectResult: ImageView
+    private lateinit var tvItemName: TextView
+    private lateinit var tvCategory: TextView
+    private lateinit var tvBinColor: TextView
+    private lateinit var tvRecyclableStatus: TextView
+    private lateinit var tvConfidence: TextView
+    private lateinit var llPreparation: LinearLayout
+    private lateinit var tvPreparation: TextView
+    private lateinit var llImpact: LinearLayout
+    private lateinit var tvImpact: TextView
+    
     private lateinit var geminiModel: GenerativeModel
-
     private var tempImagePath: String? = null // To hold the path for cleanup
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_analysis_result)
 
-        ivCapturedObject = findViewById(R.id.ivCapturedObject)
-        tvGeminiOutput = findViewById(R.id.tvGeminiOutput)
+        // Initialize views
+        initializeViews()
+        
+        // Dependencies are injected by Hilt
+        
+        // Setup recycle button
+        setupRecycleButton()
 
         // 1. Get file path and model label
-        val imagePath = intent.getStringExtra(EXTRA_BITMAP_PATH) // ⭐ GET STRING PATH ⭐
+        val imagePath = intent.getStringExtra(EXTRA_BITMAP_PATH)
         val modelLabel = intent.getStringExtra(EXTRA_LABEL) ?: "Unknown Object"
 
         var loadedBitmap: Bitmap? = null
@@ -57,13 +98,14 @@ class AnalysisResultActivity : AppCompatActivity() {
         }
 
         if (loadedBitmap != null) {
-            // Ensure proper image display
+            // Show loading state
+            showLoadingState()
+            
+            // Set up the image in both loading and results states
             ivCapturedObject.setImageBitmap(loadedBitmap)
-            ivCapturedObject.scaleType = ImageView.ScaleType.FIT_CENTER // Changed scale type for clarity
-            ivCapturedObject.adjustViewBounds = true
+            ivCapturedObjectResult.setImageBitmap(loadedBitmap)
 
             Log.d("ImageDisplay", "Displaying image: ${loadedBitmap.width}x${loadedBitmap.height}")
-            tvGeminiOutput.text = "Detecting $modelLabel..."
 
             // 3. Initialize Gemini Model
             try {
@@ -75,15 +117,137 @@ class AnalysisResultActivity : AppCompatActivity() {
                 callGeminiApi(loadedBitmap, modelLabel)
             } catch (e: Exception) {
                 Log.e("Gemini", "Failed to initialize Gemini model: ${e.message}", e)
-                tvGeminiOutput.text = "AI analysis unavailable. Check API Key."
+                showErrorState("AI analysis unavailable. Check API Key.")
             }
 
         } else {
-            tvGeminiOutput.text = "Error: Failed to load captured image."
+            showErrorState("Error: Failed to load captured image.")
         }
         
         // Add bottom navigation
         BottomNavigationHelper.addBottomNavigationToActivity(this)
+        
+        // Adjust padding for bottom navigation after it's rendered
+        ivCapturedObject.post {
+            adjustPaddingForBottomNavigation()
+        }
+    }
+
+    // --- UI State Management ---
+    private fun initializeViews() {
+        // Loading state views
+        llLoadingState = findViewById(R.id.llLoadingState)
+        lottieLoading = findViewById(R.id.lottieLoading)
+        tvAnalyzingText = findViewById(R.id.tvAnalyzingText)
+        ivCapturedObject = findViewById(R.id.ivCapturedObject)
+        
+        // Results state views
+        llResultsState = findViewById(R.id.llResultsState)
+        ivCapturedObjectResult = findViewById(R.id.ivCapturedObjectResult)
+        tvItemName = findViewById(R.id.tvItemName)
+        tvCategory = findViewById(R.id.tvCategory)
+        tvBinColor = findViewById(R.id.tvBinColor)
+        tvRecyclableStatus = findViewById(R.id.tvRecyclableStatus)
+        tvConfidence = findViewById(R.id.tvConfidence)
+        llPreparation = findViewById(R.id.llPreparation)
+        tvPreparation = findViewById(R.id.tvPreparation)
+        llImpact = findViewById(R.id.llImpact)
+        tvImpact = findViewById(R.id.tvImpact)
+        btnRecycleIt = findViewById(R.id.btnRecycleIt)
+        
+        // Set up Lottie animation
+        lottieLoading.setAnimation("loading_animation.json")
+        lottieLoading.loop(true)
+        lottieLoading.playAnimation()
+    }
+    
+    private fun showLoadingState() {
+        llLoadingState.visibility = View.VISIBLE
+        llResultsState.visibility = View.GONE
+        lottieLoading.playAnimation()
+    }
+    
+    private fun showResultsState() {
+        llLoadingState.visibility = View.GONE
+        llResultsState.visibility = View.VISIBLE
+        lottieLoading.pauseAnimation()
+    }
+    
+    private fun showErrorState(message: String) {
+        llLoadingState.visibility = View.GONE
+        llResultsState.visibility = View.VISIBLE
+        lottieLoading.pauseAnimation()
+        
+        // Show error in results state
+        tvItemName.text = "Analysis Error"
+        tvCategory.text = "Error"
+        tvBinColor.text = "Unknown"
+        tvRecyclableStatus.text = "Unable to determine"
+        tvConfidence.text = "0% Confidence"
+        llPreparation.visibility = View.GONE
+        llImpact.visibility = View.GONE
+    }
+    
+    private fun applyDynamicColors(category: String, binColor: String, isRecyclable: Boolean, confidence: Double) {
+        val context = this
+        
+        // Category color based on type
+        val categoryColor = when (category.uppercase()) {
+            "PLASTIC" -> context.getColor(R.color.accent_teal)
+            "PAPER" -> context.getColor(R.color.primary_green)
+            "GLASS" -> context.getColor(R.color.accent_teal_light)
+            "METAL" -> context.getColor(R.color.warning_orange)
+            "ELECTRONIC" -> context.getColor(R.color.question_color)
+            "ORGANIC" -> context.getColor(R.color.success_green)
+            "HAZARDOUS" -> context.getColor(R.color.error_red)
+            else -> context.getColor(R.color.text_secondary)
+        }
+        tvCategory.setTextColor(categoryColor)
+        
+        // Bin color based on bin type
+        val binColorRes = when (binColor.uppercase()) {
+            "BLUE" -> context.getColor(R.color.question_color)
+            "BROWN" -> context.getColor(R.color.warning_orange)
+            "ORANGE" -> context.getColor(R.color.accent_teal)
+            "BLACK" -> context.getColor(R.color.text_primary)
+            "RED" -> context.getColor(R.color.error_red)
+            else -> context.getColor(R.color.text_secondary)
+        }
+        tvBinColor.setTextColor(binColorRes)
+        
+        // Recyclable status color
+        val recyclableColor = if (isRecyclable) {
+            context.getColor(R.color.success_green)
+        } else {
+            context.getColor(R.color.error_red)
+        }
+        tvRecyclableStatus.setTextColor(recyclableColor)
+        
+        // Confidence color based on level
+        val confidenceColor = when {
+            confidence >= 0.8 -> context.getColor(R.color.success_green)
+            confidence >= 0.6 -> context.getColor(R.color.warning_orange)
+            else -> context.getColor(R.color.error_red)
+        }
+        tvConfidence.setTextColor(confidenceColor)
+    }
+    
+    private fun adjustPaddingForBottomNavigation() {
+        // Add extra bottom padding to ensure content is not covered by bottom navigation
+        val scrollView = findViewById<ScrollView>(R.id.scrollView)
+        val contentLayout = scrollView?.getChildAt(0) as? LinearLayout
+        contentLayout?.let { layout ->
+            val currentPadding = layout.paddingBottom
+            val extraPadding = resources.getDimensionPixelSize(R.dimen.extra_bottom_padding)
+            val totalBottomPadding = currentPadding + extraPadding
+            
+            layout.setPadding(
+                layout.paddingLeft,
+                layout.paddingTop,
+                layout.paddingRight,
+                totalBottomPadding
+            )
+        }
     }
 
     // --- Lifecycle Cleanup ---
@@ -103,37 +267,27 @@ class AnalysisResultActivity : AppCompatActivity() {
 
     private fun callGeminiApi(image: Bitmap, modelLabel: String) {
         lifecycleScope.launch(Dispatchers.IO) {
+            // Optimize image size for faster processing
+            val optimizedImage = optimizeImageForAnalysis(image)
+            
             val prompt = """
-                You are an expert waste classification specialist for Malaysia's recycling system. Analyze this image of an object preliminarily detected as '$modelLabel'.
-
-                Provide a comprehensive analysis in this EXACT JSON format:
+                Analyze this waste item for Malaysia recycling. Return ONLY this JSON:
                 {
                     "itemName": "Specific item name",
                     "category": "PLASTIC|PAPER|GLASS|METAL|ELECTRONIC|ORGANIC|HAZARDOUS|OTHER",
                     "binColor": "Blue|Brown|Orange|Black|Red",
-                    "binType": "Paper|Glass|Plastics/Metals|General Waste|Hazardous",
                     "isRecyclable": true|false,
                     "confidence": 0.85,
-                    "preparation": "Specific preparation steps required",
-                    "environmentalImpact": "CO2 saved in kg if recycled",
-                    "alternativeDisposal": "Alternative disposal method if not recyclable",
-                    "recyclingTips": "Additional helpful tips",
-                    "malaysiaSpecific": "Malaysia-specific recycling information"
+                    "preparation": "Brief prep steps",
+                    "impact": "CO2 saved if recycled"
                 }
-
-                Rules:
-                1. Be specific about the item (e.g., "Plastic Water Bottle" not just "Plastic")
-                2. Use Malaysia's bin system: Blue (Paper), Brown (Glass), Orange (Plastics/Metals), Black (General Waste), Red (Hazardous)
-                3. Provide realistic confidence scores (0.0-1.0)
-                4. Include practical preparation steps
-                5. Give environmental impact in kg CO2 saved
-                6. Provide Malaysia-specific recycling information
-                7. Return ONLY the JSON, no additional text
+                
+                Rules: Be specific (e.g., "Plastic Bottle" not "Plastic"). Use Malaysia bins: Blue=Paper, Brown=Glass, Orange=Plastics/Metals, Black=General, Red=Hazardous. Confidence 0.0-1.0. Keep responses concise.
             """.trimIndent()
 
             try {
                 val inputContent = content {
-                    image(image)
+                    image(optimizedImage)
                     text(prompt)
                 }
 
@@ -146,9 +300,25 @@ class AnalysisResultActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Log.e("GeminiError", "API call failed: ${e.message}")
                 withContext(Dispatchers.Main) {
-                    tvGeminiOutput.text = "Classification Failed: ${e.message}"
+                    showErrorState("Classification Failed: ${e.message}")
                 }
             }
+        }
+    }
+    
+    private fun optimizeImageForAnalysis(originalBitmap: Bitmap): Bitmap {
+        // Resize image to optimal size for AI analysis (faster processing)
+        val maxSize = 1024
+        val width = originalBitmap.width
+        val height = originalBitmap.height
+        
+        return if (width > maxSize || height > maxSize) {
+            val scale = minOf(maxSize.toFloat() / width, maxSize.toFloat() / height)
+            val newWidth = (width * scale).toInt()
+            val newHeight = (height * scale).toInt()
+            Bitmap.createScaledBitmap(originalBitmap, newWidth, newHeight, true)
+        } else {
+            originalBitmap
         }
     }
 
@@ -164,55 +334,156 @@ class AnalysisResultActivity : AppCompatActivity() {
             val itemName = jsonObject.optString("itemName", fallbackLabel)
             val category = jsonObject.optString("category", "OTHER")
             val binColor = jsonObject.optString("binColor", "Black")
-            val binType = jsonObject.optString("binType", "General Waste")
             val isRecyclable = jsonObject.optBoolean("isRecyclable", false)
             val confidence = jsonObject.optDouble("confidence", 0.0)
             val preparation = jsonObject.optString("preparation", "No special preparation required")
-            val environmentalImpact = jsonObject.optString("environmentalImpact", "0 kg CO2")
-            val alternativeDisposal = jsonObject.optString("alternativeDisposal", "Dispose in general waste")
-            val recyclingTips = jsonObject.optString("recyclingTips", "Check local recycling guidelines")
-            val malaysiaSpecific = jsonObject.optString("malaysiaSpecific", "Follow local municipality guidelines")
+            val impact = jsonObject.optString("impact", "0 kg CO2")
 
-            // Create enhanced display text
-            val displayText = buildString {
-                appendLine("🗑️ **$itemName**")
-                appendLine("📦 Category: $category")
-                appendLine("🎨 Bin: $binColor ($binType)")
-                appendLine("♻️ Recyclable: ${if (isRecyclable) "Yes" else "No"}")
-                appendLine("📊 Confidence: ${(confidence * 100).toInt()}%")
-                appendLine()
-                appendLine("🔧 **Preparation:**")
-                appendLine(preparation)
-                appendLine()
-                appendLine("🌱 **Environmental Impact:**")
-                appendLine("$environmentalImpact saved if recycled")
-                appendLine()
-                if (!isRecyclable) {
-                    appendLine("⚠️ **Alternative Disposal:**")
-                    appendLine(alternativeDisposal)
-                    appendLine()
-                }
-                appendLine("💡 **Tips:**")
-                appendLine(recyclingTips)
-                appendLine()
-                appendLine("🇲🇾 **Malaysia Specific:**")
-                appendLine(malaysiaSpecific)
+            // Update UI with parsed data
+            tvItemName.text = itemName
+            tvCategory.text = category
+            tvBinColor.text = binColor
+            tvRecyclableStatus.text = if (isRecyclable) "Recyclable" else "Not Recyclable"
+            tvConfidence.text = "${(confidence * 100).toInt()}% Confidence"
+            
+            // Apply dynamic colors based on content
+            applyDynamicColors(category, binColor, isRecyclable, confidence)
+            
+            // Show preparation if available
+            if (preparation.isNotEmpty() && preparation != "No special preparation required") {
+                llPreparation.visibility = View.VISIBLE
+                tvPreparation.text = preparation
+            } else {
+                llPreparation.visibility = View.GONE
+            }
+            
+            // Show impact if available
+            if (impact.isNotEmpty() && impact != "0 kg CO2") {
+                llImpact.visibility = View.VISIBLE
+                tvImpact.text = impact
+            } else {
+                llImpact.visibility = View.GONE
             }
 
-            tvGeminiOutput.text = displayText
+            // Switch to results state
+            showResultsState()
 
         } catch (e: Exception) {
             Log.e("JSONParseError", "Failed to parse Gemini response: ${e.message}")
             Log.e("JSONParseError", "Raw response: $responseText")
 
-            // Fallback to simple display if JSON parsing fails
-            tvGeminiOutput.text = buildString {
-                appendLine("🗑️ **$fallbackLabel**")
-                appendLine("📦 Analysis completed")
-                appendLine("🎨 Bin: Check response below")
-                appendLine()
-                appendLine("📝 **Raw Analysis:**")
-                appendLine(responseText)
+            // Show error state
+            showErrorState("Failed to parse analysis results")
+        }
+    }
+    
+    private fun setupRecycleButton() {
+        btnRecycleIt.setOnClickListener {
+            handleRecycleItem()
+        }
+    }
+    
+    private fun handleRecycleItem() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // Get current user
+                val userResult = userRepository.getCurrentUser()
+                if (userResult is com.example.ecosort.data.model.Result.Error) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@AnalysisResultActivity, "Please login first", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+                
+                // Always use the active FirebaseAuth user to avoid cross-account writes
+                val authUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                val firebaseUid = authUser?.uid ?: run {
+                    val user = (userResult as com.example.ecosort.data.model.Result.Success).data
+                    FirebaseUidHelper.logUserIdentification(user)
+                    FirebaseUidHelper.getFirebaseUid(user)
+                }
+                
+                // Get current analysis data
+                val itemName = tvItemName.text.toString().replace("Item: ", "")
+                val category = tvCategory.text.toString().replace("Category: ", "")
+                val binColor = tvBinColor.text.toString().replace("Bin Color: ", "")
+                val isRecyclable = tvRecyclableStatus.text.toString().contains("Yes")
+                val confidence = tvConfidence.text.toString().replace("Confidence: ", "").replace("%", "").toFloatOrNull() ?: 0f
+                
+                // Create recycled item data
+                val recycledItemData = hashMapOf<String, Any>(
+                    "id" to System.currentTimeMillis(),
+                    "userId" to firebaseUid, // Use Firebase UID instead of local ID
+                    "itemName" to itemName,
+                    "category" to category,
+                    "binColor" to binColor,
+                    "isRecyclable" to isRecyclable,
+                    "confidence" to confidence,
+                    "recycledDate" to Date(),
+                    "pointsEarned" to 100
+                )
+                
+                // Save recycled item to Firebase
+                val saveItemResult = firestoreService.saveRecycledItem(recycledItemData)
+                if (saveItemResult is com.example.ecosort.data.model.Result.Error) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@AnalysisResultActivity, "Failed to save recycled item", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+                
+                // Update user points
+                val pointsResult = firestoreService.getUserPoints(firebaseUid)
+                val currentPoints = if (pointsResult is com.example.ecosort.data.model.Result.Success && pointsResult.data != null) {
+                    (pointsResult.data["totalPoints"] as? Long)?.toInt() ?: 0
+                } else {
+                    0
+                }
+                
+                val newTotalPoints = currentPoints + 100
+                val pointsData = hashMapOf<String, Any>(
+                    "userId" to firebaseUid, // Use Firebase UID instead of local ID
+                    "totalPoints" to newTotalPoints,
+                    "lastUpdated" to Date()
+                )
+                
+                val savePointsResult = firestoreService.saveUserPoints(pointsData)
+                if (savePointsResult is com.example.ecosort.data.model.Result.Error) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@AnalysisResultActivity, "Failed to update points", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+                
+                // Create points transaction
+                val transactionData = hashMapOf<String, Any>(
+                    "id" to System.currentTimeMillis(),
+                    "userId" to firebaseUid, // Use Firebase UID instead of local ID
+                    "points" to 100,
+                    "type" to "earned",
+                    "description" to "Recycled: $itemName",
+                    "timestamp" to Date()
+                )
+                
+                val saveTransactionResult = firestoreService.savePointsTransaction(transactionData)
+                if (saveTransactionResult is com.example.ecosort.data.model.Result.Error) {
+                    Log.w("RecycleItem", "Failed to save points transaction")
+                }
+                
+                // Navigate to success screen
+                withContext(Dispatchers.Main) {
+                    val intent = Intent(this@AnalysisResultActivity, RecyclingSuccessActivity::class.java)
+                    intent.putExtra("item_name", itemName)
+                    intent.putExtra("points_earned", 100)
+                    startActivity(intent)
+                    finish()
+                }
+                
+            } catch (e: Exception) {
+                Log.e("RecycleItem", "Error recycling item", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@AnalysisResultActivity, "Error recycling item: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

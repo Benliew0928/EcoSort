@@ -55,6 +55,7 @@ class ObjectDetectionActivity : AppCompatActivity() {
     // Frame dimensions for proper coordinate calculations
     private var frameWidth: Int = 0
     private var frameHeight: Int = 0
+    private var lastProcessedRotation: Int = 0
 
     private val cameraExecutor: ExecutorService by lazy {
         Executors.newSingleThreadExecutor()
@@ -193,6 +194,8 @@ class ObjectDetectionActivity : AppCompatActivity() {
             if (mediaImage != null) {
                 // Update class-level frame dimensions with rotation awareness
                 val rotation = imageProxy.imageInfo.rotationDegrees
+                this@ObjectDetectionActivity.lastProcessedRotation = rotation
+                
                 if (rotation == 90 || rotation == 270) {
                     // Swap dimensions for rotated images
                     this@ObjectDetectionActivity.frameWidth = imageProxy.height
@@ -484,21 +487,56 @@ class ObjectDetectionActivity : AppCompatActivity() {
             return boundingBox
         }
         
-        // Calculate scale factors with safety checks
-        val scaleX = bitmapWidth.toFloat() / frameWidth.toFloat()
-        val scaleY = bitmapHeight.toFloat() / frameHeight.toFloat()
+        // Get the current rotation from the last processed frame
+        val rotation = lastProcessedRotation
         
-        Log.d("Transform", "Frame: ${frameWidth}x${frameHeight}, Bitmap: ${bitmapWidth}x${bitmapHeight}")
-        Log.d("Transform", "Scale factors: X=$scaleX, Y=$scaleY")
+        Log.d("Transform", "Frame: ${frameWidth}x${frameHeight}, Bitmap: ${bitmapWidth}x${bitmapHeight}, Rotation: ${rotation}°")
         
-        // Apply scaling with bounds checking
-        val transformedBox = Rect(
-            (boundingBox.left * scaleX).toInt().coerceIn(0, bitmapWidth),
-            (boundingBox.top * scaleY).toInt().coerceIn(0, bitmapHeight),
-            (boundingBox.right * scaleX).toInt().coerceIn(0, bitmapWidth),
-            (boundingBox.bottom * scaleY).toInt().coerceIn(0, bitmapHeight)
-        )
+        // Handle rotation-based coordinate transformation
+        val transformedBox = when (rotation) {
+            90, 270 -> {
+                // For 90° and 270° rotations, we need to account for the coordinate system change
+                // The frame dimensions are already swapped in the analyzer, but the bitmap is in sensor orientation
+                val scaleX = bitmapWidth.toFloat() / frameHeight.toFloat()  // Note: frameHeight is actually width for rotated
+                val scaleY = bitmapHeight.toFloat() / frameWidth.toFloat()  // Note: frameWidth is actually height for rotated
+                
+                Log.d("Transform", "Rotated scale factors: X=$scaleX, Y=$scaleY")
+                
+                // For 90° rotation: (x,y) -> (y, bitmapHeight - x)
+                // For 270° rotation: (x,y) -> (bitmapWidth - y, x)
+                when (rotation) {
+                    90 -> Rect(
+                        (boundingBox.top * scaleY).toInt().coerceIn(0, bitmapWidth),
+                        (bitmapHeight - boundingBox.right * scaleX).toInt().coerceIn(0, bitmapHeight),
+                        (boundingBox.bottom * scaleY).toInt().coerceIn(0, bitmapWidth),
+                        (bitmapHeight - boundingBox.left * scaleX).toInt().coerceIn(0, bitmapHeight)
+                    )
+                    270 -> Rect(
+                        (bitmapWidth - boundingBox.bottom * scaleY).toInt().coerceIn(0, bitmapWidth),
+                        (boundingBox.left * scaleX).toInt().coerceIn(0, bitmapHeight),
+                        (bitmapWidth - boundingBox.top * scaleY).toInt().coerceIn(0, bitmapWidth),
+                        (boundingBox.right * scaleX).toInt().coerceIn(0, bitmapHeight)
+                    )
+                    else -> boundingBox
+                }
+            }
+            else -> {
+                // For 0° and 180° rotations, use simple scaling
+                val scaleX = bitmapWidth.toFloat() / frameWidth.toFloat()
+                val scaleY = bitmapHeight.toFloat() / frameHeight.toFloat()
+                
+                Log.d("Transform", "Normal scale factors: X=$scaleX, Y=$scaleY")
+                
+                Rect(
+                    (boundingBox.left * scaleX).toInt().coerceIn(0, bitmapWidth),
+                    (boundingBox.top * scaleY).toInt().coerceIn(0, bitmapHeight),
+                    (boundingBox.right * scaleX).toInt().coerceIn(0, bitmapWidth),
+                    (boundingBox.bottom * scaleY).toInt().coerceIn(0, bitmapHeight)
+                )
+            }
+        }
         
+        Log.d("Transform", "Original: $boundingBox -> Transformed: $transformedBox")
         return transformedBox
     }
 

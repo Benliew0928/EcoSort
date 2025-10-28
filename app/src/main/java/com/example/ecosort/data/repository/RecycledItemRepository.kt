@@ -297,7 +297,7 @@ class RecycledItemRepository @Inject constructor(
     suspend fun syncRecycledItemsFromFirebase(userId: Long): Result<Int> {
         return try {
             withContext(Dispatchers.IO) {
-                val result = firestoreService.getUserRecycledItems(userId)
+                val result = firestoreService.getUserRecycledItems(userId.toString())
                 if (result is com.example.ecosort.data.model.Result.Success) {
                     val firebaseItems = result.data
                     var syncedCount = 0

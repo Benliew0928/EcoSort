@@ -97,6 +97,7 @@
         <activity android:name=".ui.login.GoogleUsernameActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ObjectDetectionActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".AnalysisResultActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".RecyclingSuccessActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ResultActivity" android:exported="false" android:screenOrientation="portrait" />
 
         <!-- Admin Activities -->

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_light"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:gravity="center">
+
+        <!-- Success Message -->
+        <TextView
+            android:id="@+id/tvSuccessMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Congratulations! You've successfully recycled an item!"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary_color"
+            android:gravity="center"
+            android:layout_marginBottom="32dp"
+            android:lineSpacingExtra="4dp" />
+
+        <!-- Trophy Animation -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottieTrophy"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Success Check Animation -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottieSuccess"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_marginBottom="32dp" />
+
+        <!-- Item Details Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="@android:color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Item Name -->
+                <TextView
+                    android:id="@+id/tvItemName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Item: Plastic Bottle"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:gravity="center"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Points Earned -->
+                <TextView
+                    android:id="@+id/tvPointsEarned"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="+100 points earned!"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary_green"
+                    android:gravity="center"
+                    android:background="@drawable/rounded_corner_background"
+                    android:padding="16dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Environmental Impact Message -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Thank you for contributing to a cleaner environment! 🌱"
+            android:textSize="16sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"
+            android:layout_marginBottom="32dp"
+            android:lineSpacingExtra="2dp" />
+
+        <!-- Continue Button -->
+        <Button
+            android:id="@+id/btnContinue"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Continue"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:backgroundTint="@color/primary_color"
+            android:textColor="@android:color/white"
+            android:layout_marginBottom="32dp" />
+
+    </LinearLayout>
+
+</ScrollView>
+

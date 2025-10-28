@@ -263,7 +263,7 @@
     <string name="days_ago">天前</string>
     <string name="welcome_ecosort">欢迎来到EcoSort！您正在对环境产生积极影响。🌱</string>
     <string name="your_stats">您的统计</string>
-    <string name="points_value">1,250积分</string>
+    <string name="points_value"></string>
     <string name="account_settings">账户设置</string>
     <string name="settings_icon">⚙️ 设置</string>
     <string name="friend_requests_icon">📬 好友请求</string>

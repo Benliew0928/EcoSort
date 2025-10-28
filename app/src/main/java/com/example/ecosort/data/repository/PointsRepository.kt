@@ -244,8 +244,8 @@ class PointsRepository @Inject constructor(
     suspend fun syncPointsFromFirebase(userId: Long): Result<Int> {
         return try {
             withContext(Dispatchers.IO) {
-                val pointsResult = firestoreService.getUserPoints(userId)
-                val transactionsResult = firestoreService.getUserPointsTransactions(userId)
+                val pointsResult = firestoreService.getUserPoints(userId.toString())
+                val transactionsResult = firestoreService.getUserPointsTransactions(userId.toString())
                 
                 var syncedCount = 0
                 

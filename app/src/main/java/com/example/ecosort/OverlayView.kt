@@ -3,6 +3,7 @@ package com.example.ecosort
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import kotlin.math.roundToInt
 
@@ -78,14 +79,17 @@ class OverlayView(context: Context, attrs: android.util.AttributeSet? = null) : 
         val nudgeX = 60.0f
         val nudgeY = -75.0f
 
-        // 1. Calculate the Unified Scale Factor
+        // 1. Calculate the Unified Scale Factor (matching PreviewView's fitCenter behavior)
         val scaleX = width.toFloat() / previewWidth.toFloat()
         val scaleY = height.toFloat() / previewHeight.toFloat()
         val scale = Math.min(scaleX, scaleY)
 
-        // 2. Calculate Translation (Offset) to center the smaller image
+        // 2. Calculate Translation (Offset) to center the smaller image (fitCenter letterboxing)
         val offsetX = (width.toFloat() - (previewWidth * scale)) / 2f
         val offsetY = (height.toFloat() - (previewHeight * scale)) / 2f
+        
+        Log.d("OverlayView", "Preview: ${previewWidth}x${previewHeight}, View: ${width}x${height}")
+        Log.d("OverlayView", "Scale: $scale, Offset: ($offsetX, $offsetY)")
 
         for (r in results) {
             val originalRect = RectF(r.boundingBox)

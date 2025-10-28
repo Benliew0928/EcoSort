@@ -726,7 +726,7 @@ class FirestoreService @Inject constructor() {
     /**
      * Get user's recycled items from Firebase
      */
-    suspend fun getUserRecycledItems(userId: Long): com.example.ecosort.data.model.Result<List<HashMap<String, Any>>> {
+    suspend fun getUserRecycledItems(userId: String): com.example.ecosort.data.model.Result<List<HashMap<String, Any>>> {
         return try {
             val querySnapshot = recycledItemsCollection
                 .whereEqualTo("userId", userId)
@@ -796,8 +796,8 @@ class FirestoreService @Inject constructor() {
      */
     suspend fun saveUserPoints(pointsData: HashMap<String, Any>): com.example.ecosort.data.model.Result<Unit> {
         return try {
-            val userId = pointsData["userId"] as? Long ?: 0L
-            userPointsCollection.document(userId.toString())
+            val userId = pointsData["userId"] as? String ?: throw Exception("User ID not found")
+            userPointsCollection.document(userId)
                 .set(pointsData)
                 .await()
             
@@ -812,9 +812,9 @@ class FirestoreService @Inject constructor() {
     /**
      * Get user points from Firebase
      */
-    suspend fun getUserPoints(userId: Long): com.example.ecosort.data.model.Result<HashMap<String, Any>?> {
+    suspend fun getUserPoints(userId: String): com.example.ecosort.data.model.Result<HashMap<String, Any>?> {
         return try {
-            val document = userPointsCollection.document(userId.toString())
+            val document = userPointsCollection.document(userId)
                 .get()
                 .await()
             
@@ -856,7 +856,7 @@ class FirestoreService @Inject constructor() {
     /**
      * Get user points transactions from Firebase
      */
-    suspend fun getUserPointsTransactions(userId: Long): com.example.ecosort.data.model.Result<List<HashMap<String, Any>>> {
+    suspend fun getUserPointsTransactions(userId: String): com.example.ecosort.data.model.Result<List<HashMap<String, Any>>> {
         return try {
             val querySnapshot = pointsTransactionsCollection
                 .whereEqualTo("userId", userId)

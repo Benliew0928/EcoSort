@@ -1,50 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_color"
-    tools:context=".points.PointsActivity">
+    android:orientation="vertical"
+    android:background="@color/background_light">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <!-- Header -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:background="@color/primary_color">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/primary_color"
-            app:title="My Points"
-            app:titleTextColor="@android:color/white"
-            app:navigationIcon="@drawable/ic_arrow_back"
-            app:navigationIconTint="@android:color/white" />
-
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
-        <LinearLayout
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:paddingBottom="96dp">
+            android:text="My Points"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:gravity="center"
+            android:layout_marginBottom="8dp" />
 
-            <!-- Points Overview Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="8dp"
-                app:cardBackgroundColor="@color/primary_color">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Track your recycling rewards"
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:gravity="center"
+            android:alpha="0.9" />
+
+    </LinearLayout>
+
+    <!-- Total Points Card -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="@android:color/white">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -53,198 +51,47 @@
                     android:padding="24dp"
                     android:gravity="center">
 
-                    <ImageView
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
-                        android:src="@drawable/ic_trophy"
-                        android:contentDescription="Points Trophy"
-                        app:tint="@android:color/white"
-                        android:background="@drawable/circle_background_white"
-                        android:padding="16dp" />
-
-                    <TextView
-                        android:id="@+id/tvTotalPoints"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="0"
-                        android:textSize="48sp"
-                        android:textStyle="bold"
-                        android:textColor="@android:color/white" />
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Total Points"
                         android:textSize="16sp"
-                        android:textColor="@android:color/white"
-                        android:alpha="0.9" />
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="8dp" />
 
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Points Breakdown -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:weightSum="2"
-                android:layout_marginBottom="16dp">
-
-                <!-- Points Earned Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp"
-                        android:gravity="center">
-
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:src="@drawable/ic_trending_up"
-                            android:contentDescription="Points Earned"
-                            app:tint="@color/success_color" />
-
-                        <TextView
-                            android:id="@+id/tvPointsEarned"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="0"
-                            android:textSize="24sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Earned"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary" />
-
-                    </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Points Spent Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp"
-                        android:gravity="center">
-
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:src="@drawable/ic_trending_down"
-                            android:contentDescription="Points Spent"
-                            app:tint="@color/error_color" />
-
-                        <TextView
-                            android:id="@+id/tvPointsSpent"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="0"
-                            android:textSize="24sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Spent"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary" />
-
-                    </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-            </LinearLayout>
-
-            <!-- Recent Transactions -->
             <TextView
+                android:id="@+id/tvTotalPoints"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Recent Transactions"
-                android:textSize="18sp"
+                android:text=""
+                android:textSize="32sp"
                 android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:layout_marginBottom="12dp" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvTransactions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                tools:listitem="@layout/item_points_transaction" />
-
-            <!-- Empty State -->
-            <LinearLayout
-                android:id="@+id/llEmptyState"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:padding="32dp"
-                android:visibility="gone">
-
-                <ImageView
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:src="@drawable/ic_trophy"
-                    android:contentDescription="Empty State"
-                    app:tint="@color/text_secondary"
-                    android:alpha="0.5" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="No transactions yet"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_secondary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Start recycling to earn points!"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_hint"
-                    android:layout_marginTop="4dp" />
+                android:textColor="@color/primary_green"
+                android:background="@drawable/rounded_corner_background"
+                android:padding="16dp" />
 
             </LinearLayout>
 
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+    </androidx.cardview.widget.CardView>
 
-    <!-- Loading Indicator -->
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
+    <!-- Transactions Header -->
+    <TextView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:visibility="gone" />
+        android:text="Recent Transactions"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:padding="16dp"
+        android:paddingBottom="8dp" />
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    <!-- Transactions List -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="16dp"
+        android:clipToPadding="false" />
+
+</LinearLayout>

@@ -265,7 +265,7 @@
     <string name="days_ago">days ago</string>
     <string name="welcome_ecosort">Welcome to EcoSort! You\'re making a positive impact on the environment. 🌱</string>
     <string name="your_stats">Your Stats</string>
-    <string name="points_value">1,250 points</string>
+    <string name="points_value"></string>
     <string name="account_settings">Account Settings</string>
     <string name="settings_icon">⚙️ Settings</string>
     <string name="friend_requests_icon">📬 Friend Requests</string>

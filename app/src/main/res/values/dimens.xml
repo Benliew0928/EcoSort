@@ -67,5 +67,9 @@
 
 
     <dimen name="bottom_sheet_peek_height">200dp</dimen>
+    
+    <!-- ==================== BOTTOM NAVIGATION DIMENSIONS ==================== -->
+    <dimen name="bottom_nav_height">80dp</dimen>
+    <dimen name="extra_bottom_padding">20dp</dimen>
 </resources>
 

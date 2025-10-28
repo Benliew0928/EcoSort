@@ -1,105 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
+    android:layout_marginBottom="12dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
-    android:clickable="true"
-    android:focusable="true"
-    android:foreground="?android:attr/selectableItemBackground">
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="@android:color/white">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:gravity="center_vertical">
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <!-- Item Icon -->
-        <ImageView
-            android:id="@+id/ivItemIcon"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_recycle_32"
-            android:contentDescription="Item Icon"
-            app:tint="@color/primary_color"
-            android:background="@drawable/circle_background"
-            android:padding="12dp" />
-
-        <!-- Item Details -->
-        <LinearLayout
-            android:layout_width="0dp"
+        <!-- Item Name -->
+        <TextView
+            android:id="@+id/tvItemName"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="16dp"
-            android:orientation="vertical">
+            android:text="Plastic Bottle"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Category and Bin Color Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
 
             <TextView
-                android:id="@+id/tvItemName"
-                android:layout_width="wrap_content"
+                android:id="@+id/tvCategory"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Item Name"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                tools:text="Plastic Bottle" />
-
-            <TextView
-                android:id="@+id/tvItemType"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Item Type"
+                android:layout_weight="1"
+                android:text="Category: Plastic"
                 android:textSize="14sp"
-                android:textColor="@color/text_secondary"
-                tools:text="Plastic" />
+                android:textColor="@color/text_secondary" />
 
             <TextView
-                android:id="@+id/tvRecycledDate"
+                android:id="@+id/tvBinColor"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Date"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary"
-                tools:text="Today" />
+                android:text="Bin: Orange"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary" />
 
         </LinearLayout>
 
-        <!-- Points and Weight -->
+        <!-- Date and Points Row -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="end">
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvRecycledDate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Recycled: Dec 15, 2023 at 14:30"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
 
             <TextView
                 android:id="@+id/tvPointsEarned"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="+10"
-                android:textSize="16sp"
+                android:text="+100 points"
+                android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="@color/accent_color"
-                tools:text="+10" />
-
-            <TextView
-                android:id="@+id/tvWeight"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="0.5 kg"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary"
-                android:visibility="gone"
-                tools:text="0.5 kg"
-                tools:visibility="visible" />
+                android:textColor="@color/primary_green"
+                android:background="@drawable/rounded_corner_background"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp" />
 
         </LinearLayout>
 
     </LinearLayout>
 
-</com.google.android.material.card.MaterialCardView>
+</androidx.cardview.widget.CardView>

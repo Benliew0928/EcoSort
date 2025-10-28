@@ -31,7 +31,7 @@
         android:layout_margin="32dp"
         android:visibility="gone"
         android:background="@color/primary_color"
-        app:lottie_fileName="loading_animation.json"
+        app:lottie_fileName="loading_splash.json"
         app:lottie_autoPlay="false"
         app:lottie_loop="false"
         app:lottie_repeatCount="1"
