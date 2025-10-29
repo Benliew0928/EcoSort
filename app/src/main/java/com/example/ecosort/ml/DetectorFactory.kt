@@ -23,8 +23,8 @@ object DetectorFactory {
                     clazz.newInstance() as ObjectDetectorService
                 }
                 "APP_GALLERY" -> {
-                    // Use reflection to avoid direct import
-                    val clazz = Class.forName("com.example.ecosort.ml.HmsMLKitDetector")
+                    // Use TensorFlow Lite detector for AppGallery (Huawei devices)
+                    val clazz = Class.forName("com.example.ecosort.ml.TensorFlowLiteDetector")
                     clazz.newInstance() as ObjectDetectorService
                 }
                 else -> {

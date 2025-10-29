@@ -25,28 +25,28 @@ object MapServiceFactory {
     
     /**
      * Detects which map service is available on the device
-     * Priority: Huawei Maps > Google Maps > None
+     * Priority: Google Maps > Huawei Maps > None
      * 
      * @param context Application or Activity context
      * @return MapServiceType indicating which service is available
      */
     fun detectMapService(context: Context): MapServiceType {
-        // Check Huawei Mobile Services first (prioritize HMS Map Kit)
-        val hmsAvailable = isHuaweiMobileServicesAvailable(context)
-        if (hmsAvailable) {
-            Log.d(TAG, "✅ Huawei Mobile Services detected - Using Huawei Map Kit (Priority)")
-            return MapServiceType.HUAWEI_MAPS
-        }
-        
-        // Check Google Play Services as fallback
+        // Check Google Play Services first
         val gmsAvailable = isGooglePlayServicesAvailable(context)
         if (gmsAvailable) {
-            Log.d(TAG, "✅ Google Play Services detected - Using Google Maps (Fallback)")
+            Log.d(TAG, "✅ Google Play Services detected - Using Google Maps")
             return MapServiceType.GOOGLE_MAPS
         }
         
+        // Check Huawei Mobile Services
+        val hmsAvailable = isHuaweiMobileServicesAvailable(context)
+        if (hmsAvailable) {
+            Log.d(TAG, "✅ Huawei Mobile Services detected - Using Huawei Maps")
+            return MapServiceType.HUAWEI_MAPS
+        }
+        
         // Neither service is available
-        Log.e(TAG, "❌ No map service available - Neither HMS nor GMS detected")
+        Log.e(TAG, "❌ No map service available - Neither GMS nor HMS detected")
         return MapServiceType.NONE
     }
     

@@ -120,12 +120,6 @@ class RecycleBinAdapter(
 
     fun updateList(newList: List<BinListItem>, selectedIndex: Int) {
         // 1. Update the internal list reference
-        (bins as? MutableList)?.clear() // Ensure the original list is mutable if needed, or reassign
-        // A safer way is to ensure 'bins' is defined as a var list
-        // If 'bins' is currently defined as: 'private val bins: List<BinListItem>'
-        // You should change it to: 'private var bins: List<BinListItem>'
-
-        // Assuming you change it to 'private var bins: List<BinListItem>':
         this.bins = newList
 
         // 2. Update the selected position

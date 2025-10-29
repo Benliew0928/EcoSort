@@ -333,12 +333,12 @@ class HuaweiMapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItem
                 currentBinList = sortedList.toList()
 
                 // 3. Initialize and save the adapter reference
-                recycleBinAdapter = RecycleBinAdapter(currentBinList, this@MapActivity, isAdmin) // ⭐ PASS isAdmin ⭐
+                recycleBinAdapter = RecycleBinAdapter(currentBinList, this@HuaweiMapActivity, isAdmin) // ⭐ PASS isAdmin ⭐
                 rvNearbyStations.adapter = recycleBinAdapter
 
             }.onFailure { exception ->
                 Log.e(TAG, "Failed to fetch bins from Firestore: ", exception)
-                Toast.makeText(this@MapActivity, "Failed to load bin locations.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@HuaweiMapActivity, "Failed to load bin locations.", Toast.LENGTH_SHORT).show()
             }
         }
     }

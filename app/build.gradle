@@ -178,9 +178,10 @@ dependencies {
     googlePlayImplementation 'com.google.mlkit:object-detection-custom:17.0.2'
     
     // Huawei HMS ML Kit (AppGallery only)
-    appGalleryImplementation 'com.huawei.hms:ml-computer-vision-object:3.12.0.300'
-    appGalleryImplementation 'com.huawei.hms:ml-computer-vision-image-classification:3.12.0.300'
-    appGalleryImplementation 'com.huawei.hms:ml-computer-vision:3.12.0.300'
+    // ❌ DISABLED: These versions don't exist - using TensorFlow Lite instead
+    // appGalleryImplementation 'com.huawei.hms:ml-computer-vision-object:3.12.0.300'
+    // appGalleryImplementation 'com.huawei.hms:ml-computer-vision-image-classification:3.12.0.300'
+    // appGalleryImplementation 'com.huawei.hms:ml-computer-vision:3.12.0.300'
 
     // 🔑 Gemini API SDK for Android/Java
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0"){

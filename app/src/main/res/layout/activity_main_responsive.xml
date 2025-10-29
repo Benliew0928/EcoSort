@@ -19,6 +19,7 @@
         android:id="@+id/header_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginBottom="-20dp"
         android:background="@color/dark_olive"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -38,8 +39,8 @@
 
         <androidx.cardview.widget.CardView
             android:id="@+id/cardProfileWrapper"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
             app:cardCornerRadius="20dp"
             app:cardElevation="0dp"
             app:cardBackgroundColor="@android:color/transparent"
@@ -83,7 +84,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/welcome_message"
-                    android:textSize="24sp"
+                    android:textSize="18dp"
                     android:textStyle="bold"
                     android:textColor="@color/light_bg"
                     tools:text="Hello, John Doe!" />
@@ -92,7 +93,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/make_world_greener"
-                    android:textSize="14sp"
+                    android:textSize="12sp"
                     android:textStyle="bold"
                     android:textColor="@color/gray_bg"
                     android:alpha="0.8"
@@ -102,8 +103,8 @@
             <!-- Green Eco Earth Animation -->
             <com.airbnb.lottie.LottieAnimationView
                 android:id="@+id/lottieEcoEarth"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
+                android:layout_width="55dp"
+                android:layout_height="55dp"
                 android:layout_marginStart="16dp"
                 android:visibility="gone"
                 app:lottie_autoPlay="false"
@@ -301,9 +302,7 @@
                         android:layout_width="40dp"
                         android:layout_height="40dp"
                         android:padding="8dp"
-                        android:src="@drawable/ic_arrow_forward_24"
                         android:tint="@color/white"
-                        android:background="@drawable/circle_olive"
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
                         android:contentDescription="Details" />
@@ -367,9 +366,7 @@
                             android:layout_width="40dp"
                             android:layout_height="40dp"
                             android:padding="8dp"
-                            android:src="@drawable/ic_arrow_forward_24"
                             android:tint="@color/dark_olive"
-                            android:background="@drawable/circle_white"
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
                             android:contentDescription="Details" />

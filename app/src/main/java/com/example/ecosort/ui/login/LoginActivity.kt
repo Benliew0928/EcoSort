@@ -120,9 +120,8 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         // Update button text based on provider
         btnGoogleSignIn.text = SocialAuthFactory.getSignInButtonText(BuildConfig.STORE_TYPE)
         
-        // Force white background with black text
-        btnGoogleSignIn.setBackgroundColor(android.graphics.Color.WHITE)
-        btnGoogleSignIn.setTextColor(android.graphics.Color.BLACK)
+        // Use primary green background with white text
+        btnGoogleSignIn.setTextColor(android.graphics.Color.WHITE)
         
         android.util.Log.d("LoginActivity", "Social auth configured for ${socialAuthService.getProviderName()}")
     }
