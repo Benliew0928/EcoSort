@@ -24,6 +24,8 @@
     <dimen name="margin_lg">16dp</dimen>
     <dimen name="margin_xl">20dp</dimen>
     <dimen name="margin_xxl">24dp</dimen>
+    <dimen name="margin_xxxl">40dp</dimen>
+    <dimen name="margin_top_header">60dp</dimen>
     
     <!-- ==================== RESPONSIVE TEXT SIZES ==================== -->
     <dimen name="text_xs">10sp</dimen>      <!-- Caption -->
@@ -34,18 +36,25 @@
     <dimen name="text_xxl">20sp</dimen>     <!-- Heading -->
     <dimen name="text_xxxl">24sp</dimen>    <!-- Large heading -->
     <dimen name="text_display">28sp</dimen> <!-- Display text -->
+    <dimen name="text_display_lg">32sp</dimen> <!-- Large display -->
     
     <!-- ==================== RESPONSIVE BUTTON SIZES ==================== -->
     <dimen name="button_height_sm">36dp</dimen>
     <dimen name="button_height_md">44dp</dimen>
-    <dimen name="button_height_lg">52dp</dimen>
-    <dimen name="button_height_xl">60dp</dimen>
+    <dimen name="button_height_lg">48dp</dimen>
+    <dimen name="button_height_xl">56dp</dimen>
+    <dimen name="button_height_xxl">60dp</dimen>
+    <dimen name="button_quick_action_height">120dp</dimen>
     
     <!-- ==================== RESPONSIVE CARD SIZES ==================== -->
     <dimen name="card_radius_sm">4dp</dimen>
     <dimen name="card_radius_md">8dp</dimen>
     <dimen name="card_radius_lg">12dp</dimen>
     <dimen name="card_radius_xl">16dp</dimen>
+    <dimen name="card_elevation_sm">2dp</dimen>
+    <dimen name="card_elevation_md">4dp</dimen>
+    <dimen name="card_elevation_lg">6dp</dimen>
+    <dimen name="card_elevation_xl">8dp</dimen>
     
     <!-- ==================== RESPONSIVE ICON SIZES ==================== -->
     <dimen name="icon_xs">16dp</dimen>
@@ -54,22 +63,42 @@
     <dimen name="icon_lg">32dp</dimen>
     <dimen name="icon_xl">40dp</dimen>
     <dimen name="icon_xxl">48dp</dimen>
+    <dimen name="icon_xxxl">56dp</dimen>
+    <dimen name="icon_profile_sm">36dp</dimen>
+    <dimen name="icon_profile_md">56dp</dimen>
+    <dimen name="icon_profile_lg">80dp</dimen>
+    <dimen name="icon_profile_xl">120dp</dimen>
+    
+    <!-- ==================== RESPONSIVE IMAGE SIZES ==================== -->
+    <dimen name="image_emoji_sm">24dp</dimen>
+    <dimen name="image_emoji_md">48dp</dimen>
+    <dimen name="image_emoji_lg">80dp</dimen>
+    <dimen name="image_thumbnail">120dp</dimen>
+    <dimen name="image_preview_height">180dp</dimen>
     
     <!-- ==================== RESPONSIVE LAYOUT SIZES ==================== -->
     <dimen name="container_max_width">400dp</dimen>
     <dimen name="content_max_width">360dp</dimen>
-    
-    <!-- ==================== LEGACY DIMENSIONS (for backward compatibility) ==================== -->
+    <dimen name="action_card_height">120dp</dimen>
     <dimen name="featured_card_width">180dp</dimen>
     <dimen name="featured_card_gap">12dp</dimen>
     <dimen name="featured_item_card_width">180dp</dimen>
-    <dimen name="featured_item_card_height">12dp</dimen>
-
-
-    <dimen name="bottom_sheet_peek_height">200dp</dimen>
+    <dimen name="featured_item_card_height">120dp</dimen>
     
-    <!-- ==================== BOTTOM NAVIGATION DIMENSIONS ==================== -->
-    <dimen name="bottom_nav_height">80dp</dimen>
-    <dimen name="extra_bottom_padding">20dp</dimen>
+    <!-- ==================== BOTTOM SHEET & NAVIGATION ==================== -->
+    <dimen name="bottom_sheet_peek_height">200dp</dimen>
+    <dimen name="bottom_nav_height">72dp</dimen>
+    <dimen name="bottom_nav_height_sm">64dp</dimen>
+    <dimen name="extra_bottom_padding">80dp</dimen>
+    <dimen name="fab_margin">16dp</dimen>
+    
+    <!-- ==================== INPUT FIELD DIMENSIONS ==================== -->
+    <dimen name="input_height">48dp</dimen>
+    <dimen name="input_min_height">44dp</dimen>
+    <dimen name="input_padding">12dp</dimen>
+    <dimen name="input_padding_end_with_icon">48dp</dimen>
+    
+    <!-- ==================== TOOLBAR & APPBAR ==================== -->
+    <dimen name="toolbar_elevation">4dp</dimen>
+    <dimen name="appbar_elevation">8dp</dimen>
 </resources>
-

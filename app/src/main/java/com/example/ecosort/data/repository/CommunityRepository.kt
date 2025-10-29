@@ -78,6 +78,13 @@ class CommunityRepository @Inject constructor(
             val authorId = userSession?.userId ?: 1L
             val authorName = userSession?.username ?: "Anonymous User"
             
+            // 🔑 CRITICAL: Get Firebase UID for cross-device sync
+            val authorFirebaseUid = userRepository.getCurrentUserFirebaseUid()
+            if (authorFirebaseUid.isNullOrEmpty()) {
+                android.util.Log.e("CommunityRepository", "❌ Cannot create post: No Firebase UID found")
+                return Result.Error(Exception("Authentication error. Please log in again."))
+            }
+            
             // Get current user's profile image
             val currentUser = userRepository.getCurrentUser()
             val authorAvatar = if (currentUser is com.example.ecosort.data.model.Result.Success<*>) {
@@ -87,7 +94,8 @@ class CommunityRepository @Inject constructor(
             }
             
             val newPost = CommunityPost(
-                authorId = authorId,
+                authorId = authorId, // Keep for backward compatibility
+                authorFirebaseUid = authorFirebaseUid, // 🔑 NEW: Firebase UID for cross-device sync
                 authorName = authorName,
                 authorAvatar = authorAvatar,
                 title = title,
@@ -104,15 +112,15 @@ class CommunityRepository @Inject constructor(
             val localPostId = communityPostDao.insertPost(newPost)
             val localPost = newPost.copy(id = localPostId)
 
-            // Sync to Firebase for real-time updates
+            // 🔥 NEW: Use Firebase transaction for concurrent write protection
             try {
-                val firebaseResult = firestoreService.addCommunityPost(localPost.toFirebaseModel())
+                val firebaseResult = firestoreService.addCommunityPostWithTransaction(localPost.toFirebaseModel())
                 if (firebaseResult.isSuccess) {
                     val firebaseId = firebaseResult.getOrNull() ?: ""
                     // Update local post with Firebase ID
                     val updatedPost = localPost.copy(firebaseId = firebaseId)
                     communityPostDao.updatePost(updatedPost)
-                    android.util.Log.d("CommunityRepository", "Post synced to Firebase successfully with ID: $firebaseId")
+                    android.util.Log.d("CommunityRepository", "✅ Post synced to Firebase with transaction protection: $firebaseId")
                 } else {
                     android.util.Log.e("CommunityRepository", "Error syncing post to Firebase", firebaseResult.exceptionOrNull())
                 }
@@ -191,9 +199,17 @@ class CommunityRepository @Inject constructor(
             val actualAuthorId = userSession?.userId ?: authorId
             val actualAuthorName = userSession?.username ?: authorName
             
+            // 🔑 CRITICAL: Get Firebase UID for cross-device sync
+            val authorFirebaseUid = userRepository.getCurrentUserFirebaseUid()
+            if (authorFirebaseUid.isNullOrEmpty()) {
+                android.util.Log.e("CommunityRepository", "❌ Cannot add comment: No Firebase UID found")
+                return Result.Error(Exception("Authentication error. Please log in again."))
+            }
+            
             val newComment = CommunityComment(
                 postId = postId,
-                authorId = actualAuthorId,
+                authorId = actualAuthorId, // Keep for backward compatibility
+                authorFirebaseUid = authorFirebaseUid, // 🔑 NEW: Firebase UID for cross-device sync
                 authorName = actualAuthorName,
                 authorAvatar = null,
                 content = content,
@@ -509,8 +525,56 @@ class CommunityRepository @Inject constructor(
     }
 
     /**
-     * Sync community posts from Firebase to local database
-     * This enables cross-device synchronization
+     * 🔥 NEW: Real-time sync of community posts from Firebase
+     * This continuously listens for new/updated posts and syncs them to local DB
+     */
+    fun syncCommunityPostsFromFirebaseRealTime(): Flow<Int> = kotlinx.coroutines.flow.flow {
+        android.util.Log.d("CommunityRepository", "🔄 Starting real-time sync for community posts...")
+        
+        firestoreService.getAllCommunityPosts().collect { firebasePosts ->
+            try {
+                var syncedCount = 0
+                
+                for (firebasePost in firebasePosts) {
+                    try {
+                        // Convert Firebase post to local model
+                        val localPost = firebasePost.toLocalModel()
+                        
+                        // Check if post already exists locally (by Firebase ID)
+                        val existingPost = communityPostDao.getPostByFirebaseId(firebasePost.id)
+                        
+                        if (existingPost == null) {
+                            // Insert new post
+                            communityPostDao.insertPost(localPost)
+                            syncedCount++
+                            android.util.Log.d("CommunityRepository", "✅ Synced new post: ${localPost.title}")
+                        } else {
+                            // Update existing post if Firebase version is newer
+                            if (localPost.postedAt > existingPost.postedAt) {
+                                val updatedPost = localPost.copy(id = existingPost.id) // Keep local ID
+                                communityPostDao.updatePost(updatedPost)
+                                syncedCount++
+                                android.util.Log.d("CommunityRepository", "✅ Updated existing post: ${localPost.title}")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("CommunityRepository", "Error syncing individual post", e)
+                    }
+                }
+                
+                if (syncedCount > 0) {
+                    android.util.Log.d("CommunityRepository", "✅ Real-time sync: $syncedCount posts")
+                }
+                emit(syncedCount)
+            } catch (e: Exception) {
+                android.util.Log.e("CommunityRepository", "Error in real-time sync", e)
+                emit(0)
+            }
+        }
+    }
+    
+    /**
+     * One-time sync of community posts from Firebase (legacy method, kept for compatibility)
      */
     suspend fun syncCommunityPostsFromFirebase(): Result<Int> {
         return try {

@@ -8,13 +8,13 @@ import android.util.Log
 import android.widget.Button
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
-import com.huawei.hms.maps.HuaweiMap
-import com.huawei.hms.maps.SupportMapFragment
-import com.huawei.hms.maps.model.CameraPosition
-import com.huawei.hms.maps.model.LatLng
-import com.huawei.hms.maps.model.MarkerOptions
-import com.huawei.hms.location.FusedLocationProviderClient
-import com.huawei.hms.location.LocationServices
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.example.ecosort.R
 import android.content.Intent
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -28,32 +28,38 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import android.widget.LinearLayout
 
-import com.example.ecosort.hms.RecycleBinAdapter
-import com.example.ecosort.hms.OnBinItemClickListener
-
 import android.view.View
 
 // MAP LISTENER IMPORTS
-import com.huawei.hms.maps.HuaweiMap.OnMarkerClickListener
-import com.huawei.hms.maps.model.Marker
+import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener
+import com.google.android.gms.maps.model.Marker
 
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.location.Location
 
-private var isAdmin: Boolean = false
-
 /**
- * An Activity using Huawei Map Kit and Location Kit via the recommended SupportMapFragment approach.
+ * An Activity using Google Maps SDK and Location Services.
  * This activity fetches bin locations from Firestore and displays them on the map.
+ * 
+ * IMPORTANT: This is the GMS (Google Mobile Services) implementation.
+ * For Huawei Maps implementation, see HuaweiMapActivity.kt
+ * 
+ * Features:
+ * - Real-time location tracking
+ * - Display recycling bin markers from Firebase
+ * - Calculate and display distances to bins
+ * - Bottom sheet with nearby stations list
+ * - Add new recycling stations
+ * - Synchronized marker/list selection
  */
 @AndroidEntryPoint
-class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickListener {
+class GoogleMapActivity : AppCompatActivity(), OnMarkerClickListener, OnBinItemClickListener {
 
-    private val TAG = "MapActivity"
+    private val TAG = "GoogleMapActivity"
     private val LOCATION_PERMISSION_REQUEST_CODE = 1001
 
-    private var huaweiMap: HuaweiMap? = null
+    private var googleMap: GoogleMap? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     @Inject
@@ -62,7 +68,7 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
     private val markerDataMap = mutableMapOf<String, String>()
     private lateinit var rvNearbyStations: RecyclerView
 
-    // NEW: Property to hold the user's location for distance calculation
+    // Property to hold the user's location for distance calculation
     private var currentUserLatLng: LatLng? = null
     private lateinit var behavior: BottomSheetBehavior<LinearLayout>
 
@@ -72,28 +78,24 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_map)
+        setContentView(R.layout.activity_google_map)
 
         val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbarMap)
 
-
         val bottomSheet = findViewById<LinearLayout>(R.id.bottom_sheet)
-        behavior = BottomSheetBehavior.from(bottomSheet) // ⭐ REMOVE 'val' here to initialize the class property ⭐
+        behavior = BottomSheetBehavior.from(bottomSheet)
         behavior.isFitToContents = false
-
 
         behavior.state = BottomSheetBehavior.STATE_COLLAPSED
 
-
         val peekHeightInPixels = resources.getDimensionPixelSize(R.dimen.bottom_sheet_peek_height)
         behavior.peekHeight = peekHeightInPixels
-
 
         behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
             override fun onStateChanged(bottomSheet: View, newState: Int) {
                 if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
                     // When the sheet is fully collapsed (only peek is visible), reset the padding.
-                    huaweiMap?.setPadding(0, 0, 0, 0)
+                    googleMap?.setPadding(0, 0, 0, 0)
                 }
             }
 
@@ -102,16 +104,13 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
             }
         })
 
-        // 3. Set the state to hide if swiped down far enough
         behavior.isHideable = false
 
         val btnRefreshLocation = findViewById<Button>(R.id.btnRefreshLocation)
 
         btnRefreshLocation.setOnClickListener {
-            // 1. Get a fresh location (This updates currentUserLatLng)
+            // Get a fresh location (This updates currentUserLatLng)
             getLastLocation()
-
-            // 2. getLastLocation() will call fetchRecycleBins(), which re-sorts and reloads the map.
             Toast.makeText(this, "Refreshing location and list...", Toast.LENGTH_SHORT).show()
         }
 
@@ -119,10 +118,10 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
 
         // Assign the original "Add Bin" functionality to the new "Add Station" button
         btnAddStationPlaceholder.setOnClickListener {
-            // 1. Get the current center of the map view
-            val centerLatLng = huaweiMap?.cameraPosition?.target
+            // Get the current center of the map view
+            val centerLatLng = googleMap?.cameraPosition?.target
 
-            // 2. Launch AddBinActivity (or AddStationActivity)
+            // Launch AddBinActivity
             val intent = Intent(this, AddBinActivity::class.java).apply {
                 if (centerLatLng != null) {
                     // Pass the current map center location to the new activity
@@ -136,37 +135,36 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
         rvNearbyStations = findViewById(R.id.rvNearbyStations)
         rvNearbyStations.layoutManager = LinearLayoutManager(this)
 
-        // Initialize Location Client
+        // Initialize Location Client (Google Play Services)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         // --- Map Initialization using SupportMapFragment ---
         try {
             val mapFragment = supportFragmentManager
-                .findFragmentById(R.id.hms_map_fragment) as? SupportMapFragment
+                .findFragmentById(R.id.google_map_fragment) as? SupportMapFragment
 
             if (mapFragment == null) {
-                Log.e(TAG, "FATAL ERROR: hms_map_fragment NOT FOUND.")
+                Log.e(TAG, "FATAL ERROR: google_map_fragment NOT FOUND.")
                 Toast.makeText(this, "Map component missing!", Toast.LENGTH_LONG).show()
                 return
             }
 
             mapFragment.getMapAsync { map ->
-                huaweiMap = map
-                Log.d(TAG, "Map loaded successfully via Fragment.")
+                googleMap = map
+                Log.d(TAG, "✅ Google Map loaded successfully via Fragment.")
                 setupMap()
                 checkLocationPermission()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "HMS Map initialization failed: ${e.message}")
+            Log.e(TAG, "❌ Google Map initialization failed: ${e.message}")
             Toast.makeText(this, "Map unavailable on this device", Toast.LENGTH_LONG).show()
         }
         // --- End Map Initialization ---
 
-
-        // Button functionality
+        // Toolbar back button
         toolbar.setNavigationOnClickListener {
-            finish() }
-
+            finish()
+        }
     }
 
     // FETCH DATA EVERY TIME THE SCREEN IS RESUMED
@@ -178,7 +176,7 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
 
     // --- Map Setup Functions ---
     private fun setupMap() {
-        huaweiMap?.let { map ->
+        googleMap?.let { map ->
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 map.isMyLocationEnabled = true
                 map.uiSettings.isMyLocationButtonEnabled = true
@@ -188,9 +186,9 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
             // Initial fetch of data when the map is first set up
             fetchRecycleBins()
 
-            // Move camera
+            // Move camera to initial location (Kuala Lumpur, Malaysia)
             val initialLocation = LatLng(3.1390, 101.6869)
-            map.moveCamera(com.huawei.hms.maps.CameraUpdateFactory.newCameraPosition(
+            map.moveCamera(com.google.android.gms.maps.CameraUpdateFactory.newCameraPosition(
                 CameraPosition(initialLocation, 12f, 0f, 0f)
             ))
 
@@ -203,19 +201,13 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
         }
     }
 
-
     private fun getScreenHeight(): Int {
         return resources.displayMetrics.heightPixels
     }
 
-
-
-    // --- Marker Click Listener Implementation ---
-    // MapActivity.kt
-
     // --- Marker Click Listener Implementation ---
     override fun onMarkerClick(marker: Marker): Boolean {
-        huaweiMap?.let { map ->
+        googleMap?.let { map ->
 
             // 1. Map Centering and UI Setup
             val markerLatLng = marker.position
@@ -224,7 +216,7 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
 
             map.setPadding(0, 0, 0, paddingBottom)
             val zoomLevel = map.cameraPosition?.zoom ?: 15f
-            val cameraUpdate = com.huawei.hms.maps.CameraUpdateFactory.newLatLngZoom(markerLatLng, zoomLevel)
+            val cameraUpdate = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(markerLatLng, zoomLevel)
 
             map.animateCamera(cameraUpdate, 500, null)
             behavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
@@ -250,7 +242,7 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
 
                 // c. Update the adapter with the new, sorted list and set the selection
                 recycleBinAdapter?.setSelected(RecyclerView.NO_POSITION) // Clear old highlight first
-                recycleBinAdapter?.updateList(currentBinList, newSelectedIndex) // **Requires the updateList function**
+                recycleBinAdapter?.updateList(currentBinList, newSelectedIndex)
 
                 // d. SCROLL the top item (the one we just moved) into view
                 rvNearbyStations.scrollToPosition(0)
@@ -265,14 +257,11 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
 
     // --- FUNCTION TO FETCH BINS FROM FIRESTORE (Uses stored location) ---
     private fun fetchRecycleBins() {
-        huaweiMap?.clear()
+        googleMap?.clear()
         markerDataMap.clear()
 
         val listItems = mutableListOf<BinListItem>()
         val userLocation = currentUserLatLng // Access location property here
-
-
-
 
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
@@ -280,7 +269,7 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
             }
 
             result.onSuccess { binList ->
-                huaweiMap?.let { map ->
+                googleMap?.let { map ->
                     binList.forEach { document ->
                         try {
                             val name = document["name"] as? String ?: "Unknown Bin"
@@ -319,28 +308,28 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
                     }
                 }
 
-                // ⭐ CRITICAL STEP 1: Sort the listItems by distance ⭐
+                // Sort the listItems by distance
                 val sortedList = listItems.sortedWith(compareBy {
                     // Extract the numerical distance from the string for reliable comparison
-                    // e.g., converts "📍 2.5 km away" into the number 2.5
                     it.distance.split(" ")[1].toDoubleOrNull() ?: Double.MAX_VALUE
                 })
 
-                // 2. Store the sorted list
+                // Store the sorted list
                 currentBinList = sortedList.toList()
 
-                // 3. Initialize and save the adapter reference
-                recycleBinAdapter = RecycleBinAdapter(currentBinList, this@MapActivity, isAdmin) // ⭐ PASS isAdmin ⭐
+                // Initialize and save the adapter reference
+                val isAdmin = false // You can set this from session if needed
+                recycleBinAdapter = RecycleBinAdapter(currentBinList, this@GoogleMapActivity, isAdmin)
                 rvNearbyStations.adapter = recycleBinAdapter
 
             }.onFailure { exception ->
                 Log.e(TAG, "Failed to fetch bins from Firestore: ", exception)
-                Toast.makeText(this@MapActivity, "Failed to load bin locations.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@GoogleMapActivity, "Failed to load bin locations.", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // --- Location Kit and Permission Functions (Unchanged) ---
+    // --- Location and Permission Functions ---
     private fun checkLocationPermission() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
@@ -372,12 +361,11 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
                     currentUserLatLng = userLatLng
 
                     Log.d(TAG, "Last Location: ${userLatLng.latitude}, ${userLatLng.longitude}")
-                    huaweiMap?.animateCamera(com.huawei.hms.maps.CameraUpdateFactory.newLatLngZoom(userLatLng, 15f))
+                    googleMap?.animateCamera(com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(userLatLng, 15f))
                 } else {
                     Log.w(TAG, "Last location is null.")
                 }
-                // Always call fetchRecycleBins() after attempting to get location,
-                // to update the map/list with the best available data.
+                // Always call fetchRecycleBins() after attempting to get location
                 fetchRecycleBins()
             }.addOnFailureListener { e ->
                 Log.e(TAG, "Failed to get last location: ${e.message}")
@@ -389,9 +377,7 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
         }
     }
 
-
-
-    // --- DISTANCE CALCULATION FUNCTION (FIXED) ---
+    // --- DISTANCE CALCULATION FUNCTION ---
     private fun calculateDistance(userLocation: LatLng, binLocation: LatLng): String {
         // Uses Android's standard Location utility for accurate distance calculation in meters
         val userLoc = Location("user").apply {
@@ -406,19 +392,17 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
         val distanceInMeters = userLoc.distanceTo(binLoc)
 
         return if (distanceInMeters >= 1000) {
-            // Convert to kilometers (e.g., 2.5 km)
+            // Convert to kilometers
             "📍 %.1f km away".format(distanceInMeters / 1000)
         } else {
-            // Show in meters (e.g., 850 m)
+            // Show in meters
             "📍 %d m away".format(distanceInMeters.toInt())
         }
     }
 
-
-    // MapActivity.kt
-
+    // --- RecyclerView Item Click Implementation ---
     override fun onBinItemClick(latitude: Double, longitude: Double, photoUrl: String, clickedIndex: Int) {
-        huaweiMap?.let { map ->
+        googleMap?.let { map ->
             val markerLatLng = LatLng(latitude, longitude)
 
             // 1. Map Centering and UI Setup (reusing the same logic as onMarkerClick)
@@ -426,7 +410,7 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
             val paddingBottom = (screenHeight * 0.50).toInt()
             map.setPadding(0, 0, 0, paddingBottom)
             val zoomLevel = map.cameraPosition?.zoom ?: 15f
-            val cameraUpdate = com.huawei.hms.maps.CameraUpdateFactory.newLatLngZoom(markerLatLng, zoomLevel)
+            val cameraUpdate = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(markerLatLng, zoomLevel)
 
             map.animateCamera(cameraUpdate, 500, null)
             behavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
@@ -459,3 +443,4 @@ class MapActivity : AppCompatActivity() , OnMarkerClickListener, OnBinItemClickL
         }
     }
 }
+

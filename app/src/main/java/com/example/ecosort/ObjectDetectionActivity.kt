@@ -16,10 +16,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.objects.ObjectDetection
-import com.google.mlkit.vision.objects.ObjectDetector
-import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.google.ai.client.generativeai.GenerativeModel
@@ -30,10 +26,11 @@ import kotlinx.coroutines.withContext
 import com.google.ai.client.generativeai.type.content
 import com.example.ecosort.utils.BottomNavigationHelper
 import com.example.ecosort.R.id.btnCapture
-import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions // Needed for lower threshold
 import android.content.Intent
-import com.google.mlkit.vision.objects.DetectedObject
 import java.io.File
+import com.example.ecosort.ml.DetectedObjectInfo
+import com.example.ecosort.ml.ObjectDetectorService
+import com.example.ecosort.ml.DetectorFactory
 
 // NOTE: You must have a top-level AnalysisResult.kt and OverlayView.kt file in this package.
 
@@ -48,7 +45,7 @@ class ObjectDetectionActivity : AppCompatActivity() {
     private var lastGeminiCallTime = 0L
     private val GEMINI_CALL_INTERVAL_MS = 1500L // Throttle Gemini API calls to 5 seconds
 
-    private var latestDetectedObjects: List<DetectedObject> = emptyList()
+    private var latestDetectedObjects: List<DetectedObjectInfo> = emptyList()
 
     private var latestCapturedBitmap: Bitmap? = null
     
@@ -61,24 +58,24 @@ class ObjectDetectionActivity : AppCompatActivity() {
         Executors.newSingleThreadExecutor()
     }
 
-    private var objectDetector: ObjectDetector? = null
+    // Use abstraction interface instead of specific implementation
+    private var objectDetectorService: ObjectDetectorService? = null
     
     private fun initializeObjectDetector() {
         try {
-            // Create fresh detector instance for each camera session
-            objectDetector?.close() // Close previous instance if exists
+            // Stop previous instance if exists
+            objectDetectorService?.stop()
             
-            val options = ObjectDetectorOptions.Builder()
-                .setDetectorMode(ObjectDetectorOptions.STREAM_MODE)
-                .enableClassification() // Must be enabled to get any label (even generic ones)
-                .enableMultipleObjects() // Detect more objects for better Gemini targeting
-                .build()
-            objectDetector = ObjectDetection.getClient(options)
+            // Create appropriate detector using factory based on build flavor
+            objectDetectorService = DetectorFactory.createDetector(BuildConfig.STORE_TYPE)
             
-            Log.d("Detector", "Object detector initialized successfully")
+            // Initialize the detector
+            objectDetectorService?.initialize()
+            
+            Log.d("Detector", "Object detector initialized successfully for ${BuildConfig.STORE_TYPE}")
         } catch (e: Exception) {
             Log.e("Detector", "Failed to initialize object detector: ${e.message}", e)
-            objectDetector = null
+            objectDetectorService = null
         }
     }
     
@@ -205,8 +202,6 @@ class ObjectDetectionActivity : AppCompatActivity() {
                     this@ObjectDetectionActivity.frameHeight = imageProxy.height
                 }
 
-                val image = InputImage.fromMediaImage(mediaImage, rotation)
-
                 // 🔑 CRITICAL FIX: Create a stable Bitmap copy for capture with size management
                 val capturedBitmap = imageProxy.toBitmap()
                 if (capturedBitmap != null) {
@@ -222,7 +217,8 @@ class ObjectDetectionActivity : AppCompatActivity() {
                     }
                 }
 
-                objectDetector?.process(image)
+                // Use abstraction layer for detection (works with both Google and HMS)
+                objectDetectorService?.detectObjects(imageProxy, rotation)
                     ?.addOnSuccessListener { results ->
                         val currentTime = System.currentTimeMillis()
                         this@ObjectDetectionActivity.detectionCount++
@@ -353,14 +349,14 @@ class ObjectDetectionActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        objectDetector?.close()
-        objectDetector = null
+        objectDetectorService?.stop()
+        objectDetectorService = null
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
-        objectDetector?.close()
+        objectDetectorService?.stop()
     }
 
     // --------------------------------------------------
@@ -623,7 +619,7 @@ class ObjectDetectionActivity : AppCompatActivity() {
         }
 
         // Safety check for object detector
-        if (objectDetector == null) {
+        if (objectDetectorService == null || !objectDetectorService!!.isReady()) {
             Toast.makeText(this, "Object detector not ready. Please wait.", Toast.LENGTH_SHORT).show()
             return
         }

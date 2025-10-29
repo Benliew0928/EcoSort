@@ -50,9 +50,19 @@ class SocialRepository @Inject constructor(
             }
 
             // Create follow relationship locally
+            val followerFirebaseUid = follower.firebaseUid ?: ""
+            val followingFirebaseUid = following.firebaseUid ?: ""
+            
+            if (followerFirebaseUid.isEmpty() || followingFirebaseUid.isEmpty()) {
+                android.util.Log.e("SocialRepository", "❌ Cannot create follow: Missing Firebase UID")
+                return Result.Error(Exception("Authentication error. Please log in again."))
+            }
+            
             val follow = UserFollow(
-                followerId = followerId,
-                followingId = followingId,
+                followerId = followerId, // Keep for backward compatibility
+                followingId = followingId, // Keep for backward compatibility
+                followerFirebaseUid = followerFirebaseUid, // 🔑 Firebase UID for cross-device sync
+                followingFirebaseUid = followingFirebaseUid, // 🔑 Firebase UID for cross-device sync
                 followedAt = System.currentTimeMillis()
             )
             
@@ -182,9 +192,14 @@ class SocialRepository @Inject constructor(
             }
 
             // Create friend request
+            val user = userRepository.getUserOrAdmin(userId)
+            val friend = userRepository.getUserOrAdmin(friendId)
+            
             val friendRequest = UserFriend(
-                userId = userId,
-                friendId = friendId,
+                userId = userId, // Keep for backward compatibility
+                friendId = friendId, // Keep for backward compatibility
+                userFirebaseUid = user?.firebaseUid ?: "", // 🔑 Firebase UID for cross-device sync
+                friendFirebaseUid = friend?.firebaseUid ?: "", // 🔑 Firebase UID for cross-device sync
                 status = FriendStatus.PENDING,
                 createdAt = System.currentTimeMillis()
             )
@@ -317,8 +332,10 @@ class SocialRepository @Inject constructor(
                     if (existingFollow == null) {
                         // Insert new follow
                         val localFollow = UserFollow(
-                            followerId = follower.id,
-                            followingId = following.id,
+                            followerId = follower.id, // Keep for backward compatibility
+                            followingId = following.id, // Keep for backward compatibility
+                            followerFirebaseUid = follower.firebaseUid ?: "", // 🔑 Firebase UID for cross-device sync
+                            followingFirebaseUid = following.firebaseUid ?: "", // 🔑 Firebase UID for cross-device sync
                             followedAt = firebaseFollow.followedAt?.toDate()?.time ?: System.currentTimeMillis()
                         )
                         userFollowDao.insertFollow(localFollow)
@@ -378,8 +395,10 @@ class SocialRepository @Inject constructor(
                     if (existingFollow == null) {
                         // Insert new follow
                         val localFollow = UserFollow(
-                            followerId = follower.id,
-                            followingId = following.id,
+                            followerId = follower.id, // Keep for backward compatibility
+                            followingId = following.id, // Keep for backward compatibility
+                            followerFirebaseUid = follower.firebaseUid ?: "", // 🔑 Firebase UID for cross-device sync
+                            followingFirebaseUid = following.firebaseUid ?: "", // 🔑 Firebase UID for cross-device sync
                             followedAt = firebaseFollow.followedAt?.toDate()?.time ?: System.currentTimeMillis()
                         )
                         userFollowDao.insertFollow(localFollow)

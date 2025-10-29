@@ -130,6 +130,13 @@
     <string name="nav_scan">📸\nScan</string>
     <string name="nav_map">🗺️\nMap</string>
     <string name="nav_community">👥\nCommunity</string>
+    <string name="nav_chat">💬\nChat</string>
+    
+    <!-- Missing strings for MainActivity -->
+    <string name="history">📜\nHistory</string>
+    <string name="your_points">Your Points</string>
+    <string name="see_all">See All</string>
+    <string name="no_community_posts_yet">No community posts yet. Be the first to share!</string>
     
     <!-- User Profile -->
     <string name="edit_profile">✏️ Edit Profile</string>
@@ -349,6 +356,11 @@
     
     <!-- Community -->
     <string name="no_community_posts">No community posts yet. Be the first to share!</string>
+    
+    <!-- Google Maps API Key -->
+    <!-- TODO: Replace with your actual Google Maps API key from Google Cloud Console -->
+    <!-- Get your API key at: https://console.cloud.google.com/apis/credentials -->
+    <string name="google_maps_key">AIzaSyDs9f561lw_hKaIcl0Y_zPt3HjEfHy2RaE</string>
     
     <!-- Google Sign-In -->
     <string name="sign_in_with_google">Sign in with Google</string>

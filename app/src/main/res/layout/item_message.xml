@@ -4,10 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:paddingStart="16dp"
-    android:paddingEnd="16dp"
-    android:paddingTop="4dp"
-    android:paddingBottom="4dp">
+    android:paddingStart="@dimen/padding_md"
+    android:paddingEnd="@dimen/padding_md"
+    android:paddingTop="@dimen/padding_xs"
+    android:paddingBottom="@dimen/padding_xs">
 
     <!-- Message container -->
     <LinearLayout
@@ -25,10 +25,10 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/message_bubble_other"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="12dp"
-            android:paddingBottom="12dp"
+            android:paddingStart="@dimen/padding_md"
+            android:paddingEnd="@dimen/padding_md"
+            android:paddingTop="@dimen/padding_md"
+            android:paddingBottom="@dimen/padding_md"
             android:maxWidth="260dp">
 
             <!-- Text message -->
@@ -37,45 +37,47 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/black"
-                android:textSize="16sp"
-                android:lineSpacingExtra="2dp"
+                android:textSize="@dimen/text_lg"
+                android:lineSpacingExtra="@dimen/spacing_xs"
                 android:visibility="gone"
                 tools:text="Hello! How are you doing today?" />
 
             <!-- Image message -->
             <ImageView
                 android:id="@+id/image_message"
-                android:layout_width="200dp"
-                android:layout_height="200dp"
+                android:layout_width="@dimen/image_preview_height"
+                android:layout_height="@dimen/image_preview_height"
                 android:scaleType="centerCrop"
                 android:visibility="gone"
+                android:contentDescription="Shared image"
                 tools:src="@drawable/ic_image" />
 
             <!-- Voice message -->
             <LinearLayout
                 android:id="@+id/voice_message_container"
-                android:layout_width="200dp"
-                android:layout_height="48dp"
+                android:layout_width="@dimen/image_preview_height"
+                android:layout_height="@dimen/input_height"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/voice_message_bg"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
+                android:paddingStart="@dimen/padding_md"
+                android:paddingEnd="@dimen/padding_md"
                 android:visibility="gone">
 
                 <ImageView
                     android:id="@+id/voice_play_button"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="@dimen/icon_md"
+                    android:layout_height="@dimen/icon_md"
                     android:src="@drawable/ic_play_arrow"
-                    android:background="@android:color/transparent" />
+                    android:background="@android:color/transparent"
+                    android:contentDescription="Play voice message" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_marginStart="@dimen/margin_sm"
+                    android:layout_marginEnd="@dimen/margin_sm"
                     android:orientation="vertical">
 
                     <!-- Progress bar for voice message -->
@@ -83,8 +85,8 @@
                         android:id="@+id/voice_progress_bar"
                         style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="match_parent"
-                        android:layout_height="12dp"
-                        android:layout_marginBottom="4dp"
+                        android:layout_height="@dimen/padding_md"
+                        android:layout_marginBottom="@dimen/margin_xs"
                         android:progress="0"
                         android:max="100"
                         android:progressDrawable="@drawable/voice_progress_bar"
@@ -95,7 +97,7 @@
                     <View
                         android:id="@+id/voice_waveform"
                         android:layout_width="match_parent"
-                        android:layout_height="16dp"
+                        android:layout_height="@dimen/margin_lg"
                         android:background="@drawable/voice_waveform_bg" />
 
                 </LinearLayout>
@@ -104,81 +106,107 @@
                     android:id="@+id/voice_duration"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="0:00"
+                    android:textSize="@dimen/text_sm"
                     android:textColor="@android:color/black"
-                    android:textSize="12sp"
                     tools:text="0:15" />
 
             </LinearLayout>
 
-            <!-- File message -->
+            <!-- File attachment -->
             <LinearLayout
                 android:id="@+id/file_message_container"
-                android:layout_width="200dp"
-                android:layout_height="48dp"
+                android:layout_width="@dimen/image_preview_height"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/file_message_bg"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
+                android:paddingStart="@dimen/padding_md"
+                android:paddingEnd="@dimen/padding_md"
+                android:paddingTop="@dimen/padding_sm"
+                android:paddingBottom="@dimen/padding_sm"
                 android:visibility="gone">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_attach_file" />
+                    android:layout_width="@dimen/icon_lg"
+                    android:layout_height="@dimen/icon_lg"
+                    android:src="@drawable/ic_attach_file"
+                    android:contentDescription="File attachment" />
 
-                <TextView
-                    android:id="@+id/file_name"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:maxLines="1"
-                    android:ellipsize="end"
-                    tools:text="document.pdf" />
+                    android:layout_marginStart="@dimen/margin_sm"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/file_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="document.pdf"
+                        android:textSize="@dimen/text_md"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/black"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        tools:text="presentation.pdf" />
+
+                    <TextView
+                        android:id="@+id/file_size"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2.5 MB"
+                        android:textSize="@dimen/text_sm"
+                        android:textColor="@android:color/darker_gray"
+                        tools:text="1.2 MB" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
         </LinearLayout>
 
-        <!-- Message status and time -->
+        <!-- Timestamp -->
+        <TextView
+            android:id="@+id/text_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="12:30 PM"
+            android:textSize="@dimen/text_xs"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="@dimen/margin_xs"
+            android:layout_marginStart="@dimen/margin_sm"
+            tools:text="12:30 PM" />
+
+        <!-- Message status (for sent messages) -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="4dp">
-
-            <TextView
-                android:id="@+id/text_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@android:color/darker_gray"
-                android:textSize="12sp"
-                tools:text="10:30" />
+            android:layout_marginTop="@dimen/margin_xs"
+            android:layout_marginStart="@dimen/margin_sm">
 
             <ImageView
                 android:id="@+id/message_status"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_marginStart="4dp"
+                android:layout_width="@dimen/icon_sm"
+                android:layout_height="@dimen/icon_sm"
+                android:src="@android:drawable/presence_online"
                 android:visibility="gone"
-                tools:src="@drawable/ic_done_all"
+                android:contentDescription="Message status"
                 tools:visibility="visible" />
 
             <TextView
                 android:id="@+id/text_status_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="2dp"
-                android:textColor="@android:color/darker_gray"
-                android:textSize="10sp"
+                android:text="Sent"
+                android:textSize="@dimen/text_xs"
+                android:textColor="@color/text_secondary"
+                android:layout_marginStart="@dimen/margin_xs"
                 android:visibility="gone"
-                tools:text="sent"
-                tools:visibility="visible" />
+                tools:text="Delivered" />
 
         </LinearLayout>
 

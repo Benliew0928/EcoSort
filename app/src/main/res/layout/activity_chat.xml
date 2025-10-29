@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/white"
-        android:elevation="4dp">
+        android:elevation="@dimen/toolbar_elevation">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
@@ -25,22 +25,23 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp">
+                android:layout_marginStart="@dimen/margin_lg"
+                android:layout_marginEnd="@dimen/margin_lg">
                 
                 <ImageView
                     android:id="@+id/imageUserProfile"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="@dimen/icon_profile_sm"
+                    android:layout_height="@dimen/icon_profile_sm"
                     android:scaleType="centerCrop"
-                    android:layout_marginEnd="12dp" />
+                    android:contentDescription="User profile picture"
+                    android:layout_marginEnd="@dimen/margin_md" />
                 
                 <TextView
                     android:id="@+id/textUserName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="User"
-                    android:textSize="18sp"
+                    android:textSize="@dimen/text_xl"
                     android:textStyle="bold"
                     android:textColor="@android:color/black" />
                     
@@ -60,10 +61,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:clipToPadding="false"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
+            android:paddingStart="@dimen/padding_md"
+            android:paddingEnd="@dimen/padding_md"
+            android:paddingTop="@dimen/padding_sm"
+            android:paddingBottom="@dimen/padding_sm"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -74,53 +75,54 @@
             android:id="@+id/input_bar"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_margin="12dp"
+            android:layout_margin="@dimen/margin_md"
             android:background="@drawable/bg_input_bar"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
+            android:paddingStart="@dimen/padding_md"
+            android:paddingEnd="@dimen/padding_md"
+            android:paddingTop="@dimen/padding_sm"
+            android:paddingBottom="@dimen/padding_sm"
             android:gravity="center_vertical"
-            android:elevation="4dp"
+            android:elevation="@dimen/card_elevation_md"
+            android:minHeight="@dimen/input_height"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toTopOf="@id/bottomNavBar">
 
             <ImageButton
                 android:id="@+id/button_camera"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/icon_xl"
+                android:layout_height="@dimen/icon_xl"
                 android:background="@android:color/transparent"
                 android:contentDescription="Take Photo"
                 android:src="@drawable/ic_camera"
-                android:padding="8dp" />
+                android:padding="@dimen/padding_sm" />
 
             <ImageButton
                 android:id="@+id/button_attach_image"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/icon_xl"
+                android:layout_height="@dimen/icon_xl"
                 android:background="@android:color/transparent"
                 android:contentDescription="Attach Image"
                 android:src="@drawable/ic_image"
-                android:padding="8dp" />
+                android:padding="@dimen/padding_sm" />
 
             <ImageButton
                 android:id="@+id/button_voice_record"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/icon_xl"
+                android:layout_height="@dimen/icon_xl"
                 android:background="@android:color/transparent"
                 android:contentDescription="Record Voice"
                 android:src="@drawable/ic_mic"
-                android:padding="8dp" />
+                android:padding="@dimen/padding_sm" />
 
             <ImageButton
                 android:id="@+id/button_attach_file"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/icon_xl"
+                android:layout_height="@dimen/icon_xl"
                 android:background="@android:color/transparent"
                 android:contentDescription="Attach File"
                 android:src="@drawable/ic_attach_file"
-                android:padding="8dp" />
+                android:padding="@dimen/padding_sm" />
 
             <EditText
                 android:id="@+id/edit_text_message"
@@ -129,13 +131,14 @@
                 android:layout_weight="1"
                 android:hint="Type a message"
                 android:maxLines="4"
+                android:textSize="@dimen/text_lg"
                 android:inputType="textMultiLine"
                 android:background="@android:color/transparent" />
 
             <ImageButton
                 android:id="@+id/button_send"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/icon_xl"
+                android:layout_height="@dimen/icon_xl"
                 android:background="@android:color/transparent"
                 android:contentDescription="Send"
                 android:src="@drawable/ic_arrow_forward" />

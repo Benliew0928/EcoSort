@@ -6,13 +6,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_light"
+    android:fillViewport="true"
     tools:context=".ui.login.LoginActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp"
+        android:padding="@dimen/padding_xl"
         android:gravity="center">
 
         <!-- Logo Section -->
@@ -21,33 +22,34 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center"
-            android:layout_marginTop="60dp"
-            android:layout_marginBottom="40dp">
+            android:layout_marginTop="@dimen/margin_top_header"
+            android:layout_marginBottom="@dimen/margin_xxxl">
 
             <ImageView
-                android:layout_width="120dp"
-                android:layout_height="120dp"
+                android:layout_width="@dimen/icon_profile_xl"
+                android:layout_height="@dimen/icon_profile_xl"
                 android:src="@drawable/app_logo"
-                android:scaleType="fitCenter" />
+                android:scaleType="fitCenter"
+                android:contentDescription="@string/app_title" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/app_title"
-                android:textSize="32sp"
+                android:textSize="@dimen/text_display_lg"
                 android:textStyle="bold"
-                android:textColor="@color/white"
+                android:textColor="@android:color/black"
                 android:fontFamily="@string/font_family_heading"
-                android:layout_marginTop="16dp" />
+                android:layout_marginTop="@dimen/margin_lg" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/smart_recycling_marketplace"
-                android:textSize="16sp"
-                android:textColor="@color/white"
+                android:text="Smart Recycling and Community"
+                android:textSize="@dimen/text_lg"
+                android:textColor="@android:color/black"
                 android:fontFamily="@string/font_family_body"
-                android:layout_marginTop="8dp" />
+                android:layout_marginTop="@dimen/margin_sm" />
         </LinearLayout>
 
         <!-- Login Form Card -->
@@ -56,58 +58,60 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/card_modern"
-            android:padding="24dp"
-            android:elevation="6dp">
+            android:padding="@dimen/padding_xl"
+            android:elevation="@dimen/card_elevation_lg">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/welcome_back"
-                android:textSize="24sp"
+                android:textSize="@dimen/text_xxxl"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
                 android:fontFamily="@string/font_family_heading"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/margin_sm" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/sign_in_to_continue"
-                android:textSize="14sp"
+                android:textSize="@dimen/text_md"
                 android:textColor="@color/text_secondary"
                 android:fontFamily="@string/font_family_body"
-                android:layout_marginBottom="24dp" />
+                android:layout_marginBottom="@dimen/margin_xxl" />
 
             <!-- Username Field -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Username"
-                android:textSize="14sp"
+                android:textSize="@dimen/text_md"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
                 android:fontFamily="@string/font_family_primary"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/margin_sm" />
 
             <EditText
                 android:id="@+id/etUsername"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="@dimen/input_height"
+                android:minHeight="@dimen/input_min_height"
                 android:hint="Enter your username"
-                android:padding="12dp"
+                android:padding="@dimen/input_padding"
                 android:background="@drawable/input_field"
-                android:textSize="16sp"
+                android:textSize="@dimen/text_lg"
                 android:fontFamily="@string/font_family_body"
-                android:layout_marginBottom="4dp" />
+                android:inputType="text"
+                android:layout_marginBottom="@dimen/margin_xs" />
 
             <TextView
                 android:id="@+id/tvUsernameError"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
+                android:textSize="@dimen/text_sm"
                 android:textColor="@color/error_red"
                 android:fontFamily="@string/font_family_caption"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="@dimen/margin_md"
                 android:visibility="gone" />
 
             <!-- Password Field -->
@@ -115,16 +119,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Password"
-                android:textSize="14sp"
+                android:textSize="@dimen/text_md"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
                 android:fontFamily="@string/font_family_primary"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/margin_sm" />
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginBottom="4dp">
+                android:layout_height="@dimen/input_height"
+                android:layout_marginBottom="@dimen/margin_xs">
 
                 <EditText
                     android:id="@+id/etPassword"
@@ -132,19 +136,19 @@
                     android:layout_height="match_parent"
                     android:hint="Enter your password"
                     android:inputType="textPassword"
-                    android:padding="12dp"
-                    android:paddingEnd="48dp"
+                    android:padding="@dimen/input_padding"
+                    android:paddingEnd="@dimen/input_padding_end_with_icon"
                     android:background="@drawable/input_field"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_lg"
                     android:fontFamily="@string/font_family_body" />
 
                 <ImageButton
                     android:id="@+id/btnTogglePassword"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="@dimen/icon_xl"
+                    android:layout_height="@dimen/icon_xl"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    android:layout_marginEnd="4dp"
+                    android:layout_marginEnd="@dimen/margin_xs"
                     android:background="@android:color/transparent"
                     android:src="@drawable/ic_visibility_off"
                     android:contentDescription="Show password"
@@ -156,10 +160,10 @@
                 android:id="@+id/tvPasswordError"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
+                android:textSize="@dimen/text_sm"
                 android:textColor="@color/error_red"
                 android:fontFamily="@string/font_family_caption"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="@dimen/margin_lg"
                 android:visibility="gone" />
 
             <!-- User Type Selection -->
@@ -167,18 +171,18 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/user_type"
-                android:textSize="14sp"
+                android:textSize="@dimen/text_md"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
                 android:fontFamily="@string/font_family_primary"
-                android:layout_marginBottom="12dp" />
+                android:layout_marginBottom="@dimen/margin_md" />
 
             <RadioGroup
                 android:id="@+id/rgUserType"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="@dimen/margin_xxl">
 
                 <RadioButton
                     android:id="@+id/rbUser"
@@ -186,9 +190,10 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/user_role"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_md"
                     android:fontFamily="@string/font_family_body"
                     android:textColor="@color/text_primary"
+                    android:minHeight="@dimen/button_height_md"
                     android:checked="true" />
 
                 <RadioButton
@@ -197,36 +202,39 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/admin_role"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_md"
                     android:fontFamily="@string/font_family_body"
-                    android:textColor="@color/text_primary" />
+                    android:textColor="@color/text_primary"
+                    android:minHeight="@dimen/button_height_md" />
             </RadioGroup>
 
             <!-- Action Buttons -->
             <Button
                 android:id="@+id/btnLogin"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="@dimen/button_height_xl"
+                android:minHeight="@dimen/button_height_xl"
                 android:text="@string/sign_in"
-                android:textSize="16sp"
+                android:textSize="@dimen/text_lg"
                 android:textStyle="bold"
                 android:fontFamily="@string/font_family_primary"
                 android:background="@drawable/button_primary"
                 android:textColor="@color/white"
-                android:layout_marginBottom="12dp"
-                android:elevation="4dp" />
+                android:layout_marginBottom="@dimen/margin_md"
+                android:elevation="@dimen/card_elevation_md" />
 
             <Button
                 android:id="@+id/btnRegister"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="@dimen/button_height_lg"
+                android:minHeight="@dimen/button_height_lg"
                 android:text="@string/create_account"
-                android:textSize="14sp"
+                android:textSize="@dimen/text_md"
                 android:fontFamily="@string/font_family_primary"
                 android:background="@drawable/button_secondary"
                 android:textColor="@color/white"
-                android:elevation="2dp"
-                android:layout_marginBottom="16dp" />
+                android:elevation="@dimen/card_elevation_sm"
+                android:layout_marginBottom="@dimen/margin_lg" />
 
             <!-- Divider -->
             <LinearLayout
@@ -234,7 +242,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="@dimen/margin_lg">
 
                 <View
                     android:layout_width="0dp"
@@ -247,11 +255,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="OR"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/text_sm"
                     android:textColor="@color/text_secondary"
                     android:fontFamily="@string/font_family_caption"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginEnd="16dp" />
+                    android:layout_marginStart="@dimen/margin_lg"
+                    android:layout_marginEnd="@dimen/margin_lg" />
 
                 <View
                     android:layout_width="0dp"
@@ -265,16 +273,19 @@
             <Button
                 android:id="@+id/btnGoogleSignIn"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:text="@string/sign_in_with_google"
-                android:textSize="14sp"
+                android:layout_height="@dimen/button_height_lg"
+                android:minHeight="@dimen/button_height_lg"
+                android:text="Sign in with G"
+                android:textSize="@dimen/text_md"
+                android:textAllCaps="false"
                 android:fontFamily="@string/font_family_primary"
-                android:background="@drawable/button_google_signin"
-                android:textColor="@color/text_primary"
-                android:elevation="2dp"
+                android:background="@android:color/white"
+                android:textColor="@android:color/black"
+                android:elevation="@dimen/card_elevation_sm"
                 android:drawableStart="@drawable/ic_google_logo"
-                android:drawablePadding="12dp"
-                android:gravity="center" />
+                android:drawablePadding="@dimen/padding_md"
+                android:gravity="center"
+                android:stateListAnimator="@null" />
         </LinearLayout>
 
         <!-- Demo Credentials -->
@@ -283,25 +294,26 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/card_modern"
-            android:padding="16dp"
-            android:layout_marginTop="16dp"
-            android:elevation="2dp">
+            android:padding="@dimen/padding_md"
+            android:layout_marginTop="@dimen/margin_lg"
+            android:layout_marginBottom="@dimen/margin_lg"
+            android:elevation="@dimen/card_elevation_sm">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/demo_credentials"
-                android:textSize="14sp"
+                android:textSize="@dimen/text_md"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
                 android:fontFamily="@string/font_family_primary"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="@dimen/margin_sm" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/user_demo_credentials"
-                android:textSize="12sp"
+                android:textSize="@dimen/text_sm"
                 android:textColor="@color/text_secondary"
                 android:fontFamily="@string/font_family_caption" />
 
@@ -309,7 +321,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/admin_demo_credentials"
-                android:textSize="12sp"
+                android:textSize="@dimen/text_sm"
                 android:textColor="@color/text_secondary"
                 android:fontFamily="@string/font_family_caption" />
         </LinearLayout>

@@ -42,6 +42,7 @@ class UserProfileViewActivity : AppCompatActivity() {
     lateinit var chatRepository: ChatRepository
 
     private var targetUserId: Long = 0L
+    private var targetFirebaseUid: String? = null
     private var currentUserId: Long = 0L
     private var targetUser: User? = null
 
@@ -96,9 +97,11 @@ class UserProfileViewActivity : AppCompatActivity() {
         socialLinksContainer = findViewById(R.id.socialLinksContainer)
         achievementsContainer = findViewById(R.id.achievementsContainer)
 
-        // Get target user ID from intent
+        // Get target user ID or Firebase UID from intent
         targetUserId = intent.getLongExtra("user_id", 0L)
-        if (targetUserId == 0L) {
+        targetFirebaseUid = intent.getStringExtra("firebase_uid")
+        
+        if (targetUserId == 0L && targetFirebaseUid.isNullOrBlank()) {
             Toast.makeText(this, "Invalid user profile", Toast.LENGTH_SHORT).show()
             finish()
             return
@@ -128,7 +131,7 @@ class UserProfileViewActivity : AppCompatActivity() {
             try {
                 showLoading(true)
                 
-                android.util.Log.d("UserProfileViewActivity", "Loading user data for targetUserId: $targetUserId")
+                android.util.Log.d("UserProfileViewActivity", "Loading user data for targetUserId: $targetUserId, targetFirebaseUid: $targetFirebaseUid")
                 
                 // Get current user ID
                 val session = withContext(Dispatchers.IO) { userPreferencesManager.userSession.first() }
@@ -140,37 +143,79 @@ class UserProfileViewActivity : AppCompatActivity() {
                 currentUserId = session.userId
                 android.util.Log.d("UserProfileViewActivity", "Current user ID: $currentUserId")
                 
-                // Load target user data
-                var userResult = withContext(Dispatchers.IO) { userRepository.getUserById(targetUserId) }
+                // Load target user data - prioritize Firebase UID if available
+                var userResult: com.example.ecosort.data.model.Result<User> = if (!targetFirebaseUid.isNullOrBlank()) {
+                    // Look up by Firebase UID first
+                    android.util.Log.d("UserProfileViewActivity", "Looking up user by Firebase UID: $targetFirebaseUid")
+                    val user = withContext(Dispatchers.IO) { database.userDao().getUserByFirebaseUid(targetFirebaseUid!!) }
+                    if (user != null) {
+                        targetUserId = user.id // Set the local ID for later use
+                        com.example.ecosort.data.model.Result.Success(user)
+                    } else {
+                        // Not found locally, try Firebase
+                        android.util.Log.d("UserProfileViewActivity", "User not found locally by Firebase UID, fetching from Firebase")
+                        val firebaseResult = userRepository.getUserProfileFromFirebaseByUid(targetFirebaseUid!!)
+                        when (firebaseResult) {
+                            is com.example.ecosort.data.model.Result.Success -> {
+                                if (firebaseResult.data != null) {
+                                    com.example.ecosort.data.model.Result.Success(firebaseResult.data!!)
+                                } else {
+                                    com.example.ecosort.data.model.Result.Error(Exception("User not found"))
+                                }
+                            }
+                            is com.example.ecosort.data.model.Result.Error -> firebaseResult
+                            is com.example.ecosort.data.model.Result.Loading -> com.example.ecosort.data.model.Result.Error(Exception("Unexpected loading state"))
+                        }
+                    }
+                } else {
+                    // Fall back to local ID lookup
+                    withContext(Dispatchers.IO) { userRepository.getUserById(targetUserId) }
+                }
                 android.util.Log.d("UserProfileViewActivity", "User result: $userResult")
                 
                 if (userResult is com.example.ecosort.data.model.Result.Success) {
                     targetUser = userResult.data
                     android.util.Log.d("UserProfileViewActivity", "Target user loaded: ${targetUser?.username}, profileImageUrl: ${targetUser?.profileImageUrl}")
+                    
+                    // If we got the user from Firebase, save it locally
+                    if (targetUser != null && targetUserId == 0L) {
+                        targetUserId = targetUser!!.id
+                    }
+                    
                     populateUserProfile()
                 } else {
                     // User not found locally, try to sync from Firebase
-                    android.util.Log.d("UserProfileViewActivity", "User not found locally, trying to sync from Firebase")
+                    android.util.Log.d("UserProfileViewActivity", "User not found, trying to sync from Firebase")
                     
-                    // First, we need to get the username from community posts or other sources
-                    // For now, we'll try to sync all users from Firebase
+                    // Try syncing all users from Firebase
                     val syncResult = withContext(Dispatchers.IO) { userRepository.syncAllUsersFromFirebase() }
                     if (syncResult is com.example.ecosort.data.model.Result.Success) {
                         android.util.Log.d("UserProfileViewActivity", "Synced ${syncResult.data} users from Firebase")
                         
                         // Try to load the user again after sync
-                        userResult = withContext(Dispatchers.IO) { userRepository.getUserById(targetUserId) }
+                        userResult = if (!targetFirebaseUid.isNullOrBlank()) {
+                            val user = withContext(Dispatchers.IO) { database.userDao().getUserByFirebaseUid(targetFirebaseUid!!) }
+                            if (user != null) {
+                                targetUserId = user.id
+                                com.example.ecosort.data.model.Result.Success(user)
+                            } else {
+                                com.example.ecosort.data.model.Result.Error(Exception("User not found"))
+                            }
+                        } else {
+                            withContext(Dispatchers.IO) { userRepository.getUserById(targetUserId) }
+                        }
+                        
                         if (userResult is com.example.ecosort.data.model.Result.Success) {
                             targetUser = userResult.data
                             android.util.Log.d("UserProfileViewActivity", "Target user loaded after sync: ${targetUser?.username}")
                             populateUserProfile()
                         } else {
-                            android.util.Log.e("UserProfileViewActivity", "User still not found after Firebase sync: ${userResult}")
+                            android.util.Log.e("UserProfileViewActivity", "User still not found after Firebase sync")
                             Toast.makeText(this@UserProfileViewActivity, "User not found", Toast.LENGTH_SHORT).show()
                             finish()
                         }
                     } else {
-                        android.util.Log.e("UserProfileViewActivity", "Failed to sync users from Firebase: ${syncResult}")
+                        android.util.Log.e("UserProfileViewActivity", "Failed to sync users from Firebase")
                         Toast.makeText(this@UserProfileViewActivity, "User not found", Toast.LENGTH_SHORT).show()
                         finish()
                     }

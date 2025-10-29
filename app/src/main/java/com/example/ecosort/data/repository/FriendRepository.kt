@@ -65,8 +65,10 @@ class FriendRepository @Inject constructor(
 
             // Save to local database first
             val friendRequest = FriendRequest(
-                senderId = senderId,
-                receiverId = receiverId,
+                senderId = senderId, // Keep for backward compatibility
+                receiverId = receiverId, // Keep for backward compatibility
+                senderFirebaseUid = senderFirebaseUid, // 🔑 Firebase UID for cross-device sync
+                receiverFirebaseUid = receiverFirebaseUid, // 🔑 Firebase UID for cross-device sync
                 message = message
             )
             val requestId = friendRequestDao.insertFriendRequest(friendRequest)
@@ -144,9 +146,14 @@ class FriendRepository @Inject constructor(
             android.util.Log.d("FriendRepository", "Updated friend request status to ACCEPTED locally")
 
             // Create friendship locally
+            val senderFirebaseUid = sender.firebaseUid ?: ""
+            val receiverFirebaseUid = receiver.firebaseUid ?: ""
+            
             val friendship = Friendship(
-                userId1 = request.senderId,
-                userId2 = request.receiverId,
+                userId1 = request.senderId, // Keep for backward compatibility
+                userId2 = request.receiverId, // Keep for backward compatibility
+                user1FirebaseUid = senderFirebaseUid, // 🔑 Firebase UID for cross-device sync
+                user2FirebaseUid = receiverFirebaseUid, // 🔑 Firebase UID for cross-device sync
                 createdAt = System.currentTimeMillis(),
                 lastInteraction = System.currentTimeMillis()
             )
@@ -317,8 +324,10 @@ class FriendRepository @Inject constructor(
                     if (existingFriendship == null) {
                         // Insert new friendship
                         val localFriendship = Friendship(
-                            userId1 = user1.id,
-                            userId2 = user2.id,
+                            userId1 = user1.id, // Keep for backward compatibility
+                            userId2 = user2.id, // Keep for backward compatibility
+                            user1FirebaseUid = user1.firebaseUid ?: "", // 🔑 Firebase UID for cross-device sync
+                            user2FirebaseUid = user2.firebaseUid ?: "", // 🔑 Firebase UID for cross-device sync
                             createdAt = firebaseFriendship.createdAt?.toDate()?.time ?: System.currentTimeMillis(),
                             lastInteraction = firebaseFriendship.lastInteraction?.toDate()?.time ?: System.currentTimeMillis()
                         )
@@ -379,8 +388,10 @@ class FriendRepository @Inject constructor(
                     if (existingRequest == null) {
                         // Insert new request
                         val localRequest = FriendRequest(
-                            senderId = sender.id,
-                            receiverId = receiver.id,
+                            senderId = sender.id, // Keep for backward compatibility
+                            receiverId = receiver.id, // Keep for backward compatibility
+                            senderFirebaseUid = sender.firebaseUid ?: "", // 🔑 Firebase UID for cross-device sync
+                            receiverFirebaseUid = receiver.firebaseUid ?: "", // 🔑 Firebase UID for cross-device sync
                             status = FriendRequestStatus.valueOf(firebaseRequest.status),
                             message = firebaseRequest.message,
                             createdAt = firebaseRequest.createdAt?.toDate()?.time ?: System.currentTimeMillis(),

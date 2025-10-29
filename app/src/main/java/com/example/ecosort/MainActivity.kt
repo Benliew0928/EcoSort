@@ -28,7 +28,7 @@ import android.view.View
 import com.example.ecosort.data.local.EcoSortDatabase
 import com.bumptech.glide.Glide
 import javax.inject.Inject
-import com.example.ecosort.hms.MapActivity
+import com.example.ecosort.maps.MapLauncher
 import com.example.ecosort.utils.ResponsiveUtils
 import com.example.ecosort.utils.VideoThumbnailGenerator
 import kotlinx.coroutines.CoroutineScope
@@ -213,9 +213,9 @@ class MainActivity : AppCompatActivity(), AdminPasskeyDialog.AdminPasskeyListene
             startActivity(Intent(this, ObjectDetectionActivity::class.java))
         }
 
-        // 2. Find Stations
+        // 2. Find Stations - Uses smart detection to launch Google Maps or Huawei Maps
         btnFindStationsContainer.setOnClickListener {
-            startActivity(Intent(this, MapActivity::class.java))
+            MapLauncher.launchMap(this)
         }
 
         // 3. Friends (The Empty Card in the design image)

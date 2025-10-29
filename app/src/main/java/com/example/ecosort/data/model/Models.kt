@@ -143,12 +143,15 @@ enum class MeasurementUnits {
 data class FriendRequest(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val senderId: Long,
-    val receiverId: Long,
+    val senderFirebaseUid: String, // 🔑 Changed from Long to Firebase UID
+    val receiverFirebaseUid: String, // 🔑 Changed from Long to Firebase UID
     val status: FriendRequestStatus = FriendRequestStatus.PENDING,
     val message: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    // Keep for backward compatibility during migration
+    @Deprecated("Use senderFirebaseUid instead") val senderId: Long = 0,
+    @Deprecated("Use receiverFirebaseUid instead") val receiverId: Long = 0
 )
 
 enum class FriendRequestStatus {
@@ -159,10 +162,13 @@ enum class FriendRequestStatus {
 data class Friendship(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val userId1: Long,
-    val userId2: Long,
+    val user1FirebaseUid: String, // 🔑 Changed from Long to Firebase UID
+    val user2FirebaseUid: String, // 🔑 Changed from Long to Firebase UID
     val createdAt: Long = System.currentTimeMillis(),
-    val lastInteraction: Long = System.currentTimeMillis()
+    val lastInteraction: Long = System.currentTimeMillis(),
+    // Keep for backward compatibility during migration
+    @Deprecated("Use user1FirebaseUid instead") val userId1: Long = 0,
+    @Deprecated("Use user2FirebaseUid instead") val userId2: Long = 0
 )
 
 @Entity(tableName = "blocked_users")
@@ -266,7 +272,7 @@ data class CommunityPost(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val firebaseId: String = "", // Store the original Firebase document ID
-    val authorId: Long,
+    val authorFirebaseUid: String, // 🔑 Changed from Long to Firebase UID
     val authorName: String,
     val authorAvatar: String? = null,
     val title: String,
@@ -282,7 +288,9 @@ data class CommunityPost(
     val commentsCount: Int = 0,
     val sharesCount: Int = 0,
     val isLikedByUser: Boolean = false,
-    val status: PostStatus = PostStatus.PUBLISHED
+    val status: PostStatus = PostStatus.PUBLISHED,
+    // Keep for backward compatibility during migration
+    @Deprecated("Use authorFirebaseUid instead") val authorId: Long = 0
 ) : Serializable
 
 enum class PostType : Serializable {
@@ -312,14 +320,16 @@ data class CommunityComment(
     val id: Long = 0,
     val firebaseId: String = "", // Store the original Firebase document ID
     val postId: Long,
-    val authorId: Long,
+    val authorFirebaseUid: String, // 🔑 Changed from Long to Firebase UID
     val authorName: String,
     val authorAvatar: String? = null,
     val content: String,
     val parentCommentId: Long? = null, // For replies
     val postedAt: Long = System.currentTimeMillis(),
     val likesCount: Int = 0,
-    val isLikedByUser: Boolean = false
+    val isLikedByUser: Boolean = false,
+    // Keep for backward compatibility during migration
+    @Deprecated("Use authorFirebaseUid instead") val authorId: Long = 0
 )
 
 // ==================== COMMUNITY LIKE MODEL ====================
@@ -366,7 +376,7 @@ data class ChatMessage(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val channelId: String,
-    val senderId: Long,
+    val senderFirebaseUid: String, // 🔑 Changed from Long to Firebase UID
     val senderUsername: String,
     val messageText: String,
     val messageType: MessageType = MessageType.TEXT,
@@ -375,7 +385,9 @@ data class ChatMessage(
     val attachmentDuration: Long? = null, // For voice messages
     val timestamp: Long = System.currentTimeMillis(),
     val isRead: Boolean = false,
-    val messageStatus: MessageStatus = MessageStatus.SENDING
+    val messageStatus: MessageStatus = MessageStatus.SENDING,
+    // Keep for backward compatibility during migration
+    @Deprecated("Use senderFirebaseUid instead") val senderId: Long = 0
 )
 
 enum class MessageType {
@@ -391,15 +403,19 @@ enum class MessageStatus {
 data class Conversation(
     @PrimaryKey
     val channelId: String,
-    val participant1Id: Long,
+    val participant1FirebaseUid: String, // 🔑 Changed from Long to Firebase UID
     val participant1Username: String,
-    val participant2Id: Long,
+    val participant2FirebaseUid: String, // 🔑 Changed from Long to Firebase UID
     val participant2Username: String,
     val lastMessageText: String? = null,
     val lastMessageTimestamp: Long = 0L,
-    val lastMessageSenderId: Long? = null,
+    val lastMessageSenderFirebaseUid: String? = null, // 🔑 Changed from Long to Firebase UID
     val unreadCount: Int = 0,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    // Keep for backward compatibility during migration
+    @Deprecated("Use participant1FirebaseUid instead") val participant1Id: Long = 0,
+    @Deprecated("Use participant2FirebaseUid instead") val participant2Id: Long = 0,
+    @Deprecated("Use lastMessageSenderFirebaseUid instead") val lastMessageSenderId: Long? = null
 )
 
 // ==================== SOCIAL FEATURES MODELS ====================
@@ -408,20 +424,26 @@ data class Conversation(
 data class UserFollow(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val followerId: Long, // User who is following
-    val followingId: Long, // User being followed
-    val followedAt: Long = System.currentTimeMillis()
+    val followerFirebaseUid: String, // 🔑 Changed from Long to Firebase UID - User who is following
+    val followingFirebaseUid: String, // 🔑 Changed from Long to Firebase UID - User being followed
+    val followedAt: Long = System.currentTimeMillis(),
+    // Keep for backward compatibility during migration
+    @Deprecated("Use followerFirebaseUid instead") val followerId: Long = 0,
+    @Deprecated("Use followingFirebaseUid instead") val followingId: Long = 0
 )
 
 @Entity(tableName = "user_friends")
 data class UserFriend(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val userId: Long, // First user in the friendship
-    val friendId: Long, // Second user in the friendship
+    val userFirebaseUid: String, // 🔑 Changed from Long to Firebase UID - First user in the friendship
+    val friendFirebaseUid: String, // 🔑 Changed from Long to Firebase UID - Second user in the friendship
     val status: FriendStatus = FriendStatus.PENDING,
     val createdAt: Long = System.currentTimeMillis(),
-    val acceptedAt: Long? = null
+    val acceptedAt: Long? = null,
+    // Keep for backward compatibility during migration
+    @Deprecated("Use userFirebaseUid instead") val userId: Long = 0,
+    @Deprecated("Use friendFirebaseUid instead") val friendId: Long = 0
 )
 
 enum class FriendStatus {

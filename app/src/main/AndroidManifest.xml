@@ -67,6 +67,12 @@
             android:name="com.huawei.hms.client.appid"
             android:value="YOUR_APP_ID_HERE" /> -->
 
+        <!-- ==================== GOOGLE MAPS CONFIGURATION ==================== -->
+        <!-- Google Maps API Key - Required for Google Maps SDK -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/google_maps_key" />
+
         <!-- ==================== GOOGLE SIGN-IN CONFIGURATION ==================== -->
         <meta-data
             android:name="com.google.android.gms.version"
@@ -108,8 +114,9 @@
         <activity android:name=".ui.admin.CommunityCommentsManagementActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.admin.AdminActionLogsActivity" android:exported="false" android:screenOrientation="portrait" />
 
-        <!-- MapActivity: Use the fully qualified name from the Kotlin file package (com.example.ecosort.MapActivity) -->
-        <activity android:name=".hms.MapActivity" android:exported="false" android:screenOrientation="portrait" />
+        <!-- Map Activities - Smart dual-map system supporting both GMS and HMS -->
+        <activity android:name=".hms.GoogleMapActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".hms.HuaweiMapActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".hms.AddBinActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".hms.BinDetailActivity" android:exported="false" />
 

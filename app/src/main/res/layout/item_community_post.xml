@@ -4,16 +4,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    android:elevation="4dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    android:layout_margin="@dimen/margin_sm"
+    android:elevation="@dimen/card_elevation_md"
+    app:cardCornerRadius="@dimen/card_radius_lg"
+    app:cardElevation="@dimen/card_elevation_sm">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="@dimen/padding_md">
 
         <!-- Header -->
         <LinearLayout
@@ -21,27 +21,28 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="@dimen/margin_md">
 
             <ImageView
                 android:id="@+id/imageAuthorProfile"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:scaleType="centerCrop" />
+                android:layout_width="@dimen/icon_profile_sm"
+                android:layout_height="@dimen/icon_profile_sm"
+                android:scaleType="centerCrop"
+                android:contentDescription="Author profile picture" />
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:layout_marginStart="12dp">
+                android:layout_marginStart="@dimen/margin_md">
 
                 <TextView
                     android:id="@+id/textAuthorName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Author Name"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_lg"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     tools:text="John Doe" />
@@ -51,7 +52,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="2h ago"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/text_sm"
                     android:textColor="@color/text_secondary"
                     tools:text="2h ago" />
 
@@ -62,12 +63,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="TIP"
-                android:textSize="11sp"
+                android:textSize="@dimen/text_xs"
                 android:textStyle="bold"
                 android:textColor="@color/white"
                 android:background="@drawable/tag_background"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
+                android:paddingStart="@dimen/padding_sm"
+                android:paddingEnd="@dimen/padding_sm"
+                android:paddingTop="@dimen/padding_xs"
+                android:paddingBottom="@dimen/padding_xs"
                 android:gravity="center"
                 tools:text="TIP" />
 
@@ -79,10 +82,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Post Title"
-            android:textSize="18sp"
+            android:textSize="@dimen/text_xl"
             android:textStyle="bold"
             android:textColor="@color/text_primary"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="@dimen/margin_sm"
             tools:text="How to Recycle Plastic Bottles" />
 
         <!-- Content -->
@@ -91,135 +94,134 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Post content goes here..."
-            android:textSize="15sp"
+            android:textSize="@dimen/text_md"
             android:textColor="@color/text_primary"
-            android:lineSpacingExtra="6dp"
-            android:layout_marginBottom="12dp"
+            android:lineSpacingExtra="@dimen/spacing_xs"
+            android:layout_marginBottom="@dimen/margin_md"
             android:ellipsize="end"
+            android:maxLines="5"
             tools:text="Here are some great tips for recycling plastic bottles effectively..." />
 
-        <!-- Post Image -->
+        <!-- Image (if any) -->
         <ImageView
             android:id="@+id/imagePost"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_height="@dimen/image_preview_height"
             android:scaleType="centerCrop"
-            android:background="@color/surface_light"
             android:visibility="gone"
-            android:adjustViewBounds="true"
-            android:maxHeight="300dp"
+            android:layout_marginBottom="@dimen/margin_md"
+            android:contentDescription="Post image"
             tools:visibility="visible"
-            tools:src="@drawable/ic_image_placeholder" />
+            tools:src="@drawable/ic_image" />
+
+        <!-- Video Thumbnail (if any) -->
+        <FrameLayout
+            android:id="@+id/videoThumbnailContainer"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/image_preview_height"
+            android:visibility="gone"
+            android:layout_marginBottom="@dimen/margin_md">
+
+            <ImageView
+                android:id="@+id/imageVideoThumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:contentDescription="Video thumbnail" />
+
+            <ImageView
+                android:layout_width="@dimen/icon_xxl"
+                android:layout_height="@dimen/icon_xxl"
+                android:src="@drawable/ic_play_arrow"
+                android:layout_gravity="center"
+                android:contentDescription="Play video"
+                android:background="@android:color/transparent" />
+
+        </FrameLayout>
 
         <!-- Tags -->
         <LinearLayout
             android:id="@+id/containerTags"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/margin_md"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp"
-            android:visibility="gone"
-            tools:visibility="visible">
+            android:visibility="gone" />
 
-            <!-- Tags will be added dynamically -->
-
-        </LinearLayout>
-
-        <!-- Action Buttons -->
+        <!-- Action Bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <!-- Like Button -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+            <ImageView
+                android:id="@+id/buttonLike"
+                android:layout_width="@dimen/icon_md"
+                android:layout_height="@dimen/icon_md"
+                android:src="@drawable/ic_favorite_border"
+                android:contentDescription="Like"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
-                android:focusable="true"
-                android:background="?attr/selectableItemBackground">
+                android:focusable="true" />
 
-                <ImageView
-                    android:id="@+id/buttonLike"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_favorite_border"
-                    android:tint="@color/text_secondary" />
-
-                <TextView
-                    android:id="@+id/textLikeCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="0"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_secondary"
-                    tools:text="12" />
-
-            </LinearLayout>
-
-            <!-- Comment Button -->
-            <LinearLayout
-                android:layout_width="0dp"
+            <TextView
+                android:id="@+id/textLikeCount"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:text="0"
+                android:textSize="@dimen/text_md"
+                android:textColor="@color/text_secondary"
+                android:layout_marginStart="@dimen/margin_xs"
+                android:layout_marginEnd="@dimen/margin_lg"
+                tools:text="24" />
+
+            <ImageView
+                android:id="@+id/buttonComment"
+                android:layout_width="@dimen/icon_md"
+                android:layout_height="@dimen/icon_md"
+                android:src="@drawable/ic_comment"
+                android:contentDescription="Comment"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
-                android:focusable="true"
-                android:background="?attr/selectableItemBackground">
+                android:focusable="true" />
 
-                <ImageView
-                    android:id="@+id/buttonComment"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_comment"
-                    android:tint="@color/text_secondary" />
-
-                <TextView
-                    android:id="@+id/textCommentCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="0"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_secondary"
-                    tools:text="5" />
-
-            </LinearLayout>
-
-            <!-- Share Button -->
-            <LinearLayout
-                android:layout_width="0dp"
+            <TextView
+                android:id="@+id/textCommentCount"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:text="0"
+                android:textSize="@dimen/text_md"
+                android:textColor="@color/text_secondary"
+                android:layout_marginStart="@dimen/margin_xs"
+                android:layout_marginEnd="@dimen/margin_lg"
+                tools:text="5" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/buttonShare"
+                android:layout_width="@dimen/icon_md"
+                android:layout_height="@dimen/icon_md"
+                android:src="@drawable/ic_share"
+                android:contentDescription="Share"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
-                android:focusable="true"
-                android:background="?attr/selectableItemBackground">
+                android:focusable="true" />
 
-                <ImageView
-                    android:id="@+id/buttonShare"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_share"
-                    android:tint="@color/text_secondary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Share"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_secondary" />
-
-            </LinearLayout>
+            <ImageView
+                android:id="@+id/imageMore"
+                android:layout_width="@dimen/icon_md"
+                android:layout_height="@dimen/icon_md"
+                android:src="@android:drawable/ic_menu_more"
+                android:contentDescription="More options"
+                android:layout_marginStart="@dimen/margin_md"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
 
         </LinearLayout>
 

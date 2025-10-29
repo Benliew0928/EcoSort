@@ -73,26 +73,27 @@ class CommunityFeedActivity : AppCompatActivity() {
         // Load local posts IMMEDIATELY for fast UI response
         loadPosts(null)
         
-        // Sync from Firebase in background (non-blocking)
+        // 🔥 NEW: Start continuous real-time Firebase sync in background
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                android.util.Log.d("CommunityFeedActivity", "Background sync from Firebase starting...")
-                val syncResult = communityRepository.syncCommunityPostsFromFirebase()
-                
-                when (syncResult) {
-                    is com.example.ecosort.data.model.Result.Success -> {
-                        android.util.Log.d("CommunityFeedActivity", "Background sync completed: ${syncResult.data} posts")
-                        // Posts will auto-update via Flow/LiveData - no need to manually reload
-                    }
-                    is com.example.ecosort.data.model.Result.Error -> {
-                        android.util.Log.w("CommunityFeedActivity", "Background sync failed: ${syncResult.exception.message}")
-                    }
-                    is com.example.ecosort.data.model.Result.Loading -> {
-                        // Loading state - ignore
+                android.util.Log.d("CommunityFeedActivity", "🔄 === Starting Real-Time Firebase Sync ===")
+                communityRepository.syncCommunityPostsFromFirebaseRealTime().collect { syncedCount ->
+                    if (syncedCount > 0) {
+                        android.util.Log.d("CommunityFeedActivity", "✅ Real-time sync: $syncedCount new/updated posts")
+                        // Posts will automatically update via Room DB Flow - no manual refresh needed!
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.w("CommunityFeedActivity", "Background sync error: ${e.message}")
+                android.util.Log.e("CommunityFeedActivity", "💥 Real-time sync error: ${e.message}")
+                // Fallback to one-time sync if real-time fails
+                try {
+                    val syncResult = communityRepository.syncCommunityPostsFromFirebase()
+                    if (syncResult is com.example.ecosort.data.model.Result.Success) {
+                        android.util.Log.d("CommunityFeedActivity", "✅ Fallback sync: ${syncResult.data} posts")
+                    }
+                } catch (fallbackError: Exception) {
+                    android.util.Log.e("CommunityFeedActivity", "❌ Fallback sync also failed: ${fallbackError.message}")
+                }
             }
         }
         
@@ -139,7 +140,7 @@ class CommunityFeedActivity : AppCompatActivity() {
             onPostClick = { post -> openPostDetail(post) },
             onTagClick = { tag -> filterByTag(tag) },
             onVideoClick = { videoUrl -> openVideoPlayer(videoUrl) },
-            onAuthorClick = { authorId -> openUserProfile(authorId) }
+            onAuthorClick = { authorFirebaseUid -> openUserProfile(authorFirebaseUid) }
         )
         
         // Use LinearLayoutManager for better compatibility
@@ -244,14 +245,24 @@ class CommunityFeedActivity : AppCompatActivity() {
 
                 // Use collectLatest to handle cancellation properly and get real-time updates
                 postsFlow.collectLatest { posts ->
-                    android.util.Log.d("CommunityFeedActivity", "Loaded ${posts.size} posts for type: ${postType ?: "All"}")
+                    android.util.Log.d("CommunityFeedActivity", "📊 Loaded ${posts.size} posts for type: ${postType ?: "All"}")
                     
-                    if (posts.isNotEmpty()) {
-                        android.util.Log.d("CommunityFeedActivity", "First post details: ${posts.first().title} by ${posts.first().authorName}")
+                    if (posts.isEmpty()) {
+                        android.util.Log.w("CommunityFeedActivity", "⚠️ WARNING: No posts found! This could mean:")
+                        android.util.Log.w("CommunityFeedActivity", "  1. No posts in local database")
+                        android.util.Log.w("CommunityFeedActivity", "  2. Firebase sync hasn't happened yet")
+                        android.util.Log.w("CommunityFeedActivity", "  3. All posts are filtered out (status != PUBLISHED)")
+                    } else {
+                        android.util.Log.d("CommunityFeedActivity", "📝 First post details:")
+                        android.util.Log.d("CommunityFeedActivity", "  - Title: ${posts.first().title}")
+                        android.util.Log.d("CommunityFeedActivity", "  - Author: ${posts.first().authorName}")
+                        android.util.Log.d("CommunityFeedActivity", "  - Author ID: ${posts.first().authorId}")
+                        android.util.Log.d("CommunityFeedActivity", "  - Status: ${posts.first().status}")
+                        android.util.Log.d("CommunityFeedActivity", "  - Firebase ID: ${posts.first().firebaseId}")
                     }
                     
                     // Submit posts directly - like status will be updated when user interacts
-                    android.util.Log.d("CommunityFeedActivity", "Submitting ${posts.size} posts to adapter")
+                    android.util.Log.d("CommunityFeedActivity", "📤 Submitting ${posts.size} posts to adapter")
                     adapter.submitList(posts) {
                         android.util.Log.d("CommunityFeedActivity", "Adapter list updated with ${posts.size} posts")
                         // Ensure RecyclerView is visible after data is loaded
@@ -375,6 +386,7 @@ class CommunityFeedActivity : AppCompatActivity() {
                         title = "Welcome to EcoSort Community!",
                         content = "This is our first community post. Share your eco-friendly tips, achievements, and questions here!",
                         authorId = 1L,
+                        authorFirebaseUid = "sample_uid_ecosort_team", // 🔑 Sample Firebase UID
                         authorName = "EcoSort Team",
                         postType = PostType.TIP,
                         inputType = com.example.ecosort.data.model.InputType.TEXT,
@@ -386,6 +398,7 @@ class CommunityFeedActivity : AppCompatActivity() {
                         title = "My First Recycling Achievement!",
                         content = "Just recycled 50 plastic bottles this week. Every small action counts towards a greener planet! 🌱",
                         authorId = 1L,
+                        authorFirebaseUid = "sample_uid_ben", // 🔑 Sample Firebase UID
                         authorName = "Ben",
                         postType = PostType.ACHIEVEMENT,
                         inputType = com.example.ecosort.data.model.InputType.TEXT,
@@ -397,6 +410,7 @@ class CommunityFeedActivity : AppCompatActivity() {
                         title = "How to properly sort electronic waste?",
                         content = "I have some old phones and laptops. What's the best way to dispose of them responsibly?",
                         authorId = 1L,
+                        authorFirebaseUid = "sample_uid_ben", // 🔑 Sample Firebase UID
                         authorName = "Ben",
                         postType = PostType.QUESTION,
                         inputType = com.example.ecosort.data.model.InputType.TEXT,
@@ -408,6 +422,7 @@ class CommunityFeedActivity : AppCompatActivity() {
                         title = "Community Cleanup Event This Saturday",
                         content = "Join us for a beach cleanup event this Saturday at 9 AM. Bring your friends and family!",
                         authorId = 1L,
+                        authorFirebaseUid = "sample_uid_ecosort_team", // 🔑 Sample Firebase UID
                         authorName = "EcoSort Team",
                         postType = PostType.EVENT,
                         inputType = com.example.ecosort.data.model.InputType.TEXT,
@@ -419,6 +434,7 @@ class CommunityFeedActivity : AppCompatActivity() {
                         title = "How to Recycle Electronics - Video Guide",
                         content = "Watch this video to learn the proper way to recycle your old electronics and e-waste!",
                         authorId = 1L,
+                        authorFirebaseUid = "sample_uid_ben", // 🔑 Sample Firebase UID
                         authorName = "Ben",
                         postType = PostType.TIP,
                         inputType = com.example.ecosort.data.model.InputType.VIDEO,
@@ -486,9 +502,9 @@ class CommunityFeedActivity : AppCompatActivity() {
         }
     }
 
-    private fun openUserProfile(authorId: Long) {
+    private fun openUserProfile(authorFirebaseUid: String) {
         val intent = Intent(this, com.example.ecosort.profile.UserProfileViewActivity::class.java)
-        intent.putExtra("user_id", authorId)
+        intent.putExtra("firebase_uid", authorFirebaseUid)
         startActivity(intent)
     }
 

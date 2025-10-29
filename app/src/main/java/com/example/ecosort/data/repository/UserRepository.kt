@@ -212,41 +212,178 @@ class UserRepository @Inject constructor(
 
     suspend fun checkGoogleUserExists(email: String): Result<User?> {
         return try {
-            val user = userDao.getUserByEmail(email)
-            Result.Success(user)
+            android.util.Log.d("UserRepository", "🔍 === Checking if user exists (ANY type) ===")
+            android.util.Log.d("UserRepository", "📧 Email: $email")
+            
+            // 🔑 CRITICAL: Check Firebase Firestore for ANY user with this email
+            // This ensures cross-device functionality AND prevents duplicate accounts
+            val firebaseUser = firebaseAuthService.getUserByEmail(email)
+            
+            if (firebaseUser != null) {
+                val isSocialAccount = !firebaseUser.passwordHash.isEmpty()
+                val accountType = if (isSocialAccount) "Social Login" else "Email/Password"
+                
+                android.util.Log.d("UserRepository", "✅ User found in Firebase!")
+                android.util.Log.d("UserRepository", "  - Account Type: $accountType")
+                android.util.Log.d("UserRepository", "  - Username: ${firebaseUser.username}")
+                android.util.Log.d("UserRepository", "  - Firebase UID: ${firebaseUser.firebaseUid}")
+                android.util.Log.d("UserRepository", "  - Social Account ID (passwordHash): ${firebaseUser.passwordHash}")
+                android.util.Log.d("UserRepository", "  - Profile Image: ${firebaseUser.profileImageUrl}")
+                
+                // ⚠️ CRITICAL: Check if this is an email/password account being accessed via social login
+                if (!isSocialAccount) {
+                    android.util.Log.w("UserRepository", "⚠️ WARNING: This email is registered as Email/Password account!")
+                    android.util.Log.w("UserRepository", "  User should sign in with their password, not social login.")
+                    android.util.Log.w("UserRepository", "  Alternatively, we could link this social account to existing account...")
+                    // For now, return the existing user to prevent duplicate account creation
+                }
+                
+                // Sync Firebase user to local database
+                val localUser = userDao.getUserByEmail(email)
+                if (localUser == null) {
+                    // User exists in Firebase but not locally - sync it
+                    android.util.Log.d("UserRepository", "💾 Syncing Firebase user to local database (NEW device)")
+                    val userId = userDao.insertUser(firebaseUser)
+                    val syncedUser = firebaseUser.copy(id = userId)
+                    android.util.Log.d("UserRepository", "✅ User synced to local DB with ID: $userId")
+                    Result.Success(syncedUser)
+                } else {
+                    // User exists locally, update with latest Firebase data
+                    android.util.Log.d("UserRepository", "🔄 User exists locally (ID: ${localUser.id}), updating with Firebase data")
+                    android.util.Log.d("UserRepository", "  Before update:")
+                    android.util.Log.d("UserRepository", "    - Local passwordHash: ${localUser.passwordHash}")
+                    android.util.Log.d("UserRepository", "    - Local profile image: ${localUser.profileImageUrl}")
+                    
+                    val updatedUser = localUser.copy(
+                        firebaseUid = firebaseUser.firebaseUid,
+                        passwordHash = firebaseUser.passwordHash, // 🔑 CRITICAL: Update social account ID
+                        profileImageUrl = firebaseUser.profileImageUrl,
+                        bio = firebaseUser.bio,
+                        itemsRecycled = firebaseUser.itemsRecycled,
+                        totalPoints = firebaseUser.totalPoints
+                    )
+                    userDao.updateUser(updatedUser)
+                    
+                    android.util.Log.d("UserRepository", "  After update:")
+                    android.util.Log.d("UserRepository", "    - Local passwordHash: ${updatedUser.passwordHash}")
+                    android.util.Log.d("UserRepository", "    - Local profile image: ${updatedUser.profileImageUrl}")
+                    android.util.Log.d("UserRepository", "✅ Local user updated successfully")
+                    
+                    Result.Success(updatedUser)
+                }
+            } else {
+                android.util.Log.d("UserRepository", "❌ User NOT found in Firebase - New user!")
+                Result.Success(null)
+            }
         } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "💥 Error checking if user exists", e)
             Result.Error(e)
         }
     }
 
     suspend fun loginGoogleUser(email: String, googleId: String): Result<UserSession> {
         return try {
+            android.util.Log.d("UserRepository", "🔐 === Logging in social user ===")
+            android.util.Log.d("UserRepository", "📧 Email: $email")
+            android.util.Log.d("UserRepository", "🆔 Provided Google ID: $googleId")
+            
             // Get user from database by email
             val user = userDao.getUserByEmail(email)
-                ?: return Result.Error(Exception("Google user not found"))
+            if (user == null) {
+                android.util.Log.e("UserRepository", "❌ Social user NOT found in local database!")
+                return Result.Error(Exception("Social user not found"))
+            }
+            
+            android.util.Log.d("UserRepository", "✅ User found in local DB:")
+            android.util.Log.d("UserRepository", "  - Local ID: ${user.id}")
+            android.util.Log.d("UserRepository", "  - Username: ${user.username}")
+            android.util.Log.d("UserRepository", "  - Firebase UID: ${user.firebaseUid}")
+            android.util.Log.d("UserRepository", "  - Stored passwordHash (Social ID): ${user.passwordHash}")
 
-            // Verify Google ID matches (for Google users, passwordHash contains googleId)
-            if (user.passwordHash != googleId) {
-                return Result.Error(Exception("Invalid Google account"))
+            // Verify social account ID matches (for social users, passwordHash contains social ID)
+            android.util.Log.d("UserRepository", "🔍 Verifying social account IDs:")
+            android.util.Log.d("UserRepository", "  - Stored ID: ${user.passwordHash}")
+            android.util.Log.d("UserRepository", "  - Provided ID: $googleId")
+            android.util.Log.d("UserRepository", "  - Match: ${user.passwordHash == googleId}")
+            
+            // 🔥 CRITICAL FIX: Handle missing social account ID (old accounts)
+            if (user.passwordHash.isEmpty() && !googleId.isEmpty()) {
+                android.util.Log.w("UserRepository", "⚠️ Social account ID is missing in database! Updating it now...")
+                android.util.Log.d("UserRepository", "  - Updating with Google ID: $googleId")
+                
+                // Update local database with social account ID
+                val updatedUser = user.copy(passwordHash = googleId)
+                userDao.updateUser(updatedUser)
+                
+                // Update Firebase as well
+                try {
+                    if (!user.firebaseUid.isNullOrEmpty()) {
+                        val updateData = hashMapOf<String, Any>("socialAccountId" to googleId)
+                        firebaseAuthService.updateUserProfile(user.firebaseUid, updateData)
+                        android.util.Log.d("UserRepository", "✅ Social account ID updated in both local DB and Firebase")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("UserRepository", "Failed to update Firebase: ${e.message}")
+                }
+            } else if (user.passwordHash != googleId) {
+                android.util.Log.e("UserRepository", "❌ MISMATCH! Social account ID verification failed!")
+                android.util.Log.e("UserRepository", "  Expected: ${user.passwordHash}")
+                android.util.Log.e("UserRepository", "  Got: $googleId")
+                return Result.Error(Exception("Invalid social account"))
+            }
+            
+            android.util.Log.d("UserRepository", "✅ Social account ID verified successfully!")
+
+            // 🔑 CRITICAL: Sign in to Firebase Auth for Firestore access
+            android.util.Log.d("UserRepository", "🔐 Signing into Firebase Auth for social user...")
+            if (!user.firebaseUid.isNullOrEmpty() && !googleId.isEmpty()) {
+                try {
+                    // Social users use their social account ID as their Firebase password
+                    firebaseAuthService.signInWithEmailPassword(email, googleId)
+                    android.util.Log.d("UserRepository", "✅ Firebase Auth sign-in successful!")
+                } catch (e: Exception) {
+                    android.util.Log.e("UserRepository", "⚠️ Firebase Auth sign-in failed (may need migration): ${e.message}")
+                    // Continue with login even if Firebase sign-in fails (offline mode or migration needed)
+                }
+            } else {
+                android.util.Log.w("UserRepository", "⚠️ Cannot sign into Firebase Auth - missing UID or social ID")
             }
 
-            // Generate session token
-            val token = securityManager.generateSessionToken()
+            // 🔑 CRITICAL: Check if user has Firebase UID
+            val firebaseUid = if (user.firebaseUid.isNullOrEmpty()) {
+                android.util.Log.w("UserRepository", "⚠️ Social user missing Firebase UID - using temp token")
+                securityManager.generateSessionToken()
+            } else {
+                android.util.Log.d("UserRepository", "✅ User has Firebase UID: ${user.firebaseUid}")
+                user.firebaseUid
+            }
 
-            // Create session
+            // Create session with Firebase UID as token
             val session = UserSession(
                 userId = user.id,
                 username = user.username,
                 userType = user.userType,
-                token = token,
+                token = firebaseUid, // ✅ Use Firebase UID as token
                 isLoggedIn = true
             )
+            
+            android.util.Log.d("UserRepository", "📝 Created session:")
+            android.util.Log.d("UserRepository", "  - User ID: ${session.userId}")
+            android.util.Log.d("UserRepository", "  - Username: ${session.username}")
+            android.util.Log.d("UserRepository", "  - Token (Firebase UID): ${session.token}")
+            android.util.Log.d("UserRepository", "  - User Type: ${session.userType}")
+
+            // Update user's last active timestamp
+            val updatedUser = user.copy(lastActive = System.currentTimeMillis())
+            userDao.updateUser(updatedUser)
 
             // Save session
             preferencesManager.saveUserSession(session)
+            android.util.Log.d("UserRepository", "✅ Session saved successfully!")
 
             Result.Success(session)
         } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "💥 Failed to login social user", e)
             Result.Error(e)
         }
     }
@@ -257,9 +394,17 @@ class UserRepository @Inject constructor(
         displayName: String,
         photoUrl: String,
         googleId: String,
-        userType: UserType
+        userType: UserType,
+        context: Context
     ): Result<UserSession> {
         return try {
+            android.util.Log.d("UserRepository", "👤 === Creating NEW social user account ===")
+            android.util.Log.d("UserRepository", "📧 Email: $email")
+            android.util.Log.d("UserRepository", "👤 Username: $username")
+            android.util.Log.d("UserRepository", "🆔 Social Account ID: $googleId")
+            android.util.Log.d("UserRepository", "🖼️ Photo URL: $photoUrl")
+            android.util.Log.d("UserRepository", "📝 Display Name: $displayName")
+            
             // Validate inputs
             if (!securityManager.isValidUsername(username)) {
                 return Result.Error(Exception("Username must be 3-20 characters, alphanumeric only"))
@@ -269,45 +414,181 @@ class UserRepository @Inject constructor(
                 return Result.Error(Exception("Invalid email format"))
             }
 
-            // Check if user already exists
-            if (userDao.getUserByUsername(username) != null) {
+            // Check if user already exists locally
+            val existingUsername = userDao.getUserByUsername(username)
+            val existingEmail = userDao.getUserByEmail(email)
+            
+            android.util.Log.d("UserRepository", "🔍 Checking local database:")
+            android.util.Log.d("UserRepository", "  - Username '$username' exists: ${existingUsername != null}")
+            android.util.Log.d("UserRepository", "  - Email '$email' exists: ${existingEmail != null}")
+            
+            if (existingUsername != null) {
+                android.util.Log.e("UserRepository", "❌ Username already exists: $username")
                 return Result.Error(Exception("Username already exists"))
             }
 
-            if (userDao.getUserByEmail(email) != null) {
+            if (existingEmail != null) {
+                android.util.Log.e("UserRepository", "❌ Email already registered: $email")
                 return Result.Error(Exception("Email already registered"))
             }
 
-            // Create user with Google information
+            // 🔑 CRITICAL: Get or create Firebase Authentication account for social sign-in users
+            // Social sign-in (Google/Huawei) may have already created a Firebase Auth account
+            val firebaseUid: String
+            val needsFirestoreProfile: Boolean
+            
+            try {
+                // First, try to get the current Firebase user (might already exist from social sign-in)
+                val currentFirebaseUser = firebaseAuthService.getCurrentFirebaseUser()
+                if (currentFirebaseUser != null && currentFirebaseUser.email == email) {
+                    // Firebase Auth account exists from social sign-in
+                    android.util.Log.d("UserRepository", "Using existing Firebase account from social sign-in: ${currentFirebaseUser.uid}")
+                    firebaseUid = currentFirebaseUser.uid
+                    needsFirestoreProfile = true // Need to create Firestore profile
+                    
+                    // 🔑 Set password for the existing Firebase Auth account so we can sign in with email/password later
+                    try {
+                        android.util.Log.d("UserRepository", "Setting password for existing Firebase Auth account")
+                        firebaseAuthService.updateCurrentUserPassword(googleId)
+                        android.util.Log.d("UserRepository", "✅ Password set successfully!")
+                    } catch (e: Exception) {
+                        android.util.Log.w("UserRepository", "⚠️ Failed to set password: ${e.message}")
+                        // Continue anyway - user can still access the account
+                    }
+                } else {
+                    // Firebase Auth account doesn't exist yet, create one (will also create Firestore profile)
+                    android.util.Log.d("UserRepository", "Creating new Firebase account for social user")
+                    // 🔑 Use social account ID as password for consistent authentication
+                    val firebaseResult = firebaseAuthService.registerUser(
+                        username = username,
+                        email = email,
+                        password = googleId, // Use social ID as password for consistent login
+                        userType = userType,
+                        context = context
+                    )
+                    
+                    if (firebaseResult !is Result.Success) {
+                        val errorMsg = if (firebaseResult is Result.Error) firebaseResult.exception.message else "Unknown error"
+                        android.util.Log.e("UserRepository", "Failed to create Firebase account: $errorMsg")
+                        return Result.Error(Exception("Failed to create account. Please try again."))
+                    }
+                    
+                    val firebaseUser = firebaseResult.data
+                    val uid = firebaseUser.firebaseUid
+                    
+                    if (uid.isNullOrEmpty()) {
+                        android.util.Log.e("UserRepository", "Firebase UID is null or empty after registration")
+                        return Result.Error(Exception("Failed to get Firebase UID. Please try again."))
+                    }
+                    firebaseUid = uid
+                    needsFirestoreProfile = false // Firestore profile already created by registerUser
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("UserRepository", "Error getting/creating Firebase account: ${e.message}", e)
+                return Result.Error(Exception("Failed to create account: ${e.message}"))
+            }
+            
+            if (firebaseUid.isEmpty()) {
+                return Result.Error(Exception("Failed to get Firebase UID. Please try again."))
+            }
+            
+            android.util.Log.d("UserRepository", "✅ Firebase UID obtained: $firebaseUid")
+
+            // Create local user with Firebase UID
+            android.util.Log.d("UserRepository", "💾 Creating local User object:")
+            android.util.Log.d("UserRepository", "  - Username: $username")
+            android.util.Log.d("UserRepository", "  - Email: $email")
+            android.util.Log.d("UserRepository", "  - Password Hash (Social ID): $googleId")
+            android.util.Log.d("UserRepository", "  - Firebase UID: $firebaseUid")
+            android.util.Log.d("UserRepository", "  - Profile Image URL: $photoUrl")
+            android.util.Log.d("UserRepository", "  - Bio: $displayName")
+            
             val user = User(
                 username = username,
                 email = email,
-                passwordHash = googleId, // Use Google ID as password for Google users
+                passwordHash = googleId, // Store social account ID for reference
                 userType = userType,
                 profileImageUrl = photoUrl,
-                bio = "Google user: $displayName"
+                bio = displayName,
+                firebaseUid = firebaseUid // ✅ CRITICAL: Store Firebase UID
             )
 
             val userId = userDao.insertUser(user)
             val createdUser = user.copy(id = userId)
+            android.util.Log.d("UserRepository", "✅ User saved to local DB with ID: $userId")
+            
+            // Create or update Firestore profile with social info
+            try {
+                if (needsFirestoreProfile) {
+                    // Create complete Firestore profile (Firebase Auth exists but Firestore profile doesn't)
+                    android.util.Log.d("UserRepository", "📝 Creating Firestore profile for existing Firebase Auth account")
+                    val fullProfileData = hashMapOf<String, Any>(
+                        "firebaseUid" to firebaseUid,
+                        "username" to username,
+                        "email" to email,
+                        "userType" to userType.name,
+                        "profileImageUrl" to photoUrl,
+                        "bio" to displayName,
+                        "socialAccountId" to googleId,
+                        "createdAt" to System.currentTimeMillis(),
+                        "itemsRecycled" to 0,
+                        "totalPoints" to 0,
+                        "location" to "",
+                        "joinDate" to System.currentTimeMillis(),
+                        "lastActive" to System.currentTimeMillis(),
+                        "profileCompletion" to 0,
+                        "privacySettings" to "",
+                        "achievements" to "",
+                        "socialLinks" to "",
+                        "preferences" to ""
+                    )
+                    android.util.Log.d("UserRepository", "  - Profile Image URL to save: $photoUrl")
+                    android.util.Log.d("UserRepository", "  - Social Account ID to save: $googleId")
+                    firebaseAuthService.createFirestoreProfile(firebaseUid, fullProfileData)
+                } else {
+                    // Update existing Firestore profile with social info
+                    android.util.Log.d("UserRepository", "🔄 Updating Firestore profile with social info")
+                    val socialInfoData = hashMapOf<String, Any>(
+                        "profileImageUrl" to photoUrl,
+                        "bio" to displayName,
+                        "socialAccountId" to googleId
+                    )
+                    android.util.Log.d("UserRepository", "  - Profile Image URL to update: $photoUrl")
+                    android.util.Log.d("UserRepository", "  - Social Account ID to update: $googleId")
+                    firebaseAuthService.updateUserProfile(firebaseUid, socialInfoData)
+                }
+                android.util.Log.d("UserRepository", "✅ Firestore profile synchronized successfully")
+            } catch (e: Exception) {
+                android.util.Log.w("UserRepository", "⚠️ Failed to sync Firestore profile: ${e.message}")
+                // Continue anyway, profile can be updated later
+            }
 
             // Generate session token
-            val token = securityManager.generateSessionToken()
+            val token = firebaseUid // Use Firebase UID as token for consistency
 
-            // Create session
+            android.util.Log.d("UserRepository", "📝 Creating user session:")
+            android.util.Log.d("UserRepository", "  - User ID: $userId")
+            android.util.Log.d("UserRepository", "  - Username: $username")
+            android.util.Log.d("UserRepository", "  - Token (Firebase UID): $token")
+            android.util.Log.d("UserRepository", "  - User Type: $userType")
+
+            // Create session with Firebase UID
             val session = UserSession(
                 userId = createdUser.id,
                 username = createdUser.username,
                 userType = createdUser.userType,
-                token = token,
+                token = token, // Firebase UID stored in token
                 isLoggedIn = true
             )
 
             // Save session
             preferencesManager.saveUserSession(session)
+            
+            android.util.Log.d("UserRepository", "Social user created successfully with Firebase sync enabled")
 
             Result.Success(session)
         } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "Error creating social user: ${e.message}", e)
             Result.Error(e)
         }
     }
@@ -1182,6 +1463,51 @@ class UserRepository @Inject constructor(
             }
         } catch (e: Exception) {
             Result.Error(e)
+        }
+    }
+
+    /**
+     * 🔑 Get current user's Firebase UID from session
+     * CRITICAL: Used for cross-device sync - always use Firebase UID, never local ID
+     */
+    suspend fun getCurrentUserFirebaseUid(): String? {
+        return try {
+            val session = preferencesManager.userSession.first()
+            if (session == null || !session.isLoggedIn) {
+                android.util.Log.w("UserRepository", "⚠️ No active session found")
+                return null
+            }
+            
+            // Token contains Firebase UID for all users (email/password and social)
+            val firebaseUid = session.token
+            
+            if (firebaseUid.isNullOrEmpty()) {
+                android.util.Log.e("UserRepository", "❌ Session token (Firebase UID) is null or empty!")
+                return null
+            }
+            
+            android.util.Log.d("UserRepository", "✅ Current user Firebase UID: $firebaseUid")
+            firebaseUid
+        } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "💥 Error getting current user Firebase UID", e)
+            null
+        }
+    }
+
+    /**
+     * 🔑 Get another user's Firebase UID by their local ID (for migration compatibility)
+     */
+    suspend fun getFirebaseUidByLocalId(localUserId: Long): String? {
+        return try {
+            val user = userDao.getUserById(localUserId)
+            if (user?.firebaseUid.isNullOrEmpty()) {
+                android.util.Log.w("UserRepository", "⚠️ User $localUserId has no Firebase UID!")
+                return null
+            }
+            user?.firebaseUid
+        } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "💥 Error getting Firebase UID for user $localUserId", e)
+            null
         }
     }
 }

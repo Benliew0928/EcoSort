@@ -21,6 +21,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@color/primary_green"
+            android:elevation="@dimen/toolbar_elevation"
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
     </com.google.android.material.appbar.AppBarLayout>
@@ -31,10 +32,10 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
+        android:paddingStart="@dimen/padding_md"
+        android:paddingEnd="@dimen/padding_md"
+        android:paddingTop="@dimen/padding_sm"
+        android:paddingBottom="@dimen/padding_sm"
         app:layout_constraintTop_toBottomOf="@+id/appBarLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -42,11 +43,13 @@
         <Button
             android:id="@+id/btnFilterAll"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="@dimen/icon_xl"
+            android:minHeight="@dimen/icon_xl"
             android:layout_weight="1"
-            android:layout_marginHorizontal="4dp"
+            android:layout_marginStart="@dimen/margin_xs"
+            android:layout_marginEnd="@dimen/margin_xs"
             android:text="All"
-            android:textSize="14sp"
+            android:textSize="@dimen/text_md"
             android:textAllCaps="false"
             android:background="@drawable/button_filter"
             android:textColor="@android:color/white"
@@ -55,11 +58,13 @@
         <Button
             android:id="@+id/btnFilterTips"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="@dimen/icon_xl"
+            android:minHeight="@dimen/icon_xl"
             android:layout_weight="1"
-            android:layout_marginHorizontal="4dp"
+            android:layout_marginStart="@dimen/margin_xs"
+            android:layout_marginEnd="@dimen/margin_xs"
             android:text="Tips"
-            android:textSize="14sp"
+            android:textSize="@dimen/text_md"
             android:textAllCaps="false"
             android:background="@drawable/button_filter"
             android:textColor="@android:color/white"
@@ -68,11 +73,13 @@
         <Button
             android:id="@+id/btnFilterQuestions"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="@dimen/icon_xl"
+            android:minHeight="@dimen/icon_xl"
             android:layout_weight="1"
-            android:layout_marginHorizontal="4dp"
+            android:layout_marginStart="@dimen/margin_xs"
+            android:layout_marginEnd="@dimen/margin_xs"
             android:text="QnA"
-            android:textSize="14sp"
+            android:textSize="@dimen/text_md"
             android:textAllCaps="false"
             android:background="@drawable/button_filter"
             android:textColor="@android:color/white"
@@ -81,11 +88,13 @@
         <Button
             android:id="@+id/btnFilterEvents"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="@dimen/icon_xl"
+            android:minHeight="@dimen/icon_xl"
             android:layout_weight="1"
-            android:layout_marginHorizontal="4dp"
+            android:layout_marginStart="@dimen/margin_xs"
+            android:layout_marginEnd="@dimen/margin_xs"
             android:text="Events"
-            android:textSize="14sp"
+            android:textSize="@dimen/text_md"
             android:textAllCaps="false"
             android:background="@drawable/button_filter"
             android:textColor="@android:color/white"
@@ -98,9 +107,9 @@
         android:id="@+id/rvPosts"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="16dp"
+        android:paddingStart="@dimen/padding_md"
+        android:paddingEnd="@dimen/padding_md"
+        android:paddingBottom="@dimen/padding_md"
         app:layout_constraintTop_toBottomOf="@+id/filtersRow"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -114,7 +123,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:padding="32dp"
+        android:padding="@dimen/padding_xxl"
         android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@+id/filtersRow"
         app:layout_constraintStart_toStartOf="parent"
@@ -122,8 +131,8 @@
         app:layout_constraintBottom_toBottomOf="parent">
 
         <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
+            android:layout_width="@dimen/image_emoji_lg"
+            android:layout_height="@dimen/image_emoji_lg"
             android:src="@drawable/ic_com_gray_24"
             android:contentDescription="Empty State"
             app:tint="@color/text_secondary"
@@ -132,9 +141,9 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="@dimen/margin_lg"
             android:text="No posts yet"
-            android:textSize="18sp"
+            android:textSize="@dimen/text_xl"
             android:textStyle="bold"
             android:textColor="@color/text_secondary" />
 
@@ -142,9 +151,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Be the first to share something!"
-            android:textSize="14sp"
+            android:textSize="@dimen/text_md"
             android:textColor="@color/text_hint"
-            android:layout_marginTop="4dp" />
+            android:layout_marginTop="@dimen/margin_xs" />
 
     </LinearLayout>
 
@@ -163,7 +172,7 @@
         android:id="@+id/fabAddPost"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_margin="@dimen/fab_margin"
         android:src="@drawable/ic_add"
         app:backgroundTint="@color/primary_green"
         app:tint="@android:color/white"

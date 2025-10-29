@@ -27,21 +27,23 @@ class GoogleUsernameActivity : AppCompatActivity() {
     private lateinit var btnCreateAccount: android.widget.Button
     private lateinit var btnCancel: android.widget.Button
 
-    // Google user data passed from LoginActivity
-    private var googleEmail: String = ""
-    private var googleDisplayName: String = ""
-    private var googlePhotoUrl: String = ""
-    private var googleId: String = ""
+    // Social user data passed from LoginActivity (Google or Huawei)
+    private var socialEmail: String = ""
+    private var socialDisplayName: String = ""
+    private var socialPhotoUrl: String = ""
+    private var socialAccountId: String = ""
+    private var socialProvider: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_google_username)
 
-        // Get Google user data from intent
-        googleEmail = intent.getStringExtra("google_email") ?: ""
-        googleDisplayName = intent.getStringExtra("google_display_name") ?: ""
-        googlePhotoUrl = intent.getStringExtra("google_photo_url") ?: ""
-        googleId = intent.getStringExtra("google_id") ?: ""
+        // Get social user data from intent (supports both Google and Huawei)
+        socialEmail = intent.getStringExtra("social_email") ?: ""
+        socialDisplayName = intent.getStringExtra("social_display_name") ?: ""
+        socialPhotoUrl = intent.getStringExtra("social_photo_url") ?: ""
+        socialAccountId = intent.getStringExtra("social_account_id") ?: ""
+        socialProvider = intent.getStringExtra("social_provider") ?: "Social"
 
         initViews()
         setupListeners()
@@ -81,14 +83,15 @@ class GoogleUsernameActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Create Google user account
+            // Create social user account (Google or Huawei)
             viewModel.createGoogleUser(
                 username = username,
-                email = googleEmail,
-                displayName = googleDisplayName,
-                photoUrl = googlePhotoUrl,
-                googleId = googleId,
-                userType = userType
+                email = socialEmail,
+                displayName = socialDisplayName,
+                photoUrl = socialPhotoUrl,
+                googleId = socialAccountId,
+                userType = userType,
+                context = this@GoogleUsernameActivity
             )
         }
 

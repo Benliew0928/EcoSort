@@ -26,7 +26,7 @@ class CommunityPostAdapter(
     private val onPostClick: (CommunityPost) -> Unit,
     private val onTagClick: (String) -> Unit = {},
     private val onVideoClick: (String) -> Unit = {},
-    private val onAuthorClick: (Long) -> Unit = {}
+    private val onAuthorClick: (String) -> Unit = {}
 ) : ListAdapter<CommunityPost, CommunityPostAdapter.PostViewHolder>(PostDiffCallback()) {
 
     override fun submitList(list: List<CommunityPost>?) {
@@ -133,8 +133,8 @@ class CommunityPostAdapter(
             
             // Author name click listener
             authorName.setOnClickListener {
-                android.util.Log.d("CommunityPostAdapter", "Author name clicked for post: ${post.id}, author: ${post.authorId}")
-                onAuthorClick(post.authorId)
+                android.util.Log.d("CommunityPostAdapter", "Author name clicked for post: ${post.id}, author: ${post.authorFirebaseUid}")
+                onAuthorClick(post.authorFirebaseUid)
             }
             
             // Make entire post card clickable (but not the image area for videos)

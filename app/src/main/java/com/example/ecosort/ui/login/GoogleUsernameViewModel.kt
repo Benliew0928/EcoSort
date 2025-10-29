@@ -40,12 +40,13 @@ class GoogleUsernameViewModel @Inject constructor(
         displayName: String,
         photoUrl: String,
         googleId: String,
-        userType: UserType
+        userType: UserType,
+        context: android.content.Context
     ) {
         viewModelScope.launch {
             _createUserState.value = _createUserState.value.copy(isLoading = true, errorMessage = null)
 
-            when (val result = userRepository.createGoogleUser(username, email, displayName, photoUrl, googleId, userType)) {
+            when (val result = userRepository.createGoogleUser(username, email, displayName, photoUrl, googleId, userType, context)) {
                 is Result.Success -> {
                     _createUserState.value = CreateUserUiState(
                         isLoading = false,

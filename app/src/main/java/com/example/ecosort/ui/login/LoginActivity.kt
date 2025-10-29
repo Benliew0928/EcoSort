@@ -16,16 +16,15 @@ import com.example.ecosort.MainActivity
 import com.example.ecosort.R
 import com.example.ecosort.data.model.UserType
 import com.example.ecosort.ui.admin.AdminRegistrationDialog
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
+import com.example.ecosort.auth.SocialAuthService
+import com.example.ecosort.auth.SocialAuthFactory
+import com.example.ecosort.auth.SocialAuthResult
+import com.example.ecosort.BuildConfig
 
 @AndroidEntryPoint
 class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistrationListener {
@@ -45,19 +44,23 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
     
     private var isPasswordVisible = false
     
-    // Google Sign-In
-    private lateinit var googleSignInClient: GoogleSignInClient
+    // Social Auth (works with both Google and Huawei)
+    private lateinit var socialAuthService: SocialAuthService
 
-    // Google Sign-In Activity Result Launcher
-    private val googleSignInLauncher = registerForActivityResult(
+    // Social Sign-In Activity Result Launcher
+    private val socialSignInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-        try {
-            val account = task.getResult(ApiException::class.java)
-            handleGoogleSignInResult(account)
-        } catch (e: ApiException) {
-            handleGoogleSignInError(e)
+        android.util.Log.d("LoginActivity", "Social sign-in result received. ResultCode: ${result.resultCode}")
+        lifecycleScope.launch {
+            try {
+                val authResult = socialAuthService.handleSignInResult(result.data)
+                android.util.Log.d("LoginActivity", "Auth result: isSuccess=${authResult.isSuccess}, email=${authResult.email}, error=${authResult.errorMessage}")
+                handleSocialSignInResult(authResult)
+            } catch (e: Exception) {
+                android.util.Log.e("LoginActivity", "Error handling sign-in result", e)
+                Toast.makeText(this@LoginActivity, "Sign-in error: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -82,8 +85,8 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         // Check if user is already logged in
         checkExistingSession()
 
-        configureGoogleSignIn()
         initViews()
+        configureSocialAuth()
         setupListeners()
         observeViewModel()
     }
@@ -109,21 +112,27 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         }
     }
 
-    private fun configureGoogleSignIn() {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestEmail()
-            .requestProfile()
-            .build()
-
-        googleSignInClient = GoogleSignIn.getClient(this, gso)
+    private fun configureSocialAuth() {
+        // Create appropriate auth provider based on build flavor
+        socialAuthService = SocialAuthFactory.createAuthProvider(BuildConfig.STORE_TYPE)
+        socialAuthService.configure(this)
+        
+        // Update button text based on provider
+        btnGoogleSignIn.text = SocialAuthFactory.getSignInButtonText(BuildConfig.STORE_TYPE)
+        
+        // Force white background with black text
+        btnGoogleSignIn.setBackgroundColor(android.graphics.Color.WHITE)
+        btnGoogleSignIn.setTextColor(android.graphics.Color.BLACK)
+        
+        android.util.Log.d("LoginActivity", "Social auth configured for ${socialAuthService.getProviderName()}")
     }
 
-    private fun signInWithGoogle() {
+    private fun signInWithSocialAccount() {
         // Always sign out first to ensure account picker is shown
-        googleSignInClient.signOut().addOnCompleteListener {
+        socialAuthService.signOut {
             // After signing out, launch the sign-in intent
-            val signInIntent = googleSignInClient.signInIntent
-            googleSignInLauncher.launch(signInIntent)
+            val signInIntent = socialAuthService.getSignInIntent()
+            socialSignInLauncher.launch(signInIntent)
         }
     }
 
@@ -179,9 +188,9 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
             showRegisterDialog()
         }
 
-        // Google Sign-In button
+        // Social Sign-In button (Google or Huawei)
         btnGoogleSignIn.setOnClickListener {
-            signInWithGoogle()
+            signInWithSocialAccount()
         }
     }
 
@@ -416,28 +425,38 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         textView.visibility = View.GONE
     }
 
-    // ==================== GOOGLE SIGN-IN ====================
+    // ==================== SOCIAL SIGN-IN (GOOGLE & HUAWEI) ====================
 
-    private fun handleGoogleSignInResult(account: GoogleSignInAccount?) {
-        if (account != null) {
-            // Get user information from Google account
-            val email = account.email ?: ""
-            val displayName = account.displayName ?: ""
-            val photoUrl = account.photoUrl?.toString() ?: ""
-            val googleId = account.id ?: ""
+    private fun handleSocialSignInResult(authResult: SocialAuthResult) {
+        if (authResult.isSuccess) {
+            // Get user information from social account
+            val email = authResult.email
+            val displayName = authResult.displayName
+            val photoUrl = authResult.photoUrl
+            val accountId = authResult.accountId
 
-            // Check if Google user already exists
-            checkGoogleUserExists(email, displayName, photoUrl, googleId)
+            // Show loading state
+            btnGoogleSignIn.isEnabled = false
+            btnGoogleSignIn.text = "Signing in..."
+
+            // Check if social user already exists
+            checkSocialUserExists(email, displayName, photoUrl, accountId)
         } else {
-            Toast.makeText(this, getString(R.string.google_sign_in_failed), Toast.LENGTH_SHORT).show()
+            // Hide loading state
+            btnGoogleSignIn.isEnabled = true
+            btnGoogleSignIn.text = SocialAuthFactory.getSignInButtonText(BuildConfig.STORE_TYPE)
+            
+            // Show error message
+            val message = authResult.errorMessage ?: "Sign-in failed"
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun checkGoogleUserExists(
+    private fun checkSocialUserExists(
         email: String,
         displayName: String,
         photoUrl: String,
-        googleId: String
+        accountId: String
     ) {
         lifecycleScope.launch {
             try {
@@ -445,18 +464,39 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
                     is com.example.ecosort.data.model.Result.Success -> {
                         val existingUser = result.data
                         if (existingUser != null) {
-                            // User exists, log them in directly
-                            loginExistingGoogleUser(email, googleId)
+                            // User exists - check if it's a social account or email/password account
+                            val isSocialAccount = existingUser.passwordHash.isEmpty() || 
+                                                 existingUser.passwordHash == accountId ||
+                                                 !existingUser.passwordHash.startsWith("$2a$") // Not bcrypt hash
+                            
+                            if (!isSocialAccount) {
+                                // This is an email/password account - don't allow social login
+                                btnGoogleSignIn.isEnabled = true
+                                btnGoogleSignIn.text = SocialAuthFactory.getSignInButtonText(BuildConfig.STORE_TYPE)
+                                android.util.Log.w("LoginActivity", "Email/password account detected, blocking social login")
+                                Toast.makeText(
+                                    this@LoginActivity,
+                                    "This email is registered with password. Please sign in with your password instead.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                // Social account - proceed with login
+                                loginExistingSocialUser(email, accountId)
+                            }
                         } else {
-                            // User doesn't exist, show username input page
-                            Toast.makeText(this@LoginActivity, getString(R.string.google_sign_in_success), Toast.LENGTH_SHORT).show()
-                            navigateToUsernameInput(email, displayName, photoUrl, googleId)
+                            // User doesn't exist, hide loading and show username input page
+                            btnGoogleSignIn.isEnabled = true
+                            btnGoogleSignIn.text = SocialAuthFactory.getSignInButtonText(BuildConfig.STORE_TYPE)
+                            Toast.makeText(this@LoginActivity, "Sign-in successful!", Toast.LENGTH_SHORT).show()
+                            navigateToUsernameInput(email, displayName, photoUrl, accountId)
                         }
                     }
                     is com.example.ecosort.data.model.Result.Error -> {
-                        // Error checking user, show username input page as fallback
-                        Toast.makeText(this@LoginActivity, getString(R.string.google_sign_in_success), Toast.LENGTH_SHORT).show()
-                        navigateToUsernameInput(email, displayName, photoUrl, googleId)
+                        // Error checking user, hide loading and show username input page as fallback
+                        btnGoogleSignIn.isEnabled = true
+                        btnGoogleSignIn.text = SocialAuthFactory.getSignInButtonText(BuildConfig.STORE_TYPE)
+                        Toast.makeText(this@LoginActivity, "Sign-in successful!", Toast.LENGTH_SHORT).show()
+                        navigateToUsernameInput(email, displayName, photoUrl, accountId)
                     }
                     is com.example.ecosort.data.model.Result.Loading -> {
                         // Loading state - shouldn't happen in this context, but handle it
@@ -464,22 +504,28 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
                     }
                 }
             } catch (e: Exception) {
-                // Error checking user, show username input page as fallback
-                Toast.makeText(this@LoginActivity, getString(R.string.google_sign_in_success), Toast.LENGTH_SHORT).show()
-                navigateToUsernameInput(email, displayName, photoUrl, googleId)
+                // Error checking user, hide loading and show username input page as fallback
+                btnGoogleSignIn.isEnabled = true
+                btnGoogleSignIn.text = SocialAuthFactory.getSignInButtonText(BuildConfig.STORE_TYPE)
+                Toast.makeText(this@LoginActivity, "Sign-in successful!", Toast.LENGTH_SHORT).show()
+                navigateToUsernameInput(email, displayName, photoUrl, accountId)
             }
         }
     }
 
-    private fun loginExistingGoogleUser(email: String, googleId: String) {
+    private fun loginExistingSocialUser(email: String, accountId: String) {
         lifecycleScope.launch {
             try {
-                when (val result = viewModel.loginGoogleUser(email, googleId)) {
+                when (val result = viewModel.loginGoogleUser(email, accountId)) {
                     is com.example.ecosort.data.model.Result.Success -> {
+                        btnGoogleSignIn.isEnabled = true
+                        btnGoogleSignIn.text = SocialAuthFactory.getSignInButtonText(BuildConfig.STORE_TYPE)
                         Toast.makeText(this@LoginActivity, "Welcome back!", Toast.LENGTH_SHORT).show()
                         navigateToMain()
                     }
                     is com.example.ecosort.data.model.Result.Error -> {
+                        btnGoogleSignIn.isEnabled = true
+                        btnGoogleSignIn.text = SocialAuthFactory.getSignInButtonText(BuildConfig.STORE_TYPE)
                         Toast.makeText(
                             this@LoginActivity,
                             "Login failed: ${result.exception.message}",
@@ -492,6 +538,8 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
                     }
                 }
             } catch (e: Exception) {
+                btnGoogleSignIn.isEnabled = true
+                btnGoogleSignIn.text = SocialAuthFactory.getSignInButtonText(BuildConfig.STORE_TYPE)
                 Toast.makeText(
                     this@LoginActivity,
                     "Login failed: ${e.message}",
@@ -505,35 +553,16 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         email: String,
         displayName: String,
         photoUrl: String,
-        googleId: String
+        accountId: String
     ) {
         val intent = Intent(this, GoogleUsernameActivity::class.java).apply {
-            putExtra("google_email", email)
-            putExtra("google_display_name", displayName)
-            putExtra("google_photo_url", photoUrl)
-            putExtra("google_id", googleId)
+            putExtra("social_email", email)
+            putExtra("social_display_name", displayName)
+            putExtra("social_photo_url", photoUrl)
+            putExtra("social_account_id", accountId)
+            putExtra("social_provider", socialAuthService.getProviderName())
         }
         startActivity(intent)
-    }
-
-    private fun handleGoogleSignInError(e: ApiException) {
-        when (e.statusCode) {
-            7 -> { // NETWORK_ERROR
-                Toast.makeText(this, "Network error. Please check your connection.", Toast.LENGTH_SHORT).show()
-            }
-            8 -> { // INTERNAL_ERROR
-                Toast.makeText(this, "Internal error. Please try again.", Toast.LENGTH_SHORT).show()
-            }
-            5 -> { // INVALID_ACCOUNT
-                Toast.makeText(this, "Invalid account. Please try again.", Toast.LENGTH_SHORT).show()
-            }
-            12501 -> { // SIGN_IN_CANCELLED
-                Toast.makeText(this, getString(R.string.google_sign_in_cancelled), Toast.LENGTH_SHORT).show()
-            }
-            else -> {
-                Toast.makeText(this, getString(R.string.google_sign_in_error), Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     // ==================== ADMIN REGISTRATION ====================

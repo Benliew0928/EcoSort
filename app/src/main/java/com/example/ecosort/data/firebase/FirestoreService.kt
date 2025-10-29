@@ -89,6 +89,36 @@ class FirestoreService @Inject constructor() {
             Result.failure(e)
         }
     }
+    
+    /**
+     * 🔥 NEW: Add community post with transaction for concurrent write protection
+     */
+    suspend fun addCommunityPostWithTransaction(post: FirebaseCommunityPost): Result<String> {
+        return try {
+            android.util.Log.d("FirestoreService", "Adding community post with transaction: ${post.title}")
+            
+            firestore.runTransaction { transaction ->
+                val postRef = communityPostsCollection.document(post.id)
+                
+                // Check if post already exists (prevents duplicate writes from multiple devices)
+                val snapshot = transaction.get(postRef)
+                if (!snapshot.exists()) {
+                    transaction.set(postRef, post)
+                    android.util.Log.d("FirestoreService", "✅ Transaction: New post created")
+                } else {
+                    android.util.Log.d("FirestoreService", "⚠️ Transaction: Post already exists, skipping")
+                }
+                
+                post.id
+            }.await()
+            
+            android.util.Log.d("FirestoreService", "✅ Community post added with transaction protection: ${post.id}")
+            Result.success(post.id)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Failed to add community post with transaction", e)
+            Result.failure(e)
+        }
+    }
 
     /**
      * Save user profile to Firebase
@@ -895,7 +925,113 @@ class FirestoreService @Inject constructor() {
         }
     }
 
-// ==================== CHAT OPERATIONS ====================
+    // ==================== CHAT OPERATIONS ====================
+    
+    /**
+     * Get chat messages for a channel with real-time updates
+     */
+    fun getChannelMessagesRealTime(channelId: String): Flow<List<FirebaseChatMessage>> = callbackFlow {
+        android.util.Log.d("FirestoreService", "Setting up real-time listener for channel: $channelId")
+        
+        val chatMessagesCollection = firestore.collection("chat_messages")
+        val listener = chatMessagesCollection
+            .whereEqualTo("channelId", channelId)
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to chat messages", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val messages = snapshot?.documents?.mapNotNull { document ->
+                    try {
+                        document.toObject<FirebaseChatMessage>()?.copy(id = document.id)
+                    } catch (e: Exception) {
+                        android.util.Log.e("FirestoreService", "Error parsing chat message: ${document.id}", e)
+                        null
+                    }
+                } ?: emptyList()
+                
+                android.util.Log.d("FirestoreService", "Real-time update: ${messages.size} messages in channel $channelId")
+                trySend(messages)
+            }
+
+        awaitClose { 
+            android.util.Log.d("FirestoreService", "Removing real-time listener for channel: $channelId")
+            listener.remove() 
+        }
+    }
+    
+    /**
+     * Get user follows with real-time updates
+     */
+    fun getUserFollowersRealTime(userFirebaseUid: String): Flow<List<FirebaseUserFollow>> = callbackFlow {
+        android.util.Log.d("FirestoreService", "Setting up real-time listener for followers of: $userFirebaseUid")
+        
+        val followsCollection = firestore.collection("user_follows")
+        val listener = followsCollection
+            .whereEqualTo("followingId", userFirebaseUid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to followers", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val follows = snapshot?.documents?.mapNotNull { document ->
+                    try {
+                        document.toObject<FirebaseUserFollow>()?.copy(id = document.id)
+                    } catch (e: Exception) {
+                        android.util.Log.e("FirestoreService", "Error parsing follow: ${document.id}", e)
+                        null
+                    }
+                } ?: emptyList()
+                
+                android.util.Log.d("FirestoreService", "Real-time update: ${follows.size} followers")
+                trySend(follows)
+            }
+
+        awaitClose { 
+            android.util.Log.d("FirestoreService", "Removing real-time listener for followers")
+            listener.remove() 
+        }
+    }
+    
+    /**
+     * Get user following with real-time updates
+     */
+    fun getUserFollowingRealTime(userFirebaseUid: String): Flow<List<FirebaseUserFollow>> = callbackFlow {
+        android.util.Log.d("FirestoreService", "Setting up real-time listener for following by: $userFirebaseUid")
+        
+        val followsCollection = firestore.collection("user_follows")
+        val listener = followsCollection
+            .whereEqualTo("followerId", userFirebaseUid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreService", "Error listening to following", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val follows = snapshot?.documents?.mapNotNull { document ->
+                    try {
+                        document.toObject<FirebaseUserFollow>()?.copy(id = document.id)
+                    } catch (e: Exception) {
+                        android.util.Log.e("FirestoreService", "Error parsing follow: ${document.id}", e)
+                        null
+                    }
+                } ?: emptyList()
+                
+                android.util.Log.d("FirestoreService", "Real-time update: ${follows.size} following")
+                trySend(follows)
+            }
+
+        awaitClose { 
+            android.util.Log.d("FirestoreService", "Removing real-time listener for following")
+            listener.remove() 
+        }
+    }
     
     private val chatMessagesCollection by lazy { firestore.collection("chat_messages") }
     private val conversationsCollection by lazy { firestore.collection("conversations") }

@@ -380,6 +380,151 @@ BUILD FAILED in 2m 24s
     }
 
     /**
+     * Update user profile in Firestore
+     * Used for updating additional profile information after registration
+     */
+    suspend fun updateUserProfile(firebaseUid: String, userData: HashMap<String, Any>): Result<Unit> {
+        return try {
+            android.util.Log.d("FirebaseAuthService", "Updating user profile: $firebaseUid")
+            usersCollection.document(firebaseUid).update(userData).await()
+            android.util.Log.d("FirebaseAuthService", "User profile updated successfully")
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseAuthService", "Failed to update user profile", e)
+            Result.Error(e)
+        }
+    }
+
+    /**
+     * Create Firestore profile for existing Firebase Auth account (e.g., from social sign-in)
+     * This is separate from updateUserProfile because .set() creates/replaces, while .update() requires existing doc
+     */
+    suspend fun createFirestoreProfile(firebaseUid: String, userData: HashMap<String, Any>): Result<Unit> {
+        return try {
+            android.util.Log.d("FirebaseAuthService", "Creating Firestore profile: $firebaseUid")
+            usersCollection.document(firebaseUid).set(userData).await()
+            android.util.Log.d("FirebaseAuthService", "Firestore profile created successfully")
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseAuthService", "Failed to create Firestore profile", e)
+            Result.Error(e)
+        }
+    }
+
+    /**
+     * Get user by email from Firestore
+     * Used for checking if social user exists across devices
+     */
+    suspend fun getUserByEmail(email: String): User? {
+        return try {
+            android.util.Log.d("FirebaseAuthService", "🔍 Searching for user by email in Firestore: $email")
+            val querySnapshot = usersCollection.whereEqualTo("email", email).get().await()
+            
+            if (querySnapshot.isEmpty) {
+                android.util.Log.d("FirebaseAuthService", "❌ No user found with email: $email")
+                return null
+            }
+            
+            // 🔥 CRITICAL: Log number of results to catch duplicate emails
+            if (querySnapshot.documents.size > 1) {
+                android.util.Log.e("FirebaseAuthService", "⚠️ WARNING: Multiple users found with email $email! Count: ${querySnapshot.documents.size}")
+                querySnapshot.documents.forEachIndexed { index, doc ->
+                    android.util.Log.e("FirebaseAuthService", "  User $index: ${doc.id}, username: ${doc.getString("username")}, firebaseUid: ${doc.getString("firebaseUid")}")
+                }
+            }
+            
+            val document = querySnapshot.documents.first()
+            val data = document.data ?: return null
+            
+            // 🔥 Log all retrieved data
+            android.util.Log.d("FirebaseAuthService", "📄 Retrieved Firestore document:")
+            android.util.Log.d("FirebaseAuthService", "  - Document ID: ${document.id}")
+            android.util.Log.d("FirebaseAuthService", "  - Firebase UID: ${data["firebaseUid"]}")
+            android.util.Log.d("FirebaseAuthService", "  - Username: ${data["username"]}")
+            android.util.Log.d("FirebaseAuthService", "  - Email: ${data["email"]}")
+            android.util.Log.d("FirebaseAuthService", "  - Social Account ID: ${data["socialAccountId"]}")
+            android.util.Log.d("FirebaseAuthService", "  - Profile Image: ${data["profileImageUrl"]}")
+            
+            // 🔥 CRITICAL: Check if socialAccountId is missing (old accounts)
+            val socialAccountId = data["socialAccountId"] as? String ?: ""
+            if (socialAccountId.isEmpty()) {
+                android.util.Log.w("FirebaseAuthService", "⚠️ WARNING: socialAccountId field is EMPTY or missing in Firestore!")
+                android.util.Log.w("FirebaseAuthService", "  This is likely an old account. The field will be populated during login.")
+            }
+            
+            // Convert Firestore document to User object
+            val user = User(
+                id = 0, // Will be assigned by local database
+                firebaseUid = data["firebaseUid"] as? String ?: document.id,
+                username = data["username"] as? String ?: "",
+                email = data["email"] as? String ?: "",
+                passwordHash = socialAccountId, // Social users store social ID in passwordHash - may be empty for old accounts
+                userType = UserType.valueOf(data["userType"] as? String ?: "INDIVIDUAL"),
+                profileImageUrl = data["profileImageUrl"] as? String,
+                bio = data["bio"] as? String,
+                location = data["location"] as? String,
+                itemsRecycled = (data["itemsRecycled"] as? Long)?.toInt() ?: 0,
+                totalPoints = (data["totalPoints"] as? Long)?.toInt() ?: 0,
+                joinDate = data["joinDate"] as? Long ?: System.currentTimeMillis(),
+                lastActive = data["lastActive"] as? Long ?: System.currentTimeMillis(),
+                achievements = data["achievements"] as? String,
+                socialLinks = data["socialLinks"] as? String,
+                preferences = data["preferences"] as? String,
+                privacySettings = data["privacySettings"] as? String,
+                profileCompletion = (data["profileCompletion"] as? Long)?.toInt() ?: 0
+            )
+            
+            android.util.Log.d("FirebaseAuthService", "✅ User converted to local User object:")
+            android.util.Log.d("FirebaseAuthService", "  - Username: ${user.username}")
+            android.util.Log.d("FirebaseAuthService", "  - Firebase UID: ${user.firebaseUid}")
+            android.util.Log.d("FirebaseAuthService", "  - Password Hash (Social ID): ${user.passwordHash}")
+            android.util.Log.d("FirebaseAuthService", "  - Profile Image: ${user.profileImageUrl}")
+            
+            user
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseAuthService", "💥 Error getting user by email", e)
+            null
+        }
+    }
+
+    /**
+     * Sign in to Firebase Auth with email and password
+     * Used for social users to establish Firebase Auth session for Firestore access
+     */
+    suspend fun signInWithEmailPassword(email: String, password: String) {
+        try {
+            android.util.Log.d("FirebaseAuthService", "🔐 Signing into Firebase Auth...")
+            android.util.Log.d("FirebaseAuthService", "  - Email: $email")
+            firebaseAuth.signInWithEmailAndPassword(email, password).await()
+            android.util.Log.d("FirebaseAuthService", "✅ Firebase Auth sign-in successful!")
+            android.util.Log.d("FirebaseAuthService", "  - Current Firebase User: ${firebaseAuth.currentUser?.uid}")
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseAuthService", "❌ Firebase Auth sign-in failed: ${e.message}", e)
+            throw e
+        }
+    }
+
+    /**
+     * Update password for the currently signed-in Firebase user
+     * Used to set a password for social sign-in accounts
+     */
+    suspend fun updateCurrentUserPassword(newPassword: String) {
+        try {
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser != null) {
+                android.util.Log.d("FirebaseAuthService", "🔐 Updating password for Firebase user: ${currentUser.uid}")
+                currentUser.updatePassword(newPassword).await()
+                android.util.Log.d("FirebaseAuthService", "✅ Password updated successfully!")
+            } else {
+                android.util.Log.w("FirebaseAuthService", "⚠️ No current Firebase user to update password")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseAuthService", "❌ Failed to update password: ${e.message}", e)
+            throw e
+        }
+    }
+
+    /**
      * Authenticate user with Firebase Authentication
      * Simplified - relies entirely on Firebase Auth for password verification
      */

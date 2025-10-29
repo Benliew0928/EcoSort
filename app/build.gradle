@@ -91,6 +91,23 @@ android {
             pickFirst 'google/protobuf/wrappers.proto'
         }
     }
+
+    // ==================== BUILD FLAVORS FOR MULTI-STORE SUPPORT ====================
+    flavorDimensions "store"
+    
+    productFlavors {
+        googlePlay {
+            dimension "store"
+            buildConfigField "String", "STORE_TYPE", "\"GOOGLE_PLAY\""
+            // Google Play Store specific configuration
+        }
+        
+        appGallery {
+            dimension "store"
+            buildConfigField "String", "STORE_TYPE", "\"APP_GALLERY\""
+            // Huawei AppGallery specific configuration
+        }
+    }
 }
 
 dependencies {
@@ -154,11 +171,16 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite:2.14.0'
     implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
 
-    // ML Kit Object Detection (On-device model)
-    implementation 'com.google.mlkit:object-detection:17.0.2'
-    implementation 'com.google.mlkit:image-labeling-custom:17.0.3'
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation 'com.google.mlkit:object-detection-custom:17.0.2'
+    // ==================== ML KIT - BUILD FLAVOR SPECIFIC ====================
+    // Google ML Kit (Google Play Store only)
+    googlePlayImplementation 'com.google.mlkit:object-detection:17.0.2'
+    googlePlayImplementation 'com.google.mlkit:image-labeling-custom:17.0.3'
+    googlePlayImplementation 'com.google.mlkit:object-detection-custom:17.0.2'
+    
+    // Huawei HMS ML Kit (AppGallery only)
+    appGalleryImplementation 'com.huawei.hms:ml-computer-vision-object:3.12.0.300'
+    appGalleryImplementation 'com.huawei.hms:ml-computer-vision-image-classification:3.12.0.300'
+    appGalleryImplementation 'com.huawei.hms:ml-computer-vision:3.12.0.300'
 
     // 🔑 Gemini API SDK for Android/Java
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0"){
@@ -169,10 +191,15 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    // Huawei HMS Maps & Location (These are the correct, kept dependencies)
-    implementation 'com.huawei.agconnect:agconnect-core:1.9.1.301'
-    implementation 'com.huawei.hms:maps:6.11.2.301'
-    implementation 'com.huawei.hms:location:6.12.0.300'
+    // ==================== MAPS & LOCATION - BUILD FLAVOR SPECIFIC ====================
+    // Google Maps & Location (Google Play Store only)
+    googlePlayImplementation 'com.google.android.gms:play-services-maps:18.2.0'
+    googlePlayImplementation 'com.google.android.gms:play-services-location:21.0.1'
+    
+    // Huawei HMS Maps & Location (AppGallery only)
+    appGalleryImplementation 'com.huawei.agconnect:agconnect-core:1.9.1.301'
+    appGalleryImplementation 'com.huawei.hms:maps:6.11.2.301'
+    appGalleryImplementation 'com.huawei.hms:location:6.12.0.300'
 
     // Security & Encryption
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
@@ -189,8 +216,12 @@ dependencies {
     implementation 'com.google.firebase:firebase-storage-ktx'
     implementation 'com.google.firebase:firebase-auth-ktx'
     
-    // Google Sign-In
-    implementation 'com.google.android.gms:play-services-auth:20.7.0'
+    // ==================== SOCIAL AUTH - BUILD FLAVOR SPECIFIC ====================
+    // Google Sign-In (Google Play Store only)
+    googlePlayImplementation 'com.google.android.gms:play-services-auth:20.7.0'
+    
+    // Huawei Account Kit (AppGallery only)
+    appGalleryImplementation 'com.huawei.hms:hwid:6.12.0.300'
 
     // Stream Chat
     implementation 'io.getstream:stream-chat-android-ui-components:6.0.0'

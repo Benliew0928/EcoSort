@@ -597,7 +597,7 @@ interface BlockedUserDao {
         UserPoints::class,
         PointsTransaction::class
     ],
-    version = 24,
+    version = 25,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -654,7 +654,8 @@ abstract class EcoSortDatabase : RoomDatabase() {
                 MIGRATION_20_21,
                 MIGRATION_21_22,
                 MIGRATION_22_23,
-                MIGRATION_23_24
+                MIGRATION_23_24,
+                MIGRATION_24_25
             )
                     .allowMainThreadQueries() // Temporary for debugging
                     .fallbackToDestructiveMigration() // For development only
@@ -1211,6 +1212,137 @@ internal val MIGRATION_23_24 = object : androidx.room.migration.Migration(23, 24
         } catch (e: Exception) {
             android.util.Log.e("Migration_23_24", "Migration failed: ${e.message}")
             throw e
+        }
+    }
+}
+
+internal val MIGRATION_24_25 = object : androidx.room.migration.Migration(24, 25) {
+    override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        try {
+            android.util.Log.d("Migration_24_25", "🔄 Starting migration to use Firebase UIDs for relationships...")
+            
+            // 1. Add Firebase UID columns to community_posts
+            android.util.Log.d("Migration_24_25", "Adding authorFirebaseUid to community_posts...")
+            database.execSQL("ALTER TABLE community_posts ADD COLUMN authorFirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("""
+                UPDATE community_posts 
+                SET authorFirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = community_posts.authorId
+                )
+                WHERE authorId IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+            """.trimIndent())
+            
+            // 2. Add Firebase UID columns to community_comments
+            android.util.Log.d("Migration_24_25", "Adding authorFirebaseUid to community_comments...")
+            database.execSQL("ALTER TABLE community_comments ADD COLUMN authorFirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("""
+                UPDATE community_comments 
+                SET authorFirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = community_comments.authorId
+                )
+                WHERE authorId IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+            """.trimIndent())
+            
+            // 3. Add Firebase UID columns to friend_requests
+            android.util.Log.d("Migration_24_25", "Adding Firebase UIDs to friend_requests...")
+            database.execSQL("ALTER TABLE friend_requests ADD COLUMN senderFirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("ALTER TABLE friend_requests ADD COLUMN receiverFirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("""
+                UPDATE friend_requests 
+                SET senderFirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = friend_requests.senderId
+                ),
+                receiverFirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = friend_requests.receiverId
+                )
+                WHERE senderId IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+                  AND receiverId IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+            """.trimIndent())
+            
+            // 4. Add Firebase UID columns to friendships
+            android.util.Log.d("Migration_24_25", "Adding Firebase UIDs to friendships...")
+            database.execSQL("ALTER TABLE friendships ADD COLUMN user1FirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("ALTER TABLE friendships ADD COLUMN user2FirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("""
+                UPDATE friendships 
+                SET user1FirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = friendships.userId1
+                ),
+                user2FirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = friendships.userId2
+                )
+                WHERE userId1 IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+                  AND userId2 IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+            """.trimIndent())
+            
+            // 5. Add Firebase UID columns to user_follows
+            android.util.Log.d("Migration_24_25", "Adding Firebase UIDs to user_follows...")
+            database.execSQL("ALTER TABLE user_follows ADD COLUMN followerFirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("ALTER TABLE user_follows ADD COLUMN followingFirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("""
+                UPDATE user_follows 
+                SET followerFirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = user_follows.followerId
+                ),
+                followingFirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = user_follows.followingId
+                )
+                WHERE followerId IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+                  AND followingId IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+            """.trimIndent())
+            
+            // 6. Add Firebase UID columns to user_friends
+            android.util.Log.d("Migration_24_25", "Adding Firebase UIDs to user_friends...")
+            database.execSQL("ALTER TABLE user_friends ADD COLUMN userFirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("ALTER TABLE user_friends ADD COLUMN friendFirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("""
+                UPDATE user_friends 
+                SET userFirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = user_friends.userId
+                ),
+                friendFirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = user_friends.friendId
+                )
+                WHERE userId IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+                  AND friendId IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+            """.trimIndent())
+            
+            // 7. Add Firebase UID columns to chat_messages
+            android.util.Log.d("Migration_24_25", "Adding senderFirebaseUid to chat_messages...")
+            database.execSQL("ALTER TABLE chat_messages ADD COLUMN senderFirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("""
+                UPDATE chat_messages 
+                SET senderFirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = chat_messages.senderId
+                )
+                WHERE senderId IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+            """.trimIndent())
+            
+            // 8. Add Firebase UID columns to conversations
+            android.util.Log.d("Migration_24_25", "Adding Firebase UIDs to conversations...")
+            database.execSQL("ALTER TABLE conversations ADD COLUMN participant1FirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("ALTER TABLE conversations ADD COLUMN participant2FirebaseUid TEXT NOT NULL DEFAULT ''")
+            database.execSQL("ALTER TABLE conversations ADD COLUMN lastMessageSenderFirebaseUid TEXT")
+            database.execSQL("""
+                UPDATE conversations 
+                SET participant1FirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = conversations.participant1Id
+                ),
+                participant2FirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = conversations.participant2Id
+                ),
+                lastMessageSenderFirebaseUid = (
+                    SELECT firebaseUid FROM users WHERE users.id = conversations.lastMessageSenderId
+                )
+                WHERE participant1Id IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+                  AND participant2Id IN (SELECT id FROM users WHERE firebaseUid IS NOT NULL)
+            """.trimIndent())
+            
+            android.util.Log.d("Migration_24_25", "✅ Migration 24->25 completed successfully!")
+        } catch (e: Exception) {
+            android.util.Log.e("Migration_24_25", "❌ Migration failed: ${e.message}", e)
+            // Don't throw - let fallbackToDestructiveMigration handle it
+            android.util.Log.w("Migration_24_25", "Falling back to destructive migration...")
         }
     }
 }

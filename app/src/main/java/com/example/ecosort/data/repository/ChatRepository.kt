@@ -50,11 +50,17 @@ class ChatRepository @Inject constructor(
 
             // Get sender's Firebase UID (handles admin negative IDs)
             val sender = userRepository.getUserOrAdmin(session.userId)
-            val senderFirebaseUid = sender?.firebaseUid
+            val senderFirebaseUid = sender?.firebaseUid ?: ""
+            
+            if (senderFirebaseUid.isEmpty()) {
+                android.util.Log.e("ChatRepository", "❌ Cannot send message: No Firebase UID found")
+                return Result.Error(Exception("Authentication error. Please log in again."))
+            }
 
             val message = ChatMessage(
                 channelId = channelId,
-                senderId = session.userId,
+                senderId = session.userId, // Keep for backward compatibility
+                senderFirebaseUid = senderFirebaseUid, // 🔑 Firebase UID for cross-device sync
                 senderUsername = session.username,
                 messageText = messageText,
                 messageType = MessageType.TEXT
@@ -123,9 +129,14 @@ class ChatRepository @Inject constructor(
             val session = preferencesManager.userSession.first()
                 ?: return Result.Error(Exception("No active session"))
 
+            // Get sender's Firebase UID
+            val sender = userRepository.getUserOrAdmin(session.userId)
+            val senderFirebaseUid = sender?.firebaseUid ?: ""
+
             val message = ChatMessage(
                 channelId = channelId,
-                senderId = session.userId,
+                senderId = session.userId, // Keep for backward compatibility
+                senderFirebaseUid = senderFirebaseUid, // 🔑 Firebase UID for cross-device sync
                 senderUsername = session.username,
                 messageText = "📷 Image",
                 messageType = MessageType.IMAGE,
@@ -160,9 +171,14 @@ class ChatRepository @Inject constructor(
             val session = preferencesManager.userSession.first()
                 ?: return Result.Error(Exception("No active session"))
 
+            // Get sender's Firebase UID
+            val sender = userRepository.getUserOrAdmin(session.userId)
+            val senderFirebaseUid = sender?.firebaseUid ?: ""
+
             val message = ChatMessage(
                 channelId = channelId,
-                senderId = session.userId,
+                senderId = session.userId, // Keep for backward compatibility
+                senderFirebaseUid = senderFirebaseUid, // 🔑 Firebase UID for cross-device sync
                 senderUsername = session.username,
                 messageText = "🎤 Voice message",
                 messageType = MessageType.VOICE,
@@ -198,9 +214,14 @@ class ChatRepository @Inject constructor(
             val session = preferencesManager.userSession.first()
                 ?: return Result.Error(Exception("No active session"))
 
+            // Get sender's Firebase UID
+            val sender = userRepository.getUserOrAdmin(session.userId)
+            val senderFirebaseUid = sender?.firebaseUid ?: ""
+
             val message = ChatMessage(
                 channelId = channelId,
-                senderId = session.userId,
+                senderId = session.userId, // Keep for backward compatibility
+                senderFirebaseUid = senderFirebaseUid, // 🔑 Firebase UID for cross-device sync
                 senderUsername = session.username,
                 messageText = "📎 $fileName",
                 messageType = MessageType.FILE,
@@ -302,11 +323,17 @@ class ChatRepository @Inject constructor(
             }
 
             // Create new conversation using absolute value comparison for consistency
+            // Get Firebase UIDs for participants
+            val user1 = userRepository.getUserOrAdmin(user1Id)
+            val user2 = userRepository.getUserOrAdmin(user2Id)
+            
             val conversation = Conversation(
                 channelId = channelId,
-                participant1Id = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) user1Id else user2Id,
+                participant1Id = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) user1Id else user2Id, // Keep for backward compatibility
+                participant1FirebaseUid = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) (user1?.firebaseUid ?: "") else (user2?.firebaseUid ?: ""), // 🔑 Firebase UID
                 participant1Username = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) user1Username else user2Username,
-                participant2Id = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) user2Id else user1Id,
+                participant2Id = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) user2Id else user1Id, // Keep for backward compatibility
+                participant2FirebaseUid = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) (user2?.firebaseUid ?: "") else (user1?.firebaseUid ?: ""), // 🔑 Firebase UID
                 participant2Username = if (kotlin.math.abs(user1Id) < kotlin.math.abs(user2Id)) user2Username else user1Username
             )
 
@@ -377,9 +404,11 @@ class ChatRepository @Inject constructor(
                 // Create new conversation
                 val conversation = Conversation(
                     channelId = channelId,
-                    participant1Id = if (user1Id < user2Id) user1Id else user2Id,
+                    participant1Id = if (user1Id < user2Id) user1Id else user2Id, // Keep for backward compatibility
+                    participant1FirebaseUid = if (user1Id < user2Id) (user1.firebaseUid ?: "") else (user2.firebaseUid ?: ""), // 🔑 Firebase UID
                     participant1Username = if (user1Id < user2Id) user1.username else user2.username,
-                    participant2Id = if (user1Id < user2Id) user2Id else user1Id,
+                    participant2Id = if (user1Id < user2Id) user2Id else user1Id, // Keep for backward compatibility
+                    participant2FirebaseUid = if (user1Id < user2Id) (user2.firebaseUid ?: "") else (user1.firebaseUid ?: ""), // 🔑 Firebase UID
                     participant2Username = if (user1Id < user2Id) user2.username else user1.username
                 )
 
@@ -423,7 +452,69 @@ class ChatRepository @Inject constructor(
     // ==================== FIREBASE SYNC ====================
 
     /**
-     * Sync chat messages from Firebase for a specific channel
+     * 🔥 NEW: Real-time sync of chat messages from Firebase
+     * This continuously listens for new messages and syncs them to local DB
+     */
+    fun syncChatMessagesFromFirebaseRealTime(channelId: String): Flow<Int> = kotlinx.coroutines.flow.flow {
+        android.util.Log.d("ChatRepository", "🔄 Starting real-time sync for channel: $channelId")
+        
+        firestoreService.getChannelMessagesRealTime(channelId).collect { firebaseMessages ->
+            try {
+                var syncedCount = 0
+                val allUsers = userDao.getAllUsers()
+                val existingMessages = chatMessageDao.getMessagesForChannel(channelId).first()
+                
+                for (firebaseMessage in firebaseMessages) {
+                    try {
+                        // Find sender by Firebase UID
+                        val sender = allUsers.find { it.firebaseUid == firebaseMessage.senderId }
+                        
+                        if (sender == null) {
+                            android.util.Log.w("ChatRepository", "Sender not found locally for Firebase message: ${firebaseMessage.id}")
+                            continue
+                        }
+                        
+                        // Check if message already exists by Firebase message ID (more reliable than timestamp)
+                        val exists = existingMessages.any { it.id.toString() == firebaseMessage.id }
+                        
+                        if (!exists) {
+                            // Insert new message
+                            val messageTimestamp = firebaseMessage.timestamp?.toDate()?.time ?: System.currentTimeMillis()
+                            val localMessage = ChatMessage(
+                                channelId = channelId,
+                                senderId = sender.id,
+                                senderFirebaseUid = sender.firebaseUid ?: "",
+                                senderUsername = sender.username,
+                                messageText = firebaseMessage.messageText,
+                                messageType = MessageType.valueOf(firebaseMessage.messageType),
+                                attachmentUrl = firebaseMessage.attachmentUrl,
+                                attachmentType = firebaseMessage.attachmentType,
+                                attachmentDuration = firebaseMessage.attachmentDuration,
+                                timestamp = messageTimestamp,
+                                messageStatus = MessageStatus.valueOf(firebaseMessage.messageStatus)
+                            )
+                            chatMessageDao.insertMessage(localMessage)
+                            syncedCount++
+                            android.util.Log.d("ChatRepository", "✅ Synced new message from ${sender.username}")
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("ChatRepository", "Error syncing individual message", e)
+                    }
+                }
+                
+                if (syncedCount > 0) {
+                    android.util.Log.d("ChatRepository", "✅ Real-time sync: $syncedCount new messages")
+                }
+                emit(syncedCount)
+            } catch (e: Exception) {
+                android.util.Log.e("ChatRepository", "Error in real-time sync", e)
+                emit(0)
+            }
+        }
+    }
+    
+    /**
+     * One-time sync of chat messages from Firebase (legacy method, kept for compatibility)
      */
     suspend fun syncChatMessagesFromFirebase(channelId: String): Result<Int> {
         return try {
@@ -448,19 +539,17 @@ class ChatRepository @Inject constructor(
                         continue
                     }
                     
-                    // Check if message already exists locally (by timestamp to avoid duplicates)
+                    // Check if message already exists locally by Firebase message ID
                     val messageTimestamp = firebaseMessage.timestamp?.toDate()?.time ?: System.currentTimeMillis()
                     val existingMessages = chatMessageDao.getMessagesForChannel(channelId).first()
-                    val exists = existingMessages.any { 
-                        it.senderId == sender.id && 
-                        Math.abs(it.timestamp - messageTimestamp) < 1000 // Within 1 second
-                    }
+                    val exists = existingMessages.any { it.id.toString() == firebaseMessage.id }
                     
                     if (!exists) {
                         // Insert new message
                         val localMessage = ChatMessage(
                             channelId = channelId,
-                            senderId = sender.id,
+                            senderId = sender.id, // Keep for backward compatibility
+                            senderFirebaseUid = sender.firebaseUid ?: "", // 🔑 Firebase UID for cross-device sync
                             senderUsername = sender.username,
                             messageText = firebaseMessage.messageText,
                             messageType = MessageType.valueOf(firebaseMessage.messageType),
@@ -531,13 +620,16 @@ class ChatRepository @Inject constructor(
                         // Insert new conversation
                         val localConv = Conversation(
                             channelId = firebaseConv.channelId,
-                            participant1Id = participant1.id,
+                            participant1Id = participant1.id, // Keep for backward compatibility
+                            participant1FirebaseUid = participant1.firebaseUid ?: "", // 🔑 Firebase UID
                             participant1Username = participant1.username,
-                            participant2Id = participant2.id,
+                            participant2Id = participant2.id, // Keep for backward compatibility
+                            participant2FirebaseUid = participant2.firebaseUid ?: "", // 🔑 Firebase UID
                             participant2Username = participant2.username,
                             lastMessageText = firebaseConv.lastMessageText,
                             lastMessageTimestamp = firebaseConv.lastMessageTimestamp?.toDate()?.time ?: System.currentTimeMillis(),
-                            lastMessageSenderId = allUsers.find { it.firebaseUid == firebaseConv.lastMessageSenderId }?.id,
+                            lastMessageSenderId = allUsers.find { it.firebaseUid == firebaseConv.lastMessageSenderId }?.id, // Keep for backward compatibility
+                            lastMessageSenderFirebaseUid = firebaseConv.lastMessageSenderId, // 🔑 Firebase UID
                             createdAt = firebaseConv.createdAt?.toDate()?.time ?: System.currentTimeMillis()
                         )
                         conversationDao.insertConversation(localConv)
