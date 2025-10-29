@@ -25,7 +25,7 @@ android {
         def properties = new Properties()
         properties.load(project.rootProject.file("local.properties").newDataInputStream())
         buildConfigField "String", "GEMINI_API_KEY", "\"${properties.getProperty("GEMINI_API_KEY")}\""
-        
+
         // Room schema export
         javaCompileOptions {
             annotationProcessorOptions {
@@ -34,10 +34,26 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            def keystorePropertiesFile = rootProject.file("keystore.properties")
+            def keystoreProperties = new Properties()
+            if (keystorePropertiesFile.exists()) {
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+            }
+
+            storeFile file(keystoreProperties['storeFile'] ?: 'ecosort-release.keystore')
+            storePassword keystoreProperties['storePassword'] ?: 'YOUR_ACTUAL_KEYSTORE_PASSWORD'
+            keyAlias keystoreProperties['keyAlias'] ?: 'ecosort'
+            keyPassword keystoreProperties['keyPassword'] ?: 'YOUR_ACTUAL_KEY_PASSWORD'
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
         debug {
             minifyEnabled false
@@ -56,7 +72,7 @@ android {
 
     // Configure Compose compiler version
     composeOptions {
-        kotlinCompilerExtensionVersion '1.5.13'
+        kotlinCompilerExtensionVersion '1.5.11'
     }
 
     compileOptions {
@@ -80,7 +96,7 @@ android {
                     "google/protobuf/field_mask.proto",
                     'META-INF/LICENSE.md',
                     'META-INF/LICENSE-notice.md'
-                    ]
+            ]
             pickFirst 'google/protobuf/any.proto'
             pickFirst 'google/protobuf/api.proto'
             pickFirst 'google/protobuf/duration.proto'
@@ -94,14 +110,14 @@ android {
 
     // ==================== BUILD FLAVORS FOR MULTI-STORE SUPPORT ====================
     flavorDimensions "store"
-    
+
     productFlavors {
         googlePlay {
             dimension "store"
             buildConfigField "String", "STORE_TYPE", "\"GOOGLE_PLAY\""
             // Google Play Store specific configuration
         }
-        
+
         appGallery {
             dimension "store"
             buildConfigField "String", "STORE_TYPE", "\"APP_GALLERY\""
@@ -132,7 +148,7 @@ dependencies {
     implementation 'androidx.room:room-runtime:2.6.0'
     implementation 'androidx.room:room-ktx:2.6.0'
     kapt 'androidx.room:room-compiler:2.6.0'
-    
+
     // Database Inspector (for debugging)
     debugImplementation 'androidx.room:room-testing:2.6.0'
 
@@ -141,8 +157,8 @@ dependencies {
     kapt 'com.google.dagger:hilt-compiler:2.48'
 
     // Coroutines
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
 
     // Networking
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
@@ -156,7 +172,7 @@ dependencies {
 
     // Circle Image View
     implementation 'de.hdodenhof:circleimageview:3.1.0'
-    
+
     // Lottie Animation
     implementation 'com.airbnb.android:lottie:6.1.0'
 
@@ -176,7 +192,7 @@ dependencies {
     googlePlayImplementation 'com.google.mlkit:object-detection:17.0.2'
     googlePlayImplementation 'com.google.mlkit:image-labeling-custom:17.0.3'
     googlePlayImplementation 'com.google.mlkit:object-detection-custom:17.0.2'
-    
+
     // Huawei HMS ML Kit (AppGallery only)
     // ❌ DISABLED: These versions don't exist - using TensorFlow Lite instead
     // appGalleryImplementation 'com.huawei.hms:ml-computer-vision-object:3.12.0.300'
@@ -196,7 +212,7 @@ dependencies {
     // Google Maps & Location (Google Play Store only)
     googlePlayImplementation 'com.google.android.gms:play-services-maps:18.2.0'
     googlePlayImplementation 'com.google.android.gms:play-services-location:21.0.1'
-    
+
     // Huawei HMS Maps & Location (AppGallery only)
     appGalleryImplementation 'com.huawei.agconnect:agconnect-core:1.9.1.301'
     appGalleryImplementation 'com.huawei.hms:maps:6.11.2.301'
@@ -216,11 +232,11 @@ dependencies {
     implementation 'com.google.firebase:firebase-firestore-ktx'
     implementation 'com.google.firebase:firebase-storage-ktx'
     implementation 'com.google.firebase:firebase-auth-ktx'
-    
+
     // ==================== SOCIAL AUTH - BUILD FLAVOR SPECIFIC ====================
     // Google Sign-In (Google Play Store only)
     googlePlayImplementation 'com.google.android.gms:play-services-auth:20.7.0'
-    
+
     // Huawei Account Kit (AppGallery only)
     appGalleryImplementation 'com.huawei.hms:hwid:6.12.0.300'
 
