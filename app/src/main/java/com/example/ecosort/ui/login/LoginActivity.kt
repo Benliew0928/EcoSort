@@ -1,11 +1,18 @@
 package com.example.ecosort.ui.login
 
 import android.content.Intent
+import android.graphics.Typeface
 import android.os.Bundle
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
+import android.text.TextPaint
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
 import android.widget.RadioGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -41,6 +48,9 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
     private lateinit var btnLogin: android.widget.Button
     private lateinit var btnRegister: android.widget.Button
     private lateinit var btnGoogleSignIn: android.widget.Button
+    private lateinit var cbTermsAndConditions: android.widget.CheckBox
+    private lateinit var tvTermsAndConditions: android.widget.TextView
+    private lateinit var tvPrivacyPolicy: android.widget.TextView
     
     private var isPasswordVisible = false
     
@@ -127,6 +137,12 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
     }
 
     private fun signInWithSocialAccount() {
+        // Check terms and conditions first
+        if (!cbTermsAndConditions.isChecked) {
+            Toast.makeText(this@LoginActivity, "Please accept the Terms and Conditions to continue.", Toast.LENGTH_LONG).show()
+            return
+        }
+        
         // Always sign out first to ensure account picker is shown
         socialAuthService.signOut {
             // After signing out, launch the sign-in intent
@@ -145,9 +161,97 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         btnLogin = findViewById(R.id.btnLogin)
         btnRegister = findViewById(R.id.btnRegister)
         btnGoogleSignIn = findViewById(R.id.btnGoogleSignIn)
+        cbTermsAndConditions = findViewById(R.id.cbTermsAndConditions)
+        tvTermsAndConditions = findViewById(R.id.tvTermsAndConditions)
+        tvPrivacyPolicy = findViewById(R.id.tvPrivacyPolicy)
 
         // Set default user type
         findViewById<android.widget.RadioButton>(R.id.rbUser).isChecked = true
+        
+        // Setup clickable terms text
+        setupTermsText()
+    }
+
+    private fun setupTermsText() {
+        val termsText = findViewById<TextView>(R.id.tvTermsText)
+        val fullText = "I have read and agree to the Terms and Conditions and the Privacy Policy."
+        val spannableString = SpannableString(fullText)
+        
+        // Make "Terms and Conditions" clickable
+        val termsStart = fullText.indexOf("Terms and Conditions")
+        val termsEnd = termsStart + "Terms and Conditions".length
+        val termsClickableSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                showTermsAndConditionsDialog()
+            }
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.color = getColor(R.color.primary)
+                ds.isUnderlineText = false
+                ds.typeface = Typeface.DEFAULT_BOLD
+            }
+        }
+        spannableString.setSpan(termsClickableSpan, termsStart, termsEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        
+        // Make "Privacy Policy" clickable
+        val privacyStart = fullText.indexOf("Privacy Policy")
+        val privacyEnd = privacyStart + "Privacy Policy".length
+        val privacyClickableSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                showTermsAndConditionsDialog()
+            }
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.color = getColor(R.color.primary)
+                ds.isUnderlineText = false
+                ds.typeface = Typeface.DEFAULT_BOLD
+            }
+        }
+        spannableString.setSpan(privacyClickableSpan, privacyStart, privacyEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        
+        termsText.text = spannableString
+        termsText.movementMethod = LinkMovementMethod.getInstance()
+    }
+
+    private fun setupRegisterTermsText(dialogView: View) {
+        val termsText = dialogView.findViewById<TextView>(R.id.tvRegTermsText)
+        val fullText = "I have read and agree to the Terms and Conditions and the Privacy Policy."
+        val spannableString = SpannableString(fullText)
+        
+        // Make "Terms and Conditions" clickable
+        val termsStart = fullText.indexOf("Terms and Conditions")
+        val termsEnd = termsStart + "Terms and Conditions".length
+        val termsClickableSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                showTermsAndConditionsDialog()
+            }
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.color = getColor(R.color.primary)
+                ds.isUnderlineText = false
+                ds.typeface = Typeface.DEFAULT_BOLD
+            }
+        }
+        spannableString.setSpan(termsClickableSpan, termsStart, termsEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        
+        // Make "Privacy Policy" clickable
+        val privacyStart = fullText.indexOf("Privacy Policy")
+        val privacyEnd = privacyStart + "Privacy Policy".length
+        val privacyClickableSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                showTermsAndConditionsDialog()
+            }
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.color = getColor(R.color.primary)
+                ds.isUnderlineText = false
+                ds.typeface = Typeface.DEFAULT_BOLD
+            }
+        }
+        spannableString.setSpan(privacyClickableSpan, privacyStart, privacyEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        
+        termsText.text = spannableString
+        termsText.movementMethod = LinkMovementMethod.getInstance()
     }
 
     // ==================== LISTENERS ====================
@@ -171,6 +275,12 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         btnLogin.setOnClickListener {
             val username = etUsername.text.toString().trim()
             val password = etPassword.text.toString().trim()
+            
+            // Check terms and conditions
+            if (!cbTermsAndConditions.isChecked) {
+                Toast.makeText(this@LoginActivity, "Please accept the Terms and Conditions to continue.", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
             
             // Get selected user type
             val selectedUserType = when (rgUserType.checkedRadioButtonId) {
@@ -241,6 +351,10 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         val tvRegPasswordError = dialogView.findViewById<android.widget.TextView>(R.id.tvRegPasswordError)
         val tvRegConfirmPasswordError = dialogView.findViewById<android.widget.TextView>(R.id.tvRegConfirmPasswordError)
         val rgRegUserType = dialogView.findViewById<RadioGroup>(R.id.rgRegUserType)
+        val cbRegTermsAndConditions = dialogView.findViewById<android.widget.CheckBox>(R.id.cbRegTermsAndConditions)
+        val tvRegTermsAndConditions = dialogView.findViewById<android.widget.TextView>(R.id.tvRegTermsAndConditions)
+        val tvRegPrivacyPolicy = dialogView.findViewById<android.widget.TextView>(R.id.tvRegPrivacyPolicy)
+        val tvRegTermsError = dialogView.findViewById<android.widget.TextView>(R.id.tvRegTermsError)
 
         var isRegPasswordVisible = false
         var isRegConfirmPasswordVisible = false
@@ -255,6 +369,9 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
             isRegConfirmPasswordVisible = !isRegConfirmPasswordVisible
             togglePasswordVisibility(etRegConfirmPassword, btnToggleRegConfirmPassword, isRegConfirmPasswordVisible)
         }
+
+        // Setup clickable terms text for register dialog
+        setupRegisterTermsText(dialogView)
 
 
         val dialog = MaterialAlertDialogBuilder(this)
@@ -285,15 +402,17 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
                 val emailError = validateEmail(email)
                 val passwordError = validatePassword(password)
                 val confirmPasswordError = validateConfirmPassword(password, confirmPassword)
+                val termsError = if (!cbRegTermsAndConditions.isChecked) "Please accept the Terms and Conditions to continue." else null
 
                 // Show field errors
                 showFieldError(tvRegUsernameError, usernameError)
                 showFieldError(tvRegEmailError, emailError)
                 showFieldError(tvRegPasswordError, passwordError)
                 showFieldError(tvRegConfirmPasswordError, confirmPasswordError)
+                showFieldError(tvRegTermsError, termsError)
 
                 // Only proceed with registration if all fields are valid
-                if (usernameError == null && emailError == null && passwordError == null && confirmPasswordError == null) {
+                if (usernameError == null && emailError == null && passwordError == null && confirmPasswordError == null && termsError == null) {
                     // If user is trying to register as admin, show admin passkey dialog first
                     if (userType == UserType.ADMIN) {
                         dialog.dismiss() // Close the registration dialog first
@@ -321,6 +440,11 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
         }
         etRegConfirmPassword.doOnTextChanged { _, _, _, _ -> 
             clearFieldError(tvRegConfirmPasswordError)
+        }
+
+        // Clear terms error when checkbox is checked
+        cbRegTermsAndConditions.setOnCheckedChangeListener { _, _ ->
+            clearFieldError(tvRegTermsError)
         }
 
         dialog.show()
@@ -384,6 +508,20 @@ class LoginActivity : AppCompatActivity(), AdminRegistrationDialog.AdminRegistra
             password != confirmPassword -> "Passwords do not match"
             else -> null
         }
+    }
+
+    // ==================== TERMS AND CONDITIONS ====================
+
+    private fun showTermsAndConditionsDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_terms_and_conditions, null)
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Terms and Conditions & Privacy Policy")
+            .setView(dialogView)
+            .setPositiveButton("Close") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 
     // ==================== UTILITY METHODS ====================

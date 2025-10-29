@@ -1,6 +1,12 @@
 <resources>
     <string name="app_name">EcoSort</string>
     
+    <!-- Terms and Conditions -->
+    <string name="terms_and_conditions_content">Welcome to EcoSort, an application designed to help you identify, categorize, and responsibly manage waste through image recognition, location services, and community chat.\n\nBy accessing or using the App, you agree to be bound by these Terms. If you disagree with any part of the terms, you may not access the App.\n\n1. Definitions\n\"App\": Refers to the EcoSort mobile application and all related services.\n\"We\" / \"Us\" / \"Our\": Refers to the developer and owner of the EcoSort App.\n\"User\" / \"You\": Refers to the individual accessing or using the App.\n\n2. License to Use the App\nWe grant you a non-exclusive, non-transferable, revocable license to use the App for your personal, non-commercial use.\n\n3. User Accounts\nTo access certain features, you must register for an account. You agree to provide accurate information during registration.\n\n4. Prohibited Conduct\nYou agree not to use the App for any unlawful purpose or submit illegal, defamatory, or harmful content.\n\n5. User-Generated Content\nYou are responsible for all content you submit. By submitting content, you grant us a license to use it in connection with the App.\n\n6. Third-Party Services\nThe App uses Google Mobile Services, Huawei Mobile Services, Gemini API, and Stream Chat. You agree to their terms.\n\n7. Disclaimers\nThe App is provided \"AS IS\" without warranties. We are not liable for any damages resulting from your use of the App.\n\n8. Termination\nWe may terminate your account immediately for any reason, including breach of these Terms.\n\n9. Contact Information\nFor questions about these Terms, contact us at: ecosort05@gmail.com</string>
+    
+    <!-- Privacy Policy -->
+    <string name="privacy_policy_content">This Privacy Policy explains how we collect, use, and safeguard your information when you use EcoSort.\n\n1. Consent\nBy using the App, you consent to the collection and use of information in accordance with this Privacy Policy.\n\n2. Information We Collect\nWe collect personal data (email, name, user ID) and usage data (location, images, device info, crash reports).\n\n3. Third-Party Services\nData is processed by:\n- Gemini API: For image classification\n- Firebase: For authentication and storage\n- ML Kit: For object detection\n- HMS/GMS: For maps and location\n- Stream Chat: For messaging\n\n4. How We Use Your Information\n- To provide core services (waste classification, recycling locations, chat)\n- To maintain accounts and authenticate users\n- To improve the App and personalize experience\n\n5. Your Rights\nYou can access, correct, delete, or restrict your personal data. You can request account deletion by contacting us.\n\n6. Data Security\nWe use encryption and secure protocols to protect your data, though no method is 100% secure.\n\n7. Changes to Policy\nWe may update this Privacy Policy. We will notify you of changes by posting the new policy.\n\n8. Contact Us\nFor questions about this Privacy Policy, contact us at: ecosort05@gmail.com</string>
+    
     <!-- Theme Options -->
     <string-array name="theme_options">
         <item>Light</item>
@@ -353,6 +359,13 @@
     <string name="demo_credentials">Demo Credentials</string>
     <string name="user_demo_credentials">User: user123 / password123</string>
     <string name="admin_demo_credentials">Admin: admin123 / password123</string>
+    
+    <!-- Terms and Conditions -->
+    <string name="terms_checkbox_text">I have read and agree to the Terms and Conditions and the Privacy Policy.</string>
+    <string name="terms_and_conditions">Terms and Conditions</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="terms_agreement_required">Please accept the Terms and Conditions to continue.</string>
+    <string name="terms_dialog_title">Terms and Conditions &amp; Privacy Policy</string>
     
     <!-- Community -->
     <string name="no_community_posts">No community posts yet. Be the first to share!</string>

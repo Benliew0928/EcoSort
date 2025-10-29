@@ -59,8 +59,16 @@ service cloud.firestore {
     
     // Recycled items collection rules
     match /recycled_items/{itemId} {
-      // Allow read/write access only for the item owner
-      allow read, write: if request.auth != null 
+      // Allow read access only for the item owner
+      allow read: if request.auth != null 
+        && request.auth.uid == resource.data.userId;
+      
+      // Allow create for authenticated users (checks incoming data)
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.userId;
+      
+      // Allow update/delete only for the item owner
+      allow update, delete: if request.auth != null 
         && request.auth.uid == resource.data.userId;
     }
     
@@ -72,8 +80,16 @@ service cloud.firestore {
     }
     
     match /points_transactions/{transactionId} {
-      // Allow read/write access only for the transaction owner
-      allow read, write: if request.auth != null 
+      // Allow read access only for the transaction owner
+      allow read: if request.auth != null 
+        && request.auth.uid == resource.data.userId;
+      
+      // Allow create for authenticated users (checks incoming data)
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.userId;
+      
+      // Allow update/delete only for the transaction owner
+      allow update, delete: if request.auth != null 
         && request.auth.uid == resource.data.userId;
     }
     

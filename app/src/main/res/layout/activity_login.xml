@@ -208,6 +208,48 @@
                     android:minHeight="@dimen/button_height_md" />
             </RadioGroup>
 
+            <!-- Terms and Conditions Checkbox -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="top"
+                android:layout_marginBottom="@dimen/margin_lg">
+
+                <CheckBox
+                    android:id="@+id/cbTermsAndConditions"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/margin_sm"
+                    android:layout_marginTop="2dp" />
+
+                <TextView
+                    android:id="@+id/tvTermsText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="I have read and agree to the Terms and Conditions and the Privacy Policy."
+                    android:textSize="@dimen/text_sm"
+                    android:textColor="@color/text_secondary"
+                    android:fontFamily="@string/font_family_body"
+                    android:lineSpacingExtra="2dp" />
+
+                <!-- Hidden TextViews for clickable parts - will be handled programmatically -->
+                <TextView
+                    android:id="@+id/tvTermsAndConditions"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="0"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvPrivacyPolicy"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="0"
+                    android:visibility="gone" />
+            </LinearLayout>
+
             <!-- Action Buttons -->
             <Button
                 android:id="@+id/btnLogin"
@@ -286,44 +328,6 @@
                 android:drawablePadding="@dimen/padding_md"
                 android:gravity="center"
                 android:stateListAnimator="@null" />
-        </LinearLayout>
-
-        <!-- Demo Credentials -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/card_modern"
-            android:padding="@dimen/padding_md"
-            android:layout_marginTop="@dimen/margin_lg"
-            android:layout_marginBottom="@dimen/margin_lg"
-            android:elevation="@dimen/card_elevation_sm">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/demo_credentials"
-                android:textSize="@dimen/text_md"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:fontFamily="@string/font_family_primary"
-                android:layout_marginBottom="@dimen/margin_sm" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/user_demo_credentials"
-                android:textSize="@dimen/text_sm"
-                android:textColor="@color/text_secondary"
-                android:fontFamily="@string/font_family_caption" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/admin_demo_credentials"
-                android:textSize="@dimen/text_sm"
-                android:textColor="@color/text_secondary"
-                android:fontFamily="@string/font_family_caption" />
         </LinearLayout>
 
     </LinearLayout>

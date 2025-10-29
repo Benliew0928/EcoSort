@@ -41,6 +41,7 @@ class OverlayView(context: Context, attrs: android.util.AttributeSet? = null) : 
         frameWidth: Int,
         frameHeight: Int
     ) {
+        Log.d("OverlayView", "updateResults called with ${newResults.size} results, frame: ${frameWidth}x${frameHeight}")
         results = newResults
         this.previewWidth = frameWidth
         this.previewHeight = frameHeight
@@ -65,7 +66,19 @@ class OverlayView(context: Context, attrs: android.util.AttributeSet? = null) : 
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        Log.d("OverlayView", "onDraw called: results=${results.size}, preview=${previewWidth}x${previewHeight}, view=${width}x${height}")
+        
+        // Always draw a test rectangle to verify the overlay is working
+        val testPaint = Paint().apply {
+            color = Color.RED
+            style = Paint.Style.STROKE
+            strokeWidth = 10f
+        }
+        canvas.drawRect(50f, 50f, 200f, 150f, testPaint)
+        canvas.drawText("OVERLAY TEST", 60f, 100f, textPaint)
+        
         if (results.isEmpty() || previewWidth == 0 || previewHeight == 0) {
+            Log.d("OverlayView", "No results to draw or invalid dimensions")
             // Draw global message if no objects are detected
             if (finalGlobalClassification.isNotEmpty()) {
                 val msgPaint = Paint(textPaint).apply { color = Color.YELLOW; textSize = 60f }
@@ -93,6 +106,7 @@ class OverlayView(context: Context, attrs: android.util.AttributeSet? = null) : 
 
         for (r in results) {
             val originalRect = RectF(r.boundingBox)
+            Log.d("OverlayView", "Drawing result: ${r.label}, rect: $originalRect")
 
             // 🔑 CREATE UNIQUE KEY: This key is used to check the finalLabels map.
             val rawBoxKey = originalRect.toString()
@@ -112,6 +126,8 @@ class OverlayView(context: Context, attrs: android.util.AttributeSet? = null) : 
                 (originalRect.right * scale) + offsetX + nudgeX,
                 (originalRect.bottom * scale) + offsetY + nudgeY + heightIncrease
             )
+
+            Log.d("OverlayView", "Scaled rect: $scaledRect")
 
             // 4. Draw the Scaled Box
             canvas.drawRect(scaledRect, boxPaint)

@@ -16,6 +16,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import java.util.*
 import android.content.Intent
+import com.google.firebase.Timestamp
 import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -419,18 +420,21 @@ class AnalysisResultActivity : AppCompatActivity() {
                     "binColor" to binColor,
                     "isRecyclable" to isRecyclable,
                     "confidence" to confidence,
-                    "recycledDate" to Date(),
+                    "recycledDate" to com.google.firebase.Timestamp.now(),
                     "pointsEarned" to 100
                 )
                 
                 // Save recycled item to Firebase
+                Log.d("RecycleItem", "Attempting to save recycled item for user: $firebaseUid")
                 val saveItemResult = firestoreService.saveRecycledItem(recycledItemData)
                 if (saveItemResult is com.example.ecosort.data.model.Result.Error) {
+                    Log.e("RecycleItem", "Failed to save recycled item", saveItemResult.exception)
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(this@AnalysisResultActivity, "Failed to save recycled item", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@AnalysisResultActivity, "Failed to save recycled item: ${saveItemResult.exception.message}", Toast.LENGTH_LONG).show()
                     }
                     return@launch
                 }
+                Log.d("RecycleItem", "Recycled item saved successfully")
                 
                 // Update user points
                 val pointsResult = firestoreService.getUserPoints(firebaseUid)
@@ -443,17 +447,20 @@ class AnalysisResultActivity : AppCompatActivity() {
                 val newTotalPoints = currentPoints + 100
                 val pointsData = hashMapOf<String, Any>(
                     "userId" to firebaseUid, // Use Firebase UID instead of local ID
-                    "totalPoints" to newTotalPoints,
-                    "lastUpdated" to Date()
+                    "totalPoints" to newTotalPoints.toLong(), // Convert to Long for Firebase consistency
+                    "lastUpdated" to com.google.firebase.Timestamp.now()
                 )
                 
+                Log.d("RecycleItem", "Attempting to save points: $currentPoints + 100 = $newTotalPoints for user: $firebaseUid")
                 val savePointsResult = firestoreService.saveUserPoints(pointsData)
                 if (savePointsResult is com.example.ecosort.data.model.Result.Error) {
+                    Log.e("RecycleItem", "Failed to save points", savePointsResult.exception)
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(this@AnalysisResultActivity, "Failed to update points", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@AnalysisResultActivity, "Failed to update points: ${savePointsResult.exception.message}", Toast.LENGTH_LONG).show()
                     }
                     return@launch
                 }
+                Log.d("RecycleItem", "Points saved successfully: $newTotalPoints")
                 
                 // Create points transaction
                 val transactionData = hashMapOf<String, Any>(
@@ -462,16 +469,21 @@ class AnalysisResultActivity : AppCompatActivity() {
                     "points" to 100,
                     "type" to "earned",
                     "description" to "Recycled: $itemName",
-                    "timestamp" to Date()
+                    "timestamp" to com.google.firebase.Timestamp.now()
                 )
                 
                 val saveTransactionResult = firestoreService.savePointsTransaction(transactionData)
                 if (saveTransactionResult is com.example.ecosort.data.model.Result.Error) {
-                    Log.w("RecycleItem", "Failed to save points transaction")
+                    Log.w("RecycleItem", "Failed to save points transaction", saveTransactionResult.exception)
+                } else {
+                    Log.d("RecycleItem", "Points transaction saved successfully")
                 }
                 
-                // Navigate to success screen
+                // All operations successful! Navigate to success screen
                 withContext(Dispatchers.Main) {
+                    Log.d("RecycleItem", "All save operations completed. Navigating to success screen.")
+                    Toast.makeText(this@AnalysisResultActivity, "Item recycled successfully! +100 points", Toast.LENGTH_SHORT).show()
+                    
                     val intent = Intent(this@AnalysisResultActivity, RecyclingSuccessActivity::class.java)
                     intent.putExtra("item_name", itemName)
                     intent.putExtra("points_earned", 100)
